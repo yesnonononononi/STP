@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: STP
+  data:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/stp?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true&tinyInt1isBit=false&allowLoadLocalInfile=true&allowLocalInfile=true&allowUrlInLocalInfile=true&allowUrlInLocalFile=true&allowUrlInFile=true&allowUrlInJdbcLocalInfile=true&allowUrlInJdbcLocalFile
+    hikari:
+      username: root
+      password: root
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.summit.stp.**.infrastructure.persistence.po
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+payment:
+  pid: 297
+  to: https://pay.aikelaikaifa.com/api/pay/submit
+  notify_url:
+  return_url:
+  signType:
+    RSA:
+      privateKey: MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDDwsCMsWcIgfpY/jdwh28RzLwH+9QxkVypltYqIOV4cJVxPNCsaGdVBvo7KGJOBUMq/dTOaX/Y6mxjJuPoO7+37x/OSn2j+XouFHnbsMo9oVL4cwDBuPfEs70Qulu8JekT7Wpu6a0aJouQrlF+YvbQ7yvThfBVfHJO2iumZzzeW9W9uzx4OXLn4NsaCjnKmdR894mxAfzOZHsVa4k6YqvWHcX+KxaKWNzeFmdJWewiULVvQMbQYsIamknDiz50E7xSIdFk+kDSqaYzXZyFEwTEPuGp8EMwkMWVgsX0NyWGnd36M/HoXTPCRp6RGAMp0LZnebUB2vkFm9dEUFITsGZTAgMBAAECggEAIBuIM0tBh+6xnfkMJMPB3tyClpiiRAMAfLxFoiFFIcztZeZAn5Z8JEEBt8Q2428PhjSdu8En++7vGhAd31A1cLiisdYb51IazQYEupizgwo7ro5GOH/a+4MzZlP6idB5+w+8njZrcteRmohMy3r12mzv9kCIm6zOnso/0IosPJfvY0e+Rr/BCXAr/wJ56j46UTNnS2He61oTg2I1a4LrMjVyXgrtz2w5u1APTQ6CuSY4mFV6E8PJ+7Wym86iFk3+k0yr3rbQ2Z0VyRpESGsVXsnd2tVohvB2Mv9ootKL3VsCrR8bO6pxZpFQm0U/3+2E9QvUfsTqI0nTfcZeu6DXiQKBgQD9rdX7SnyyD7t6zbSinCJN3drOM95myqQj/WIlP41k9ywqoXddX/1ZT7ssJhW5PPtX68ok5nuGou4euKiriGUzlqNub1EC6nNC59q3q8Yd+uuma3oy6jmiuMe02SmDOjYCcqizSPWMvR0PlAHGLscgxsCkksfZ+afU/YubPAw+bQKBgQDFjUK+XlhrvpwvR7oAVipAvBRQP+1x1SSoOYFJK2Le9ThsJZWZbxcQAtKJD73bZ0CCJ0TxMSP+S7EREiSqklJSHWt/DbL4HY/tWlLfEaoffury6+Je9IIe/jnA9XF0en4yQ8rHGEF/UX/7uCR6EJsCPWof4FWqdjKsqrRRDVU/vwKBgQDXV8cK75tUyFgdEhwh4aqZMRh57LwBxEl8J6818XIE4HHEqpaaVE7LjwxTmOzd929hnk5V7rWzgAHlYFoGat2F4n1P1P0PHZjEle8r9YxTjNqXxirQp9ZPVM5qreI4fKS2hUDCGNAhLbRKshijdLgjEbUcv2EZn32iJ61oFJxMLQKBgCFBHjMdfpTkiTYMROs5lfM/tcusdzPqRTlsNK80dnhBnzXVPdGOObugPgCEfdkpEFrYcWqIcx6jbzMIctOjvefEvAuvKqlJkKjLw5d5ScHzg2lQ+9IwJpdBBEfPCUIqPIQJlWDeXGgqN/kPjlRd5zoBTJQBF2qSawVV1vSt4ePRAoGBAMMUkW2jRkXMx5Ghl+uezz5cZ/BJMOZlvs4tcWc6TbaEisoVBcpWuUUD7TGRThJ10ibd2YOe8bzbK1lhLh7BnT6K1ReJsSF7NEZhUIs8eIi2fgSdpXTQ76iZq3A51sgL6eaKSliVqWxvE1nJd8O2hzOlfJen++9zHfIc4j79Chtg
+    Md5:
+      sign: h6bAFjFzeZvbXvhVrCFXss5v6Sb6svvc
+    current: RSA
+
+
+
+encrypt:
+  rsa:
+    private:

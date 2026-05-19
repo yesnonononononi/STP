@@ -1,0 +1,9 @@
+package com.summit.stp.payment.domain.exception;
+
+import com.summit.stp.shared.exception.BusinessException;
+
+public class OrderDuplicationException extends BusinessException {
+    public OrderDuplicationException(String message) {
+        super(message);
+    }
+}
