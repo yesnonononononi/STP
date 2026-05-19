@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>收银台 - 安全支付中心</title>
+    <!-- 引入 Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <!-- 引入 CryptoJS 用于前端签名演示 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        /* 装饰背景圆 */
+        .blob {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: -1;
+            filter: blur(40px);
+            animation: move 20s infinite alternate;
+        }
+
+        @keyframes move {
+            from { transform: translate(-10%, -10%); }
+            to { transform: translate(10%, 10%); }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+        }
+
+        .payment-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
+        }
+
+        .payment-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            color: var(--text-dim);
+            font-size: 14px;
+        }
+
+        .amount-section {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+        }
+
+        .amount-label {
+            font-size: 14px;
+            color: var(--text-dim);
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .amount-value {
+            font-size: 48px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .amount-value span {
+            font-size: 24px;
+            margin-right: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-dim);
+        }
+
+        /* 支付方式选择器 */
+        .method-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .method-item {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .method-item input {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .method-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px;
+            border: 2px solid var(--glass-border);
+            border-radius: 16px;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .method-item input:checked + .method-content {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+        }
+
+        .method-content svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .pay-btn {
+            width: 100%;
+            padding: 18px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .pay-btn:hover {
+            background: var(--primary-hover);
+            transform: scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.5);
+        }
+
+        .pay-btn:active {
+            transform: scale(0.98);
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+
+        /* 加载动画 */
+        .loader {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 隐藏的表单 */
+        #payment-form {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="blob"></div>
+    
+    <div class="container">
+        <div class="payment-card">
+            <div class="header">
+                <h1>收银台</h1>
+                <p>请确认您的订单信息并选择支付方式</p>
+            </div>
+
+            <div class="amount-section">
+                <span class="amount-label">支付金额</span>
+                <div class="amount-value"><span>¥</span>1.00</div>
+            </div>
+
+            <div class="form-group">
+                <span class="label">选择支付方式</span>
+                <div class="method-grid">
+                    <label class="method-item">
+                        <input type="radio" name="pay_type" value="alipay" checked>
+                        <div class="method-content">
+                            <svg viewBox="0 0 1024 1024" fill="#027aff"><path d="M720.5 174.4c-47.3 0-85.6 38.3-85.6 85.6v2.2c0 47.3 38.3 85.6 85.6 85.6s85.6-38.3 85.6-85.6v-2.2c0-47.3-38.3-85.6-85.6-85.6zM884.2 466.8H139.8c-23.4 0-42.3 18.9-42.3 42.3v375.1c0 23.4 18.9 42.3 42.3 42.3h744.4c23.4 0 42.3-18.9 42.3-42.3V509.1c0-23.4-18.9-42.3-42.3-42.3z"/></svg>
+                            <span>支付宝</span>
+                        </div>
+                    </label>
+                    <label class="method-item">
+                        <input type="radio" name="pay_type" value="wxpay">
+                        <div class="method-content">
+                            <svg viewBox="0 0 1024 1024" fill="#07c160"><path d="M512 64C264.6 64 64 221.4 64 416c0 109.8 63.8 206.4 163.6 272.2-11.8 41.6-42.6 112.4-43.2 113.8-1 2.2-0.4 4.8 1.4 6.4 1 0.8 2.2 1.2 3.4 1.2 0.8 0 1.6-0.2 2.4-0.6 1.4-0.8 90.6-53.6 142.2-79.4 55.4 17.6 115.4 27.2 178.2 27.2 247.4 0 448-157.4 448-352S759.4 64 512 64z"/></svg>
+                            <span>微信支付</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <button class="pay-btn" id="submit-btn">
+                <span>立即支付</span>
+                <div class="loader" id="loader"></div>
+            </button>
+
+            <div class="footer-note">
+                点击“立即支付”即代表您同意《服务协议》<br>
+                由 安全支付中心 提供技术支持
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐藏的 HTML Form -->
+    <form id="payment-form" action="https://pay.aikelaikaifa.com/api/pay/submit" method="POST">
+        <input type="hidden" name="pid" value="297">
+        <input type="hidden" name="type" id="form-type">
+        <input type="hidden" name="out_trade_no" id="form-out_trade_no">
+        <input type="hidden" name="notify_url" value="http://yourdomain.com/notify.php">
+        <input type="hidden" name="return_url" value="http://yourdomain.com/return.php">
+        <input type="hidden" name="name" value="VIP会员测试">
+        <input type="hidden" name="money" value="1.00">
+        <input type="hidden" name="timestamp" id="form-timestamp">
+        <input type="hidden" name="sign" id="form-sign">
+        <input type="hidden" name="sign_type" value="MD5">
+    </form>
+
+    <script>
+        const MERCHANT_KEY = "h6bAFjFzeZvbXvhVrCFXss5v6Sb6svvc";
+        const PID = "297";
+
+        document.getElementById('submit-btn').addEventListener('click', function() {
+            const btn = this;
+            const loader = document.getElementById('loader');
+            const type = document.querySelector('input[name="pay_type"]:checked').value;
+            
+            // 切换状态
+            btn.querySelector('span').innerText = '正在跳转...';
+            loader.style.display = 'block';
+            btn.disabled = true;
+
+            // 1. 生成必要参数
+            const out_trade_no = "PAY" + Date.now() + Math.floor(Math.random() * 1000);
+            const timestamp = Math.floor(Date.now() / 1000).toString();
+            const money = "1.00";
+            const name = "VIP会员测试";
+            const notify_url = "http://yourdomain.com/notify.php";
+            const return_url = "http://yourdomain.com/return.php";
+
+            // 2. 准备签名参数 (排除空值和 sign, sign_type)
+            const params = {
+                pid: PID,
+                type: type,
+                out_trade_no: out_trade_no,
+                notify_url: notify_url,
+                return_url: return_url,
+                name: name,
+                money: money,
+                timestamp: timestamp
+            };
+
+            // 3. 计算签名 (MD5 示例)
+            // 规则：参数名从小到大排序，拼接 &，最后接 key
+            const sortedKeys = Object.keys(params).sort();
+            let signStr = sortedKeys.map(key => `${key}=${params[key]}`).join('&');
+            signStr += MERCHANT_KEY;
+            
+            const sign = CryptoJS.MD5(signStr).toString();
+
+            // 4. 填充表单并提交
+            document.getElementById('form-type').value = type;
+            document.getElementById('form-out_trade_no').value = out_trade_no;
+            document.getElementById('form-timestamp').value = timestamp;
+            document.getElementById('form-sign').value = sign;
+            
+            // 提示：虽然接口显示 sign_type 默认为 RSA，但如果使用 MD5 密钥，可能需要联系平台确认
+            // 这里我们按照通用 MD5 逻辑提交，如果需要 RSA 签名，则需要在后端处理。
+            
+            setTimeout(() => {
+                document.getElementById('payment-form').submit();
+            }, 800);
+        });
+    </script>
+</body>
+</html>

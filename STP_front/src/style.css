@@ -1,0 +1,13 @@
+@import 'tailwindcss';
+
+@layer components {
+  /* 毛玻璃效果基础类 */
+  .glass {
+    @apply bg-white/30 backdrop-blur-md border border-white/20 shadow-lg;
+  }
+
+  /* 轻度毛玻璃效果 */
+  .glass-light {
+    @apply bg-white/10 backdrop-blur-sm border border-white/10;
+  }
+}
