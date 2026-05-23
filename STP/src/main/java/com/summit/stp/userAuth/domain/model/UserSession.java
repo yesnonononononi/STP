@@ -9,13 +9,21 @@ import java.time.LocalDateTime;
 
 @Getter
 @Builder
-@NoArgsConstructor
+@NoArgsConstructor(force = true)
 @AllArgsConstructor
 public class UserSession {
-    private Long id;
-    private String username;
+    private final Long id;
+    private final String username;
     private String ip;
-    private LocalDateTime loginTime;
-    private String onlineStatus; // e.g., "ONLINE", "OFFLINE"
-    private String token;
+    private final LocalDateTime loginTime;
+    private String onlineStatus;
+    private final String token;
+
+    public void updateIp(String newIp){
+        ip = newIp;
+    }
+    public void updateOnlineStatus(String newStatus){
+        onlineStatus = newStatus;
+    }
+
 }

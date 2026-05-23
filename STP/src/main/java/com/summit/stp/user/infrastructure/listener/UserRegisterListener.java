@@ -3,19 +3,20 @@ package com.summit.stp.user.infrastructure.listener;
 import com.summit.stp.shared.domain.model.Password;
 import com.summit.stp.shared.domain.model.PhoneNumber;
 import com.summit.stp.shared.domain.model.Username;
+import com.summit.stp.shared.service.subcribe.domain.event.EventBus;
+import com.summit.stp.shared.service.subcribe.domain.event.EventListener;
 import com.summit.stp.user.domain.exception.UserExistException;
 import com.summit.stp.user.domain.model.User;
 import com.summit.stp.user.domain.repository.UserRepository;
 import com.summit.stp.userAuth.domain.event.UserRegisterEvent;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.event.EventListener;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionTemplate;
+
 
 @Component
 @RequiredArgsConstructor
-public class UserRegisterListener {
+public class UserRegisterListener implements EventListener<UserRegisterEvent> {
   private final UserRepository userRepository;
 
 
@@ -24,7 +25,7 @@ public class UserRegisterListener {
    * 
    * @param event 用户注册事件
    */
-  @EventListener
+
   public void handleUserRegisterEvent(UserRegisterEvent event) {
     try {
       // 使用事件传来的唯一用户名
@@ -33,10 +34,15 @@ public class UserRegisterListener {
       Password password = Password.fromHash(event.getPasswordHash());
       PhoneNumber phoneNumber = PhoneNumber.of(event.getPhoneNumber());
 
-      User user = User.create(username, password, phoneNumber);
+      User user = User.builder().username(username).password(password).phoneNumber(phoneNumber).build();
       userRepository.save(user);
     } catch (DuplicateKeyException e) {
       throw new UserExistException();
     }
+  }
+
+  @Override
+  public void onEvent(UserRegisterEvent event, EventBus eventBus) {
+    handleUserRegisterEvent(event);
   }
 }

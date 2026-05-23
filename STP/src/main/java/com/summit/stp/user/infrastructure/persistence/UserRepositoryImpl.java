@@ -1,5 +1,6 @@
 package com.summit.stp.user.infrastructure.persistence;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.summit.stp.shared.domain.model.Password;
 import com.summit.stp.shared.domain.model.PhoneNumber;
 import com.summit.stp.shared.domain.model.Username;
@@ -8,21 +9,21 @@ import com.summit.stp.user.domain.repository.UserRepository;
 import com.summit.stp.user.infrastructure.persistence.mapper.UserMapper;
 import com.summit.stp.user.infrastructure.persistence.po.UserPO;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
 @Repository
+@RequiredArgsConstructor
 public class UserRepositoryImpl implements UserRepository {
-    @Autowired
-    private UserMapper userMapper;
+    private final UserMapper userMapper;
 
     @Override
     public void save(User user) {
         UserPO po = toPO(user);
         // 如果存在则更新，不存在则插入 (MyBatis Plus saveOrUpdate 或者先查后处理)
-        UserPO existing = userMapper.selectById(po.getUname());
+        UserPO existing = userMapper.selectOne(new LambdaQueryWrapper<UserPO>()
+                .eq(UserPO::getUname, po.getUname()));
         if (existing != null) {
+            po.setId(existing.getId());
             userMapper.updateById(po);
         } else {
             userMapper.insert(po);
@@ -55,10 +56,11 @@ public class UserRepositoryImpl implements UserRepository {
     private User fromPO(UserPO po) {
         // 使用反射或构造函数还原领域模型
         // 注意：Password.fromHash 假设数据库存的是加密后的
-        return User.create(
-            Username.of(po.getUname()),
-            Password.fromHash(po.getPassword()),
-            PhoneNumber.of(po.getPhone())
-        );
+        return User.builder()
+                .username(Username.of(po.getUname()))
+                .password(Password.fromHash(po.getPassword()))
+                .phoneNumber(PhoneNumber.of(po.getPhone()))
+                .statusCode(po.getStatusCode())
+                .build();
     }
 }

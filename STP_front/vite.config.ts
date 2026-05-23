@@ -15,10 +15,26 @@ export default defineConfig({
     vueDevTools(),
     tailwindcss(),
     AutoImport({
-      resolvers: [ElementPlusResolver()],
+      resolvers: [
+        ElementPlusResolver(),
+        // 自动导入图标
+        (componentName) => {
+          if (componentName.startsWith('ElIcon')) {
+            return { name: componentName.slice(6), from: '@element-plus/icons-vue' }
+          }
+        },
+      ],
     }),
     Components({
-      resolvers: [ElementPlusResolver()],
+      resolvers: [
+        ElementPlusResolver(),
+        // 自动注册图标组件
+        (componentName) => {
+          if (componentName.startsWith('ElIcon')) {
+            return { name: componentName.slice(6), from: '@element-plus/icons-vue' }
+          }
+        },
+      ],
     }),
   ],
   resolve: {

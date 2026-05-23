@@ -1,12 +1,13 @@
 package com.summit.stp.userAuth.infrastructure.persistence;
 
-import cn.hutool.json.JSONUtil;
+
 import com.summit.stp.shared.constant.UserAuthConstants;
 import com.summit.stp.userAuth.domain.model.UserSession;
 import com.summit.stp.userAuth.domain.repository.TokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -15,11 +16,17 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class RedisTokenRepositoryImpl implements TokenRepository {
     private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
     public void saveSession(String token, UserSession session, long expireSeconds) {
         String key = UserAuthConstants.SESSION_CACHE_PREFIX + token;
-        redisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(session), expireSeconds, TimeUnit.SECONDS);
+        try {
+            String json = objectMapper.writeValueAsString(session);
+            redisTemplate.opsForValue().set(key, json, expireSeconds, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize session", e);
+        }
     }
 
     @Override
@@ -29,7 +36,11 @@ public class RedisTokenRepositoryImpl implements TokenRepository {
         if (json == null) {
             return Optional.empty();
         }
-        return Optional.of(JSONUtil.toBean(json, UserSession.class));
+        try {
+            return Optional.of(objectMapper.readValue(json, UserSession.class));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to deserialize session", e);
+        }
     }
 
     @Override

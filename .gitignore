@@ -1,0 +1,13 @@
+node_modules/
+target/
+.idea/
+.vscode/
+*.log
+.claude/
+.gemini/
+*.class
+*.jar
+*.war
+*.rar
+*.zip
+.system_generated/

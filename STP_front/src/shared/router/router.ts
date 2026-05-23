@@ -4,11 +4,17 @@ const auth = () => import('../../auth/infrastructure/page/auth.vue')
 const login = () => import('../../auth/infrastructure/page/loginPage.vue')
 const register = () => import('../../auth/infrastructure/page/registerPage.vue')
 const forget = () => import('../../auth/infrastructure/page/forgetPage.vue')
-
+const home = () => import('../../main/infrastructure/page/home.vue')
+const payResult = () => import('../../payment/infrastructure/page/PayResult.vue')
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: '/auth/login',
+    redirect: '/home',
+  },
+  {
+    path: '/home',
+    component: home,
+    name: 'home',
   },
   {
     path: '/auth',
@@ -32,6 +38,11 @@ const routes: RouteRecordRaw[] = [
         name: 'forget',
       },
     ],
+  },
+  {
+    path: '/payResult',
+    component: payResult,
+    name: 'payResult',
   },
 ]
 

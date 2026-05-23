@@ -1,6 +1,7 @@
 package com.summit.stp.userAuth.application;
 
 import com.summit.stp.shared.result.Result;
+import com.summit.stp.userAuth.application.command.ForgetCommand;
 import com.summit.stp.userAuth.application.command.LoginCommand;
 import com.summit.stp.userAuth.application.command.RefreshTokenCommand;
 import com.summit.stp.userAuth.application.command.RegisterCommand;
@@ -15,4 +16,7 @@ public interface UserAuthApplicationService {
     void logout();
 
     void register(RegisterCommand command);
+
+    void forget(ForgetCommand command);
+
 }

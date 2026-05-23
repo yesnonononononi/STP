@@ -31,8 +31,12 @@ public class Result<T> implements Serializable {
         return new Result<>(1, data, null, signature);
     }
 
-    public static Result<Void> error(String errMsg) {
+    public static <T> Result<T> error(String errMsg) {
         return new Result<>(0, null, errMsg, null);
+    }
+
+    public static <T> Result<T> error(int code, String errMsg) {
+        return new Result<>(code, null, errMsg, null);
     }
 
 

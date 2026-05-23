@@ -1,21 +1,27 @@
 <template>
   <div class="w-full animate-fade-in">
-    <el-form ref="loginFormRef" :model="loginForm" :rules="LoginRules" label-width="0" class="space-y-4">
+    <el-form
+      ref="loginFormRef"
+      :model="loginForm"
+      :rules="LoginRules"
+      label-width="0"
+      class="space-y-4"
+    >
       <el-form-item prop="username">
-        <el-input 
-          v-model="loginForm.username" 
-          placeholder="请输入用户名" 
-          :prefix-icon="User" 
+        <el-input
+          v-model="loginForm.username"
+          placeholder="请输入用户名"
+          :prefix-icon="User"
           class="custom-input"
         />
       </el-form-item>
-      
+
       <el-form-item prop="password">
-        <el-input 
-          v-model="loginForm.password" 
-          type="password" 
-          placeholder="请输入密码" 
-          :prefix-icon="Lock" 
+        <el-input
+          v-model="loginForm.password"
+          type="password"
+          placeholder="请输入密码"
+          :prefix-icon="Lock"
           show-password
           class="custom-input"
           @keyup.enter="handleLogin"
@@ -23,18 +29,26 @@
       </el-form-item>
 
       <div class="flex flex-col gap-4 mt-6">
-        <el-button 
-          type="primary" 
-          class="w-full h-10 rounded-lg text-base font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 border-none transition-all duration-300 transform active:scale-[0.98]" 
+        <el-button
+          type="primary"
+          class="w-full h-10 rounded-lg text-base font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 border-none transition-all duration-300 transform active:scale-[0.98]"
           :loading="loading"
           @click="handleLogin"
         >
           登录
         </el-button>
-        
+
         <div class="flex justify-between items-center text-sm mt-2">
-          <router-link class="text-slate-400 hover:text-cyan-400 transition-colors" to="/auth/forget">忘记密码？</router-link>
-          <router-link class="text-cyan-400 hover:text-cyan-300 font-medium transition-colors" to="/auth/register">注册账号</router-link>
+          <router-link
+            class="text-slate-400 hover:text-cyan-400 transition-colors"
+            to="/auth/forget"
+            >忘记密码？</router-link
+          >
+          <router-link
+            class="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+            to="/auth/register"
+            >注册账号</router-link
+          >
         </div>
       </div>
     </el-form>
@@ -63,12 +77,8 @@ const loginForm: LoginForm = reactive({
 })
 
 const LoginRules = reactive<FormRules>({
-  username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-  ],
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 })
 
 const handleLogin = async () => {
@@ -78,17 +88,12 @@ const handleLogin = async () => {
       loading.value = true
       try {
         const res = await auther.login(loginForm)
-        if (res.code === 1) {
-          ElMessage.success('登录成功')
-          if (res.data) {
-            authStore.setAuth(res.data)
-          }
-          router.push('/')
-        } else {
-          ElMessage.error(res.errMsg || '登录失败')
+        if (res.data) {
+          authStore.setAuth(res.data)
         }
+        router.push('/')
       } catch (err: any) {
-        ElMessage.error(err.message || '登录失败')
+        console.error(err)
       } finally {
         loading.value = false
       }

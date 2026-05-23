@@ -1,0 +1,15 @@
+package com.summit.stp.member.domain.repository;
+
+import com.summit.stp.member.domain.model.UserMember;
+
+/**
+ * 用户-会员映射表
+ */
+public interface UserMemberRepository {
+    UserMember queryUserMemberByUserId(long creatorId);
+
+    void save(UserMember userMember);
+
+
+    UserMember queryUserMemberByUserIdForUpdate(long creatorId);
+}

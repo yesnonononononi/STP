@@ -5,8 +5,10 @@ import lombok.Data;
 @Data
 public class PayRequest {
     private String uname;
-    private Long commodityId;
+    private Long packageId;
     //商品数量
     private Integer quantity;
-    private String payType;
+    private Long couponId;
+    private Integer payType;
+
 }

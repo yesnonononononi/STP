@@ -15,7 +15,7 @@ public class PhoneNumber {
 
     public static void validate(String phoneNumber) {
         // 验证手机号码的逻辑
-        if (!phoneNumber.matches("^1[3-9]\\d{8}$")) {
+        if (phoneNumber == null || !phoneNumber.matches("^1[3-9]\\d{9}$")) {
             throw new IllegalArgumentException("手机号码格式不正确");
         }
     }

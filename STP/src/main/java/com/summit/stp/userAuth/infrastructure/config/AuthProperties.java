@@ -14,6 +14,8 @@ public class AuthProperties {
      */
     private long tokenExpireSeconds = UserAuthConstants.DEFAULT_TOKEN_EXPIRE_SECONDS;
 
+    private long refreshTokenExpireSeconds = UserAuthConstants.DEFAULT_REFRESH_TOKEN_EXPIRE_SECONDS;
+
     /**
      * 是否允许单账号多端登录
      */

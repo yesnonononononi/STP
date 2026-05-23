@@ -11,11 +11,18 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     private final Interceptor authInterceptor;
+    private final RequestLoggingInterceptor requestLoggingInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // 添加请求日志拦截器（最先执行）
+        registry.addInterceptor(requestLoggingInterceptor)
+                .addPathPatterns("/**")
+                .excludePathPatterns("/static/**", "/error", "/favicon.ico");
+        
+        // 添加鉴权拦截器
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/user-auth/login", "/user-auth/refresh-token", "/static/**", "/error");
+                .excludePathPatterns("/user-auth/login","/pay/check", "/user-auth/refresh-token","/user-auth/register","/user-auth/forget", "/static/**", "/error");
     }
 }

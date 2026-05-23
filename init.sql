@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS `coupon` (
 -- 4. 支付订单表
 CREATE TABLE IF NOT EXISTS `payment_order` (
     `id` BIGINT NOT NULL COMMENT '订单ID',
+    `creator_id` BIGINT NOT NULL COMMENT '创建者用户ID',
     `price` DECIMAL(10,2) NOT NULL COMMENT '订单金额',
     `pay_type` INT DEFAULT NULL COMMENT '支付类型: 1支付宝, 2微信',
     `to_name` VARCHAR(128) DEFAULT NULL COMMENT '收款方名称',
