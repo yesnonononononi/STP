@@ -1,6 +1,6 @@
 package com.summit.stp.member.application.service.impl;
 
-import com.summit.stp.order.application.converter.MemberVOConverter;
+import com.summit.stp.member.application.converter.MemberVOConverter;
 import com.summit.stp.member.application.service.MemberAppService;
 import com.summit.stp.member.application.vo.MemberTypeVO;
 import com.summit.stp.member.application.vo.MemberVO;

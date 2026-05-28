@@ -1,12 +1,14 @@
 package com.summit.stp.payment.domain.event;
 
 import com.summit.stp.payment.domain.model.PaySuccessType;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@RequiredArgsConstructor
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class PaySuccessEvent {
-    private final Long orderId;
+    private Long orderId;
 
 }

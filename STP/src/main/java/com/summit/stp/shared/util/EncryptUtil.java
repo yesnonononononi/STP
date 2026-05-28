@@ -4,6 +4,7 @@ import cn.hutool.crypto.asymmetric.Sign;
 import cn.hutool.crypto.asymmetric.SignAlgorithm;
 import cn.hutool.crypto.digest.BCrypt;
 import cn.hutool.crypto.digest.MD5;
+import io.netty.util.internal.StringUtil;
 import org.springframework.util.MultiValueMap;
 
 import java.util.Map;
@@ -78,5 +79,22 @@ public class EncryptUtil {
      */
     public static boolean bcryptVerify(String rawPassword, String hashedPassword) {
         return BCrypt.checkpw(rawPassword, hashedPassword);
+    }
+
+
+
+    public static String encodeStrForStar(String str,String type){
+        if(StringUtil.isNullOrEmpty(str))return "";
+        switch ( type){
+            case "email" ->{
+                return str.replaceAll(str.substring(4,str.indexOf("@")-2), "****");
+            }
+            case "phone" ->{
+                return str.replaceAll(str.substring(3,str.length()-4), "****");
+            }
+            default -> {
+                return null;
+            }
+        }
     }
 }

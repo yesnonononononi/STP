@@ -18,7 +18,7 @@ public class UserSession {
     private final LocalDateTime loginTime;
     private String onlineStatus;
     private final String token;
-
+    private final Integer admin;
     public void updateIp(String newIp){
         ip = newIp;
     }

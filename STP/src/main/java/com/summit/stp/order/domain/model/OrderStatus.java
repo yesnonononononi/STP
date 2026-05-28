@@ -1,10 +1,13 @@
 package com.summit.stp.order.domain.model;
 
 import lombok.Getter;
+import com.summit.stp.shared.exception.ParameterException;
 
 /**
  * 订单状态值对象 (枚举)
  */
+
+
 @Getter
 public enum OrderStatus {
     PENDING(0, "待支付"),
@@ -29,6 +32,6 @@ public enum OrderStatus {
                 return status;
             }
         }
-        throw new IllegalArgumentException("未知的订单状态码: " + code);
+        throw new ParameterException("未知的订单状态码: " + code);
     }
 }

@@ -1,6 +1,15 @@
 spring:
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
   application:
     name: STP
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/stp?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true&tinyInt1isBit=false&allowLoadLocalInfile=true&allowLocalInfile=true&allowUrlInLocalInfile=true&allowUrlInLocalFile=true&allowUrlInFile=true&allowUrlInJdbcLocalInfile=true&allowUrlInJdbcLocalFile&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
   data:
     redis:
       host: localhost
@@ -14,13 +23,55 @@ spring:
           max-idle: 8
           min-idle: 0
           max-wait: -1ms
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/stp?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true&tinyInt1isBit=false&allowLoadLocalInfile=true&allowLocalInfile=true&allowUrlInLocalInfile=true&allowUrlInLocalFile=true&allowUrlInFile=true&allowUrlInJdbcLocalInfile=true&allowUrlInJdbcLocalFile
-    hikari:
-      username: root
-      password: root
-
+minio:
+  endpoint: http://localhost:9000
+  policy: public
+  access-key: admin
+  secret-key: 12345678
+  default_bucket: stp-summit-files
+  policy-data: |
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": [
+            "s3:GetObject",        
+            "s3:ListBucket",       
+            "s3:GetBucketLocation" 
+          ],
+          "Resource": [
+            "arn:aws:s3:::summit-files",       
+            "arn:aws:s3:::summit-files/*"      
+          ]
+        }
+      ]
+    }
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        acknowledge-mode: manual
+        concurrency: 5
+        max-concurrency: 10
+        prefetch: 1
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+          max-interval: 10000
+          multiplier: 2
+    template:
+      retry:
+        enabled: true
+        initial-interval: 1000
+        max-attempts: 3
+        max-interval: 10000
+        multiplier: 2
 
 
 mybatis-plus:

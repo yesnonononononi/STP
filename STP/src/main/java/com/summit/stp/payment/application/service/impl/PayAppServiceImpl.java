@@ -11,9 +11,9 @@ import com.summit.stp.payment.domain.event.PayFailEvent;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import com.summit.stp.payment.application.service.PayEventPublishProvider;
 import com.summit.stp.shared.exception.BusinessException;
 import com.summit.stp.shared.result.Result;
-import com.summit.stp.shared.service.subcribe.api.EventPublisher;
 import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +30,7 @@ import java.util.Map;
 @Service
 public class PayAppServiceImpl implements PayAppService {
     private final PayDomainService payService;
+    private final PayEventPublishProvider payEventPublishProvider;
 
     @Value("${payment.pay.success.symbol}")
     private String successSymbol;
@@ -61,9 +62,9 @@ public class PayAppServiceImpl implements PayAppService {
         //是否支付成功
         if(payResult.getTrade_status().equals(successSymbol)) {
             //发布支付成功事件并带上商户订单ID
-            EventPublisher.publish(new PaySuccessEvent(payResult.getOut_trade_no()));
+            payEventPublishProvider.publish(new PaySuccessEvent(payResult.getOut_trade_no()));
         }else{
-            EventPublisher.publish(new PayFailEvent(payResult.getOut_trade_no(), payResult.getTrade_status()));
+            payEventPublishProvider.publish(new PayFailEvent(payResult.getOut_trade_no(), payResult.getTrade_status()));
         }
     }
 

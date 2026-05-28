@@ -11,7 +11,17 @@ public class CaptchaServiceImpl implements CaptchaService {
     }
 
     @Override
+    public boolean validateEmail(String email, String verifyCode) {
+        return false;
+    }
+
+    @Override
     public void send(String phoneNumber) {
+
+    }
+
+    @Override
+    public void sendForEmail(String email) {
 
     }
 }

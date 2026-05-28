@@ -61,10 +61,9 @@ public class OrderController {
 
     @ApiOperation(value = "手动触发订单对账逻辑")
     @PostMapping("/reconcile/{orderId}")
-    public Result<Void> reconcileOrder(
+    public Result<String> reconcileOrder(
             @ApiParam(value = "订单ID", required = true) @PathVariable Long orderId) {
-        orderReconciliationAppService.reconcileOrder(orderId);
-        return Result.success();
+        return orderReconciliationAppService.reconcileOrder(orderId);
     }
 
     @ApiOperation(value = "创建新订单并返回支付参数")

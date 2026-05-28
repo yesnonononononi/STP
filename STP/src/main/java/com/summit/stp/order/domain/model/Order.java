@@ -46,6 +46,9 @@ public class Order {
      * 确认并完成支付
      */
     public void payComplete() {
+        if (this.status == OrderStatus.PAID || this.status == OrderStatus.COMPLETED) {
+            return;
+        }
         if (this.status != OrderStatus.PENDING && this.status != OrderStatus.CANCELLED) {
             throw new IllegalStateException("只有待支付或已取消的订单才能确认完成支付");
         }

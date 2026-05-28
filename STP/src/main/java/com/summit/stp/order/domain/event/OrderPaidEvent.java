@@ -1,12 +1,16 @@
 package com.summit.stp.order.domain.event;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
 
+@Data
 @Builder
-@Getter
+@NoArgsConstructor
+@AllArgsConstructor
 public class OrderPaidEvent {
     private long orderId;
     private long creatorId;

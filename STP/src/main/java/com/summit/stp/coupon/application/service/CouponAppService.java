@@ -3,10 +3,16 @@ package com.summit.stp.coupon.application.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.coupon.application.vo.CouponQueryVO;
+import java.util.List;
 
 import java.math.BigDecimal;
 
 public interface CouponAppService {
+    /**
+     * 查询当前用户可用的未使用优惠券
+     */
+    List<CouponQueryVO> queryAvailableCoupons();
+
     /**
      * 查询优惠券
      * @param id 优惠券id

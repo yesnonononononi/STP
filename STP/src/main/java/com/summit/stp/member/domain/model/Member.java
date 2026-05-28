@@ -1,6 +1,7 @@
 package com.summit.stp.member.domain.model;
 
 import com.summit.stp.shared.exception.BusinessException;
+import com.summit.stp.shared.exception.ParameterException;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -40,12 +41,14 @@ public class Member {
 
 
 
+
+
     /**
      * 价格验证规则
      */
     private static void validatePrice(BigDecimal price) {
         if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("会员价格不能小于或等于0");
+            throw new ParameterException("会员价格不能小于或等于0");
         }
     }
 }

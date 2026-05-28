@@ -4,10 +4,13 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
+import com.summit.stp.shared.exception.ParameterException;
 
 /**
  * 会员等级配置 (领域聚合根)
  */
+
+
 @Getter
 @Builder
 public class MemberLevelConfig {
@@ -35,10 +38,10 @@ public class MemberLevelConfig {
      */
     public void updateConfig(String levelName, double minRecharge, String privilegesJson, String iconUrl, long sortOrder) {
         if (levelName == null || levelName.trim().isEmpty()) {
-            throw new IllegalArgumentException("等级名称不能为空");
+            throw new ParameterException("等级名称不能为空");
         }
         if (minRecharge < 0) {
-            throw new IllegalArgumentException("最小充值金额不能为负数");
+            throw new ParameterException("最小充值金额不能为负数");
         }
         this.levelName = levelName;
         this.minRecharge = minRecharge;

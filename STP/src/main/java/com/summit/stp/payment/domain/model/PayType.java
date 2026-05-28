@@ -2,6 +2,8 @@ package com.summit.stp.payment.domain.model;
 
 import lombok.Getter;
 
+import com.summit.stp.shared.exception.ParameterException;
+
 @Getter
 public enum PayType {
     WX_PAY("wxpay", 1),
@@ -24,7 +26,7 @@ public enum PayType {
                 return payType;
             }
         }
-        throw new IllegalArgumentException("未知的支付类型编码: " + code);
+        throw new ParameterException("未知的支付类型编码: " + code);
     }
 
     /**
@@ -39,6 +41,6 @@ public enum PayType {
                 return payType;
             }
         }
-        throw new IllegalArgumentException("未知的支付类型: " + type);
+        throw new ParameterException("未知的支付类型: " + type);
     }
 }

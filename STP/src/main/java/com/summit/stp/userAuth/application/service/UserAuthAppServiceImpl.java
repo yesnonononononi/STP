@@ -8,12 +8,13 @@ import com.summit.stp.shared.domain.model.PhoneNumber;
 import com.summit.stp.shared.domain.model.Username;
 import com.summit.stp.shared.domain.service.CaptchaService;
 import com.summit.stp.shared.result.Result;
-import com.summit.stp.shared.service.subcribe.api.EventPublisher;
+import com.summit.stp.shared.exception.ParameterException;
 import com.summit.stp.userAuth.application.UserAuthApplicationService;
 import com.summit.stp.userAuth.application.command.ForgetCommand;
 import com.summit.stp.userAuth.application.command.LoginCommand;
 import com.summit.stp.userAuth.application.command.RefreshTokenCommand;
 import com.summit.stp.userAuth.application.command.RegisterCommand;
+import com.summit.stp.userAuth.application.service.UserRegisterEventPublishProvider;
 import com.summit.stp.userAuth.application.vo.LoginVO;
 import com.summit.stp.userAuth.application.vo.RefreshTokenVO;
 import com.summit.stp.userAuth.domain.event.UserRegisterEvent;
@@ -24,6 +25,9 @@ import com.summit.stp.userAuth.domain.model.AuthUser;
 import com.summit.stp.userAuth.domain.model.UserSession;
 import com.summit.stp.userAuth.domain.repository.AuthUserRepository;
 import com.summit.stp.userAuth.domain.repository.TokenRepository;
+import com.summit.stp.shared.util.IpUtil;
+import com.summit.stp.user.domain.model.User;
+import com.summit.stp.user.domain.repository.UserRepository;
 import com.summit.stp.userAuth.domain.service.ResetPasswordStrategy;
 import com.summit.stp.userAuth.domain.service.ResetStrategyRegistry;
 import com.summit.stp.userAuth.domain.service.UserAuthDomainService;
@@ -50,6 +54,8 @@ public class UserAuthAppServiceImpl implements UserAuthApplicationService {
     private final TokenRepository tokenRepository;
     private final CaptchaService captchaService;
     private final PlatformTransactionManager transactionManager;
+    private final UserRegisterEventPublishProvider userRegisterEventPublishProvider;
+    private final UserRepository userRepository;
 
 
     @Override
@@ -68,6 +74,18 @@ public class UserAuthAppServiceImpl implements UserAuthApplicationService {
                 true,
                 user.getId()
         );
+
+        // 更新数据库中用户的 IP 地理归属地信息
+        try {
+            User userProfile = userRepository.findUserById(user.getId());
+            if (userProfile != null) {
+                String ipLocation = IpUtil.toString(command.getIp());
+                userProfile.updateIp(ipLocation);
+                userRepository.save(userProfile);
+            }
+        } catch (Exception e) {
+            log.error("【登录】更新用户 IP 地理归属地失败, userId: " + user.getId(), e);
+        }
 
         LoginVO loginVO = LoginVO.builder()
                 .token(authToken.getAccessToken())
@@ -123,12 +141,10 @@ public class UserAuthAppServiceImpl implements UserAuthApplicationService {
         
         // 1. 校验验证码
         resetStrategyRegistry.getResetStrategy(ResetType.PHONE).verify(command.getPhoneNumber(), command.getVerifyCode());
-
         // 2. 校验手机号是否已注册
         if (authUserRepository.existsByPhone(command.getPhoneNumber())) {
-            throw new IllegalArgumentException("该手机号已被注册");
+            throw new ParameterException("该手机号已被注册");
         }
-
         // 3. 创建 AuthUser 并持久化 (身份信息)
         String username = "U_" + command.getPhoneNumber();
         AuthUser authUser = AuthUser.builder()
@@ -143,7 +159,7 @@ public class UserAuthAppServiceImpl implements UserAuthApplicationService {
         });
 
         // 4. 发布领域事件，触发跨模块的 User 创建个人档案 (松耦合设计)
-        EventPublisher.publish(new UserRegisterEvent(command.getPhoneNumber(), username, authUser.getPassword().getEncryptedValue()));
+        userRegisterEventPublishProvider.publish(new UserRegisterEvent(command.getPhoneNumber(), username, authUser.getPassword().getEncryptedValue()));
         
         log.info("用户注册成功: {}", command.getPhoneNumber());
     }

@@ -1,6 +1,7 @@
 package com.summit.stp.coupon.domain.model;
 
 import lombok.Getter;
+import com.summit.stp.shared.exception.ParameterException;
 
 @Getter
 public enum CouponStatus {
@@ -19,7 +20,7 @@ public enum CouponStatus {
                 return value;
             }
         }
-        throw new IllegalArgumentException("Invalid CouponStatus code: " + code);
+        throw new ParameterException("Invalid CouponStatus code: " + code);
     }
 
 

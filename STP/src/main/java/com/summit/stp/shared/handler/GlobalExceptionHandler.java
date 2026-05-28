@@ -3,8 +3,10 @@ package com.summit.stp.shared.handler;
 import com.summit.stp.shared.exception.BusinessException;
 import com.summit.stp.shared.result.Result;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @Slf4j
 @RestControllerAdvice
@@ -17,8 +19,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public Result<Void> handleIllegalArgumentException(IllegalArgumentException e) {
-        log.error("参数异常: {}", e.getMessage());
-        return Result.error(e.getMessage());
+        log.error("系统参数异常", e);
+        return Result.error("参数异常");
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public Result<Void> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+        log.warn("文件大小超出限制: {}", e.getMessage());
+        return Result.error("文件大小超出限制，请上传不超过50MB的文件");
+    }
+
+    @ExceptionHandler(ClientAbortException.class)
+    public void handleClientAbortException(ClientAbortException e) {
+        log.debug("客户端中断连接: {}", e.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

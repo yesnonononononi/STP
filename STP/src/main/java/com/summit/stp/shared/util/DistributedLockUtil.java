@@ -17,22 +17,21 @@ public class DistributedLockUtil {
         return redissonClient.getLock(key);
     }
 
-/**
- * @param key 锁的key
- * @param task 任务
- * @param <T> 任务返回值类型
- * @return 任务返回值
- */
+    /**
+     * @param key 锁的key
+     * @param task 任务
+     * @param <T> 任务返回值类型
+     * @return 任务返回值
+     */
     public <T> T executeWithLock(String key, Supplier<T> task) {
         RLock lock = getLock(key);
         try {
-            lock.lock();
             if (lock.tryLock()) {
                 return task.get();
             }
             throw new RuntimeException("Failed to acquire lock");
         } finally {
-            releaseLock( lock);
+            releaseLock(lock);
         }
     }
 
@@ -48,11 +47,11 @@ public class DistributedLockUtil {
         RLock lock = getLock(key);
         try {
             if (lock.tryLock(waitTime, leaseTime, TimeUnit.SECONDS)) {
-                lock.lock(leaseTime, TimeUnit.SECONDS);
                 return task.get();
             }
             throw new RuntimeException("Failed to acquire lock");
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         } finally {
             releaseLock(lock);
@@ -66,9 +65,9 @@ public class DistributedLockUtil {
     public void executeWithLock(String key, Runnable task) {
         RLock lock = getLock(key);
         try {
-            lock.lock();
             if (lock.tryLock()) {
                 task.run();
+                return;
             }
             throw new RuntimeException("Failed to acquire lock");
         } finally {
@@ -86,18 +85,21 @@ public class DistributedLockUtil {
         RLock lock = getLock(key);
         try {
             if (lock.tryLock(waitTime, leaseTime, TimeUnit.SECONDS)) {
-                lock.lock(leaseTime, TimeUnit.SECONDS);
                 task.run();
+                return;
             }
             throw new RuntimeException("Failed to acquire lock");
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         } finally {
             releaseLock(lock);
         }
     }
+
     public void releaseLock(RLock lock) {
-        if (lock != null && lock.isLocked() && lock.isHeldByCurrentThread())
+        if (lock != null && lock.isLocked() && lock.isHeldByCurrentThread()) {
             lock.unlock();
+        }
     }
 }

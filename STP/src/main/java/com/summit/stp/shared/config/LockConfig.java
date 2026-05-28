@@ -1,12 +1,9 @@
 package com.summit.stp.shared.config;
 
-import lombok.Builder;
 import org.redisson.Redisson;
-import org.redisson.RedissonLock;
-
 import org.redisson.api.RedissonClient;
-import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.Config;
+import org.redisson.config.SingleServerConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,9 +24,9 @@ public class LockConfig {
     private int redisDatabase;
 
     @Bean
-    public RedissonClient  redissonClient(){
+    public RedissonClient redissonClient() {
         Config config = new Config();
-        config.useSingleServer()
+        SingleServerConfig singleServerConfig = config.useSingleServer()
                 .setAddress("redis://" + redisHost + ":" + redisPort)
                 .setDatabase(redisDatabase)
                 .setConnectTimeout(3000)
@@ -38,9 +35,9 @@ public class LockConfig {
                 .setIdleConnectionTimeout(10000)
                 .setRetryAttempts(3);
 
-        if(redisPassword != null && !redisPassword.isEmpty()){
-            config.useSentinelServers().setPassword(redisPassword);
+        if (redisPassword != null && !redisPassword.isEmpty()) {
+            singleServerConfig.setPassword(redisPassword);
         }
-        return  Redisson.create(config);
+        return Redisson.create(config);
     }
 }

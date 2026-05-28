@@ -11,6 +11,7 @@ import com.summit.stp.coupon.domain.repository.UserCouponRepository;
 import com.summit.stp.shared.ThreadContext.UserHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.summit.stp.shared.exception.ParameterException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -21,6 +22,15 @@ import java.util.stream.Collectors;
 public class CouponAppServiceImpl implements CouponAppService {
     private final UserCouponRepository userCouponRepository;
     private final CouponRepository couponRepository;
+
+    @Override
+    public List<CouponQueryVO> queryAvailableCoupons() {
+        Long currentUserId = UserHolder.getUser().getId();
+        List<UserCoupon> unused = userCouponRepository.findUnusedByUserId(currentUserId);
+        return unused.stream()
+                .map(this::convert)
+                .collect(Collectors.toList());
+    }
 
     @Override
     public CouponQueryVO queryById(Long id) {
@@ -67,13 +77,13 @@ public class CouponAppServiceImpl implements CouponAppService {
         }
         UserCoupon userCoupon = userCouponRepository.findUserCouponById(id);
         if (userCoupon == null) {
-            throw new IllegalArgumentException("未找到对应的优惠券记录，ID: " + id);
+            throw new ParameterException("未找到对应的优惠券记录，ID: " + id);
         }
 
         // 校验所属权
         Long currentUserId = UserHolder.getUser().getId();
         if (!userCoupon.getUserId().equals(currentUserId)) {
-            throw new IllegalArgumentException("该优惠券不属于当前登录用户！");
+            throw new ParameterException("该优惠券不属于当前登录用户！");
         }
 
         userCoupon.use(orderId);

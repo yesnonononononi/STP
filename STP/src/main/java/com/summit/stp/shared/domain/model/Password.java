@@ -5,6 +5,8 @@ import com.summit.stp.shared.util.EncryptUtil;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
+import com.summit.stp.shared.exception.ParameterException;
+
 @Getter
 @EqualsAndHashCode
 public class Password {
@@ -29,25 +31,25 @@ public class Password {
      */
     public static Password fromHash(String hash) {
         if (hash == null || hash.isEmpty()) {
-            throw new IllegalArgumentException("密码哈希不能为空");
+            throw new ParameterException("密码哈希不能为空");
         }
         return new Password(hash, true);
     }
 
     private static void validate(String value) {
         if (value == null || value.isEmpty()) {
-            throw new IllegalArgumentException("密码不能为空");
+            throw new ParameterException("密码不能为空");
         }
         if (value.length() < UserAuthConstants.MIN_PASSWORD_LENGTH) {
-            throw new IllegalArgumentException(
+            throw new ParameterException(
                 String.format("密码长度不能小于%d", UserAuthConstants.MIN_PASSWORD_LENGTH));
         }
         if (value.length() > UserAuthConstants.MAX_PASSWORD_LENGTH) {
-            throw new IllegalArgumentException(
+            throw new ParameterException(
                 String.format("密码长度不能大于%d", UserAuthConstants.MAX_PASSWORD_LENGTH));
         }
         if (!value.matches("^[a-zA-Z0-9_]+$")) {
-            throw new IllegalArgumentException("密码只能包含字母、数字和下划线");
+            throw new ParameterException("密码只能包含字母、数字和下划线");
         }
     }
 

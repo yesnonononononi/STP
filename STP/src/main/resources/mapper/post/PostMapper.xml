@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.summit.stp.post.infrastructure.persistence.mapper.PostsMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.summit.stp.post.application.vo.PostVO">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="creator_id" property="creatorId" jdbcType="BIGINT"/>
+        <result column="title" property="title" jdbcType="VARCHAR"/>
+        <result column="type" property="type" jdbcType="VARCHAR"/>
+        <result column="content" property="content" jdbcType="VARCHAR"/>
+        <result column="reply_count" property="replyCount" jdbcType="INTEGER"/>
+        <result column="status" property="status" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="extraMedia" property="extraMediaUrl" javaType="String"/>
+        <association property="publisher" javaType="com.summit.stp.user.application.vo.UserSimpleVO">
+            <id column="creator_id" property="id" jdbcType="BIGINT"/>
+            <result column="nick" property="nick" jdbcType="VARCHAR"/>
+            <result column="avatar" property="avatar" jdbcType="VARCHAR"/>
+            <result column="gender" property="gender" jdbcType="VARCHAR"/>
+            <result column="ip" property="ip" javaType="String"/>
+            <result column="fans" property="fans" javaType="Long"/>
+            <result column="liked" property="liked" javaType="Long"/>
+            <result column="topic" property="topic" javaType="Long"/>
+            <result column="memberLevel" property="memberLevel" javaType="String"/>
+            <result column="memberLevelName" property="memberLevelName" javaType="String"/>
+            <result column="vipType" property="vipType" javaType="String"/>
+            <result column="vipConfigIcon" property="vipConfigIcon" javaType="String"/>
+            <result column="followed" property="followed" javaType="String"/>
+        </association>
+        <collection property="mediaUrls" ofType="com.summit.stp.post.application.vo.PostImageVO" autoMapping="true" >
+            <id column="pi_id" property="id" jdbcType="BIGINT"/>
+            <result column="post_id" property="postId" jdbcType="BIGINT"/>
+            <result column="image_url" property="imageUrl" jdbcType="VARCHAR"/>
+            <result column="width" property="width" jdbcType="VARCHAR"/>
+            <result column="height" property="height" jdbcType="VARCHAR"/>
+            <result column="sortOrder" property="sortOrder" jdbcType="VARCHAR"/>
+            <result column="pi_status" property="status" jdbcType="VARCHAR"/>
+            <result column="pi_create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        </collection>
+    </resultMap>
+
+
+
+    <select id="queryByPage" resultMap="BaseResultMap">
+        select ps.id as id,
+        ps.creator_id as creator_id,
+        ps.title as title,
+        ps.type as type,
+        ps.content as content,
+        ps.reply_count as reply_count,
+        ps.status as status,
+        ps.create_time as create_time,
+        ps.update_time as update_time,
+        ps.media_urls as extraMedia,
+        u.nick as nick,
+        u.avatar as avatar,
+        u.gender as gender,
+        u.ip as ip,
+        mlc.level as memberLevel,
+        mlc.level_name as memberLevelName,
+        mt.name as vipType,
+        mlc.icon_url as vipConfigIcon,
+        uf.followee_id = u.id and uf.follower_id = #{userId} as followed,
+        us.fans as fans,
+        us.topic as topic,
+        us.liked as liked
+        from posts ps
+        left join user u
+        on u.id = ps.creator_id
+        left join user_member um
+        on um.user_id = u.id
+        left join user_stat us
+        on us.user_id = u.id
+        left join user_follow uf
+        on uf.follower_id = u.id and uf.followee_id = #{userId}
+        left join member_package mp
+        on mp.id = um.package_type_id
+        left join member_level_config mlc
+        on mlc.level = um.vip_level
+        left join member_type mt
+        on mt.id = mp.type_id
+        <where>
+            <if test="cursorTime != null and cursorTime != ''">
+                and ps.create_time &lt; #{cursorTime}
+            </if>
+            <if test="creatorId != null">
+                and ps.creator_id = #{creatorId}
+            </if>
+            and ps.status = #{status}
+        </where>
+        order by ps.create_time desc
+        limit 20
+    </select>
+</mapper>

@@ -17,11 +17,13 @@ import tools.jackson.databind.ser.std.ToStringSerializer;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Configuration
 public class SystemMessageConverter {
-    private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 
     @Bean
     @Primary
@@ -36,7 +38,7 @@ public class SystemMessageConverter {
         simpleModule.addSerializer(Date.class,ToStringSerializer.instance);
         simpleModule.addSerializer(DateTime.class,ToStringSerializer.instance);
         
-        // Timestamp -> Long (时间戳毫秒数)
+        // Timestamp -> ISO-8601 String
         simpleModule.addSerializer(Timestamp.class, new StdSerializer<Timestamp>(Timestamp.class) {
 
             @Override
@@ -45,7 +47,8 @@ public class SystemMessageConverter {
                     gen.writeNull();
                 }
                 else {
-                    gen.writeNumber(value.getTime());
+                    ZonedDateTime zonedDateTime = value.toInstant().atZone(ZoneId.systemDefault());
+                    gen.writeString(zonedDateTime.format(ISO_FORMATTER));
                 }
             }
         });

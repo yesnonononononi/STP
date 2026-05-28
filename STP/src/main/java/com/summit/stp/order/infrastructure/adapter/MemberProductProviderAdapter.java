@@ -7,10 +7,13 @@ import com.summit.stp.order.application.vo.ProductVO;
 import com.summit.stp.shared.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import com.summit.stp.shared.exception.ParameterException;
 
 /**
  * 针对会员套餐的商品信息查询适配器（防腐层 ACL 实现）
  */
+
+
 @Component
 @RequiredArgsConstructor
 public class MemberProductProviderAdapter implements ProductProvider {
@@ -21,7 +24,7 @@ public class MemberProductProviderAdapter implements ProductProvider {
     public ProductVO getProductInfo(Long productId) {
         Result<MemberVO> result = memberAppService.queryMemberById(productId);
         if (result == null || !result.isSuccess() || result.getData() == null) {
-            throw new IllegalArgumentException("商品不存在或已下架，ID: " + productId);
+            throw new ParameterException("商品不存在或已下架，ID: " + productId);
         }
         MemberVO memberVO = result.getData();
         return ProductVO.builder()

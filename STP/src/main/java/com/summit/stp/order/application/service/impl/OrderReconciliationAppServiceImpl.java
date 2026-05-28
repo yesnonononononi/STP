@@ -7,11 +7,12 @@ import com.summit.stp.order.infrastructure.persistence.mapper.OrderMapper;
 import com.summit.stp.order.infrastructure.persistence.po.OrderPO;
 import com.summit.stp.payment.domain.event.PaySuccessEvent;
 import com.summit.stp.shared.exception.BusinessException;
-import com.summit.stp.shared.service.subcribe.api.EventPublisher;
+import com.summit.stp.shared.result.Result;
 import com.summit.stp.shared.util.EncryptUtil;
 import com.summit.stp.shared.util.PaymentSignHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -35,6 +36,7 @@ public class OrderReconciliationAppServiceImpl implements OrderReconciliationApp
     private final RestTemplate restTemplate;
     private final OrderMapper orderMapper;
     private final PaymentSignHelper paymentSignHelper;
+    private final RabbitTemplate rabbitTemplate;
 
     @Value("${payment.pid}")
     private Integer pid;
@@ -43,18 +45,18 @@ public class OrderReconciliationAppServiceImpl implements OrderReconciliationApp
     private String queryUrl;
 
     @Override
-    public String reconcileOrder(Long orderId) {
+    public Result<String> reconcileOrder(Long orderId) {
         log.info("【订单对账】开始对账订单: {}", orderId);
         
         OrderPO orderPO = orderMapper.selectById(orderId);
         if (orderPO == null) {
-            throw new BusinessException("对账失败，订单不存在: " + orderId);
+            return Result.error("对账失败，订单不存在: " + orderId);
         }
 
         // 已经支付或完成的订单，无需对账更新
         // 本地状态：0-待支付, 1-已支付, 2-已完成, 3-已取消
         if (orderPO.getStatus() != null && (orderPO.getStatus() == 1 || orderPO.getStatus() == 2)) {
-            return "订单本地已处于完成/支付状态，无需对账。";
+            return Result.success("订单本地已处于完成/支付状态，无需对账。");
         }
 
         // 1. 调用三方支付查询接口
@@ -63,7 +65,7 @@ public class OrderReconciliationAppServiceImpl implements OrderReconciliationApp
         if (queryResult == null || queryResult.getCode() != 0) {
             String msg = queryResult != null ? queryResult.getMsg() : "响应为空";
             log.warn("【订单对账】查询三方订单状态失败: {}, 错误信息: {}", orderId, msg);
-            throw new BusinessException("查询三方订单状态失败: " + msg);
+            return Result.error("查询三方订单状态失败: " + msg);
         }
 
         // 2. 判断三方状态
@@ -75,40 +77,15 @@ public class OrderReconciliationAppServiceImpl implements OrderReconciliationApp
             // 三方已支付，本地未支付/已取消
             log.warn("【订单对账】检测到掉单！三方已支付，本地为待支付/已取消，开始进行状态补偿。订单ID: {}", orderId);
             // 补偿订单状态并分发权益
-            EventPublisher.publish(new PaySuccessEvent(orderId));
-            return "对账发现掉单，已成功触发补偿分发逻辑！";
+            rabbitTemplate.convertAndSend("pay.exchange", "pay.queue.success", new PaySuccessEvent(orderId));
+            return Result.success("对账发现掉单，已成功触发补偿分发逻辑！");
         } else {
-            throw new BusinessException("三方支付平台查询状态为: " + getThirdPartyStatusDesc(thirdPartyStatus) + "，订单未支付完成");
+            log.error("三方支付平台查询状态为: {}，订单未支付完成", getThirdPartyStatusDesc(thirdPartyStatus));
+            return Result.error("订单未支付完成");
         }
     }
 
-    @Override
-    public void reconcilePendingOrders() {
-        log.info("【批量对账】开始扫描最近的未支付/已取消订单进行批量对账...");
-        
-        // 扫描最近24小时内未支付的订单
-        LambdaQueryWrapper<OrderPO> queryWrapper = new LambdaQueryWrapper<>();
-        // status = 0 (待支付) 或者 status = 3 (已取消，以防超时取消但在渠道侧成功支付的情况)
-        queryWrapper.in(OrderPO::getStatus, List.of(0, 3))
-                .gt(OrderPO::getCreateTime, new Timestamp(System.currentTimeMillis() - 86400000L)); // 最近1天
 
-        List<OrderPO> pendingOrders = orderMapper.selectList(queryWrapper);
-        if (pendingOrders.isEmpty()) {
-            log.info("【批量对账】未扫描到需要对账的待支付/已取消订单。");
-            return;
-        }
-
-        log.info("【批量对账】扫描到 {} 个待对账订单，开始逐个对账...", pendingOrders.size());
-        for (OrderPO order : pendingOrders) {
-            try {
-                String result = reconcileOrder(order.getId());
-                log.info("【批量对账】订单 {} 对账结果: {}", order.getId(), result);
-            } catch (Exception e) {
-                log.error("【批量对账】订单 {} 对账异常: ", order.getId(), e);
-            }
-        }
-        log.info("【批量对账】批量对账结束。");
-    }
 
     private PaymentQueryResultVO queryThirdPartyOrder(Long orderId) {
         try {

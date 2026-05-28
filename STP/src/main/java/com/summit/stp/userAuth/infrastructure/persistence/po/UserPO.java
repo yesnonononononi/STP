@@ -8,12 +8,14 @@ import lombok.Data;
 @Data
 @TableName("user")
 public class UserPO {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private String uname;
     private String password;
     private String phone;
     private Integer statusCode;
+    private String gender;
+    private Integer age;
     private java.sql.Timestamp createTime;
     private java.sql.Timestamp updateTime;
 }

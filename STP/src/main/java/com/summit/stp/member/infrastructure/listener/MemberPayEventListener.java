@@ -8,11 +8,8 @@ import com.summit.stp.member.domain.repository.MemberRepository;
 import com.summit.stp.member.domain.repository.UserMemberRepository;
 import com.summit.stp.member.domain.service.MemberDomainService;
 import com.summit.stp.order.domain.event.OrderPaidEvent;
-import com.summit.stp.shared.service.subcribe.domain.event.EventBus;
-import com.summit.stp.shared.service.subcribe.domain.event.EventListener;
 import com.summit.stp.shared.util.DistributedLockUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -23,18 +20,17 @@ import java.util.List;
 /**
  * 会员支付成功事件
  */
-@Component
 @RequiredArgsConstructor
-public class MemberPayEventListener implements EventListener<OrderPaidEvent> {
+@Deprecated
+public class MemberPayEventListener {
 
     private final UserMemberRepository userMemberRepository;
     private final MemberRepository memberRepository;
     private final MemberLevelConfigRepository memberLevelConfigRepository;
 
-    @Override
     @Transactional(rollbackFor = Exception.class)
-    public void onEvent(OrderPaidEvent event, EventBus eventBus) {
-        //查询充值会员套餐信息
+    public void onEvent(OrderPaidEvent event) {
+       /* //查询充值会员套餐信息
         long packageId = event.getPackageId();
         Member member = queryMemberInfo(packageId);
         //查询用户会员状态
@@ -51,7 +47,7 @@ public class MemberPayEventListener implements EventListener<OrderPaidEvent> {
 
 
         //保存用户
-        userMemberRepository.save(userMember);
+        userMemberRepository.save(userMember);*/
     }
 
     private UserMember initUserMember(Long uid, Member member) {

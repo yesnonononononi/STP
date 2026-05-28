@@ -68,6 +68,18 @@ public class UserCouponRepositoryImpl implements UserCouponRepository {
         return domainPage;
     }
 
+    @Override
+    public List<UserCoupon> findUnusedByUserId(Long userId) {
+        List<UserCouponPO> pos = userCouponMapper.selectList(
+                new LambdaQueryWrapper<UserCouponPO>()
+                        .eq(UserCouponPO::getUserId, userId)
+                        .eq(UserCouponPO::getStatus, CouponStatus.NOT_USE.getCode())
+                        .orderByDesc(UserCouponPO::getCreateTime)
+        );
+        return pos.stream()
+                .map(this::getUserCoupon)
+                .collect(Collectors.toList());
+    }
 
     /**
      * 获取领域模型对象
