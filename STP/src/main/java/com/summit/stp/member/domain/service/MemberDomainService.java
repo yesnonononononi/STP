@@ -1,13 +1,7 @@
 package com.summit.stp.member.domain.service;
 
-import com.summit.stp.member.domain.model.Member;
-import com.summit.stp.member.domain.model.MemberLevelConfig;
-import com.summit.stp.member.domain.model.UserMember;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.sql.Timestamp;
 
 @Service
 @RequiredArgsConstructor

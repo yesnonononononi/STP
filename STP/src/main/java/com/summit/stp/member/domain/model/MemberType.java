@@ -53,4 +53,6 @@ public class MemberType {
     public void unban() {
         this.status = 1;
     }
+
+
 }

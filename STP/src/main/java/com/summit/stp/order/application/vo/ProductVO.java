@@ -25,4 +25,9 @@ public class ProductVO {
      * 商品/套餐单价
      */
     private BigDecimal price;
+
+    /**
+     * 商品/套餐折扣率
+     */
+    private BigDecimal discount;
 }

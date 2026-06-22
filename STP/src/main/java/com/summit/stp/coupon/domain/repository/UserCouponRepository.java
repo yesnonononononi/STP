@@ -2,6 +2,7 @@ package com.summit.stp.coupon.domain.repository;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.coupon.domain.model.UserCoupon;
+
 import java.util.List;
 
 public interface UserCouponRepository {
@@ -24,4 +25,6 @@ public interface UserCouponRepository {
      * 查询特定用户持有的所有未使用优惠券
      */
     List<UserCoupon> findUnusedByUserId(Long userId);
+
+    Integer countUnUsedByCouponId(Long couponId);
 }

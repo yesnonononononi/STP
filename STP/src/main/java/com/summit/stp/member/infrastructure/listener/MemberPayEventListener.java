@@ -6,15 +6,12 @@ import com.summit.stp.member.domain.model.UserMember;
 import com.summit.stp.member.domain.repository.MemberLevelConfigRepository;
 import com.summit.stp.member.domain.repository.MemberRepository;
 import com.summit.stp.member.domain.repository.UserMemberRepository;
-import com.summit.stp.member.domain.service.MemberDomainService;
 import com.summit.stp.order.domain.event.OrderPaidEvent;
-import com.summit.stp.shared.util.DistributedLockUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.util.List;
 
 
 /**

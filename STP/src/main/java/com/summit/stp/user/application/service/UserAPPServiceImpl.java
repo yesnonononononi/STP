@@ -1,9 +1,15 @@
 package com.summit.stp.user.application.service;
 
+import com.summit.stp.member.domain.model.MemberLevelConfig;
+import com.summit.stp.member.domain.model.UserMember;
+import com.summit.stp.member.domain.repository.UserMemberRepository;
 import com.summit.stp.shared.ThreadContext.UserHolder;
+import com.summit.stp.shared.constant.MemberConstants;
 import com.summit.stp.shared.domain.model.Password;
 import com.summit.stp.shared.domain.model.PhoneNumber;
 import com.summit.stp.shared.domain.service.CaptchaService;
+import com.summit.stp.shared.exception.NoFoundUserInfoException;
+import com.summit.stp.shared.exception.ParameterException;
 import com.summit.stp.shared.util.EncryptUtil;
 import com.summit.stp.user.application.UserApplicationService;
 import com.summit.stp.user.application.command.UserPasswordUpdateCommand;
@@ -13,16 +19,24 @@ import com.summit.stp.user.application.vo.UserProfileVO;
 import com.summit.stp.user.application.vo.UserSimpleVO;
 import com.summit.stp.user.domain.model.Email;
 import com.summit.stp.user.domain.model.User;
+import com.summit.stp.user.domain.repository.UserFollowRepository;
 import com.summit.stp.user.domain.repository.UserRepository;
-import com.summit.stp.member.domain.model.UserMember;
-import com.summit.stp.member.domain.repository.UserMemberRepository;
-import com.summit.stp.shared.constant.MemberConstants;
+import com.summit.stp.user.infrastructure.persistence.po.UserFollowPO;
+import com.summit.stp.userAuth.domain.model.UserSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import com.summit.stp.shared.exception.ParameterException;
+import org.springframework.context.ApplicationEventPublisher;
+import com.summit.stp.shared.event.FileDeleteEvent;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -31,16 +45,18 @@ public class UserAPPServiceImpl implements UserApplicationService {
     private final UserRepository userRepository;
     private final UserMemberRepository userMemberRepository;
     private final CaptchaService captchaService;
+    private final UserFollowRepository userFollowRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void updateProfile(UserProfileUpdateCommand command) {
         String currentUsername = UserHolder.getUser().getUsername();
         log.info("修改用户基本资料: {}", currentUsername);
 
         User user = userRepository.findUserByName(currentUsername);
         if (user == null) {
-            throw new RuntimeException(String.format("用户 %s 不存在", currentUsername));
+            throw new NoFoundUserInfoException(String.format("用户 %s 不存在", currentUsername));
         }
 
         String newEmail = command.getEmail();
@@ -57,13 +73,37 @@ public class UserAPPServiceImpl implements UserApplicationService {
             }
         }
 
+        String oldAvatar = user.getAvatar();
+        String oldBgImage = user.getBgImage();
         user.updateProfile(command.getNick(), command.getAvatar(), newEmail, command.getIntroduce(), command.getVerifyCode(), command.getGender(), command.getAge());
+
+        if (command.getBgImage() != null) {
+            if (StringUtils.hasText(command.getBgImage())) {
+                user.updateBgImage(command.getBgImage());
+            } else {
+                user.clearBgImage();
+            }
+        }
+
         userRepository.save(user);
+
+        String newAvatar = command.getAvatar();
+        if (oldAvatar != null && !oldAvatar.isEmpty() && !oldAvatar.equals(newAvatar)) {
+            applicationEventPublisher.publishEvent(new FileDeleteEvent(this, List.of(oldAvatar)));
+        }
+
+        if (command.getBgImage() != null) {
+            String newBgImage = command.getBgImage();
+            if (oldBgImage != null && !oldBgImage.isEmpty() && !oldBgImage.equals(newBgImage)) {
+                applicationEventPublisher.publishEvent(new FileDeleteEvent(this, java.util.List.of(oldBgImage)));
+            }
+        }
+
         log.info("用户基本资料修改成功: {}", currentUsername);
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void bindPhone(UserPhoneBindCommand command) {
         String currentUsername = UserHolder.getUser().getUsername();
         log.info("用户修改手机号绑定: {}", currentUsername);
@@ -84,7 +124,7 @@ public class UserAPPServiceImpl implements UserApplicationService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void updatePassword(UserPasswordUpdateCommand command) {
         String currentUsername = UserHolder.getUser().getUsername();
         log.info("用户修改登录密码: {}", currentUsername);
@@ -99,6 +139,7 @@ public class UserAPPServiceImpl implements UserApplicationService {
         log.info("用户密码修改成功: {}", currentUsername);
     }
 
+
     @Override
     public UserProfileVO findUserById(Long id) {
         User user = userRepository.findUserById(id);
@@ -111,26 +152,84 @@ public class UserAPPServiceImpl implements UserApplicationService {
 
     @Override
     public UserSimpleVO findSimpleUserById(Long id) {
-        UserProfileVO user = findUserById(id);
-        if (user == null) {
+        UserProfileVO profile = findUserById(id);
+        if (profile == null) {
             return null;
         }
         return UserSimpleVO.builder()
-                .id(user.getId())
-                .nick(user.getNick())
-                .avatar(user.getAvatar())
-                .vipType(user.getVipType())
-                .ip(user.getIp())
-                .memberLevel(user.getMemberLevel())
-                .vipConfigIcon(user.getVipConfigIcon())
+                .id(profile.getId())
+                .nick(profile.getNick())
+                .avatar(profile.getAvatar())
+                .vipType(profile.getVipType())
+                .ip(profile.getIp())
+                .memberLevel(profile.getMemberLevel())
+                .memberLevelName(profile.getMemberLevel()) // 填充会员等级名称，避免前端解析为空
+                .vipConfigIcon(profile.getVipConfigIcon())
+                .followed(profile.isFollowed())
+                .introduction(profile.getIntroduction())
+                .fans(profile.getFans() != null ? Long.valueOf(profile.getFans()) : 0L)
+                .liked(profile.getLiked() != null ? Long.valueOf(profile.getLiked()) : 0L)
+                .topic(profile.getTopic() != null ? Long.valueOf(profile.getTopic()) : 0L)
+                .gender(profile.getGender() != null ? String.valueOf(profile.getGender()) : null)
                 .build();
     }
 
+    @Override
+    public Map<Long, UserSimpleVO> findSimpleUserByIds(Collection<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, User> map = userRepository.findUserByIds(userIds);
+        Map<Long, UserMember> memberMap = userMemberRepository.queryUserMemberByUserIds(userIds);
+
+        return map.values().stream()
+                .filter(Objects::nonNull)
+                .map(user -> {
+                    UserMember userMember = memberMap.get(user.getId());
+                    String memberLevel = "";
+                    String vipConfigIcon = null;
+                    if (userMember != null) {
+                        MemberLevelConfig level = userMember.getLevel();
+                        if (level != null) {
+                            memberLevel = level.getLevelName();
+                            vipConfigIcon = level.getIconUrl();
+                        }
+                    }
+                    String nick = user.getNick();
+                    return UserSimpleVO.builder()
+                            .id(user.getId())
+                            .nick(nick == null ? user.getUsername().getValue() : nick)
+                            .avatar(user.getAvatar())
+                            .ip(user.getIp())
+                            .memberLevel(memberLevel)
+                            .memberLevelName(memberLevel)
+                            .vipConfigIcon(vipConfigIcon)
+                            .build();
+                })
+                .collect(Collectors.toMap(UserSimpleVO::getId, vo -> vo, (v1, v2) -> v1));
+    }
+
     private UserProfileVO convertToVO(User user, UserMember userMember) {
+        boolean followed = false;
+        try {
+            UserSession currentUser = UserHolder.getUser();
+            if (!currentUser.getId().equals(user.getId())) {
+                UserFollowPO follow = userFollowRepository.findByFollowerAndFollowee(currentUser.getId(), user.getId());
+                if (follow != null && follow.getStatus() == 1) {
+                    followed = true;
+                }
+            }
+        } catch (NoFoundUserInfoException e) {
+            // 未登录或非 Web 请求线程，默认设为未关注
+        }
+        return convertToVO(user, userMember, followed);
+    }
+
+    private UserProfileVO convertToVO(User user, UserMember userMember, boolean followed) {
         if (user == null) {
             return null;
         }
-        
+
         String memberLevel = "";
         String vipType = MemberConstants.DEFAULT_VIP_TYPE;
         String vipExpireDate = null;
@@ -167,10 +266,12 @@ public class UserAPPServiceImpl implements UserApplicationService {
                 .topic(user.getTopic() != null ? String.valueOf(user.getTopic()) : "0")
                 .fans(user.getFans() != null ? String.valueOf(user.getFans()) : "0")
                 .vipType(vipType)
+                .bgImage(user.getBgImage())
                 .vipConfigIcon(userMember != null && userMember.getLevel() != null ? userMember.getLevel().getIconUrl() : null)
                 .vipExpireDate(vipExpireDate)
                 .gender(user.getGender())
                 .age(user.getAge())
+                .followed(followed)
                 .build();
     }
 }

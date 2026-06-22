@@ -4,8 +4,6 @@ import com.summit.stp.userAuth.domain.exception.ResetPasswordException;
 import com.summit.stp.userAuth.domain.model.ResetType;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;

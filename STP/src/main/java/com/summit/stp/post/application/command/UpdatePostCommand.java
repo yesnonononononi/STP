@@ -1,8 +1,9 @@
 package com.summit.stp.post.application.command;
 
+import com.summit.stp.post.api.dto.request.ImageInfo;
 import lombok.Builder;
 import lombok.Data;
-import com.summit.stp.post.api.dto.request.ImageInfo;
+
 import java.util.List;
 
 @Data
@@ -16,4 +17,5 @@ public class UpdatePostCommand {
     private List<ImageInfo> mediaUrls;
     private Integer status;
     private List<Long> tagIds;
+    private Integer isTop;
 }

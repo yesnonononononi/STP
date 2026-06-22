@@ -1,8 +1,10 @@
 package com.summit.stp.order.domain.repository;
 
+import com.summit.stp.order.application.vo.OrderQueryVO;
 import com.summit.stp.order.domain.model.Order;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 订单仓储接口
@@ -19,4 +21,6 @@ public interface OrderRepository {
     void deleteById(Long orderId);
 
     void timeout(Long aLong);
+
+    Map<Long, OrderQueryVO> findOrderByCouponIds(Long currentUserId, List<Long> ids);
 }

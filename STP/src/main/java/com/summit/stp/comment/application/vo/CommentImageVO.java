@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.sql.Timestamp;
 
 @Data
@@ -19,6 +20,12 @@ public class CommentImageVO {
 
     @ApiModelProperty("所属评论ID")
     private Long commentId;
+
+    @ApiModelProperty("图片名称")
+    private String imageName;
+
+    @ApiModelProperty("图片类型")
+    private Integer typeCode;
 
     @ApiModelProperty("图片URL")
     private String imageUrl;

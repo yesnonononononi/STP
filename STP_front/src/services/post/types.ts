@@ -34,6 +34,8 @@ export enum PostStatus {
   REPORTED = 4,
   UNKNOWN = 5,
   DRAFT = 6,
+  COLLECTED = 7,
+  LIKED = 8,
 }
 
 /**
@@ -64,6 +66,8 @@ export interface PostPO {
   status?: PostStatus
   createTime?: string
   updateTime?: string
+  isTop?: number
+  viewCount?: number
 }
 
 /**
@@ -102,6 +106,9 @@ export interface PostVO {
   tags?: TagVO[] // 帖子关联的标签详情
   isLike?: boolean // 当前用户是否已点赞
   isCollect?: boolean // 当前用户是否已收藏
+  isTop?: number
+  viewCount?: number
+  visibleScope: number
 }
 
 /**
@@ -143,8 +150,6 @@ export interface TagVO {
  */
 export interface CreateTagRequest {
   tagName: string
-  sort?: number
-  status?: number
 }
 
 /**
@@ -156,7 +161,6 @@ export interface UpdateTagRequest {
   sort?: number
   status?: number
 }
-
 
 /**
  * 帖子标签关联实体
@@ -184,6 +188,8 @@ export interface CreatePostRequest {
   content?: string
   mediaUrls?: ImageInfo[]
   status: PostStatus
+  isTop?: number
+  visibleScope?: number
 }
 
 /**
@@ -197,4 +203,19 @@ export interface UpdatePostRequest {
   tagIds?: number[]
   mediaUrls?: ImageInfo[]
   status?: PostStatus
+  isTop?: number
+  visibleScope?: number
+}
+
+export interface TopicTag {
+  id: number
+  keyword: string
+  extra: number
+}
+
+export interface suggestion {
+  limit: number
+  total: number
+  keyword: string
+  suggestList: TopicTag[]
 }

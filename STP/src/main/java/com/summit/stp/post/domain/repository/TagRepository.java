@@ -1,14 +1,25 @@
 package com.summit.stp.post.domain.repository;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.summit.stp.post.infrastructure.persistence.po.TagPO;
+import com.summit.stp.post.domain.model.Tag;
+import com.summit.stp.shared.result.Result;
+import com.summit.stp.shared.service.SearchSuggest.SuggestVO;
+
 import java.util.List;
 
 public interface TagRepository {
-    TagPO findById(Long id);
-    TagPO findByName(String name);
-    void save(TagPO tag);
+    Tag findById(Long id);
+    Tag findByName(String name);
+    void save(Tag tag);
     void delete(Long id);
-    Page<TagPO> queryByPage(long page, long pageSize);
-    List<TagPO> findByIds(List<Long> ids);
+    Page<Tag> queryByPage(long page, long pageSize);
+    List<Tag> findByIds(List<Long> ids);
+
+    Result<SuggestVO> searchTag(String keyword, Integer limit);
+    void incrementUseCount(Long id, Integer delta);
+
+    List<Tag> getRecentTag(Integer limit);
+
+    List<Tag> queryTagByUseCount(Integer limit);
+
 }

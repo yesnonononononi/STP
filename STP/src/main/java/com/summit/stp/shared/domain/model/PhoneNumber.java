@@ -1,9 +1,8 @@
 package com.summit.stp.shared.domain.model;
 
+import com.summit.stp.shared.exception.ParameterException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-
-import com.summit.stp.shared.exception.ParameterException;
 
 @Data
 @AllArgsConstructor

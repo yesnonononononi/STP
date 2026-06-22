@@ -3,18 +3,20 @@ package com.summit.stp.order.infrastructure.persistence;
 import cn.hutool.core.lang.generator.SnowflakeGenerator;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.summit.stp.order.application.vo.OrderQueryVO;
 import com.summit.stp.order.domain.model.Order;
-import com.summit.stp.order.domain.repository.OrderRepository;
 import com.summit.stp.order.domain.model.OrderStatus;
-import com.summit.stp.payment.domain.model.PayType;
+import com.summit.stp.order.domain.repository.OrderRepository;
 import com.summit.stp.order.infrastructure.persistence.mapper.OrderMapper;
 import com.summit.stp.order.infrastructure.persistence.po.OrderPO;
+import com.summit.stp.payment.domain.model.PayType;
 import com.summit.stp.shared.ThreadContext.UserHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -129,5 +131,18 @@ public class OrderRepositoryImpl implements OrderRepository {
         updateWrapper.eq(OrderPO::getId, orderId).eq(OrderPO::getStatus, OrderStatus.PENDING.getCode());
         
         orderMapper.update(po, updateWrapper);
+    }
+
+    @Override
+    public Map<Long, OrderQueryVO> findOrderByCouponIds(Long currentUserId, List<Long> ids) {
+        LambdaQueryWrapper<OrderPO> wrapper = new LambdaQueryWrapper<OrderPO>().in(OrderPO::getCouponId, ids).eq(OrderPO::getCreatorId, currentUserId);
+        List<OrderPO> orderPOS = orderMapper.selectList(wrapper);
+        return orderPOS.stream().collect(Collectors.toMap(OrderPO::getCouponId,po->
+            OrderQueryVO.builder()
+                    .orderId(po.getId())
+                    .memberId(po.getPackageId())
+                    .build()
+        ));
+
     }
 }

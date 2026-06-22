@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class QueryPostListByCursorCommand {
-    public String cursor;
+    public Long cursor;
     public Boolean self;
     public Long creatorId;
     public Integer status;

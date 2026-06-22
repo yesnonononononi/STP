@@ -63,6 +63,7 @@ import { User, Lock } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/views/auth/store'
 import type { LoginForm } from '@/views/auth/types'
 import { Auther } from '@/views/auth/composables/Auth'
+import { useUserInfoStore } from '@/stores/userInfo'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -90,6 +91,8 @@ const handleLogin = async () => {
         const res = await auther.login(loginForm)
         if (res.data) {
           authStore.setAuth(res.data)
+          // 登录成功后立即获取最新的用户信息并缓存
+          await useUserInfoStore().flush()
         }
         router.push('/')
       } catch (err: any) {

@@ -1,6 +1,5 @@
 package com.summit.stp.member.domain.model;
 
-import com.summit.stp.shared.exception.BusinessException;
 import com.summit.stp.shared.exception.ParameterException;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -24,23 +23,9 @@ public class Member {
     private final String description;
     private final BigDecimal dailyRate;
     private final Integer priority;
-
-
-    private Member(Long id, String name, MemberType type, BigDecimal price, Integer duration, Double discount, String description, BigDecimal dailyRate, Integer priority) {
-        validatePrice(price);
-        this.id = id;
-        this.name = name;
-        this.type = type;
-        this.price = price;
-        this.duration = duration;
-        this.discount = discount;
-        this.description = description;
-        this.dailyRate = dailyRate;
-        this.priority = priority;
-    }
-
-
-
+    private final Long typeId;
+    private final Boolean isSuper;
+    private Integer stock;
 
 
     /**

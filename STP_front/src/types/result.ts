@@ -3,3 +3,9 @@ export interface Result<T = any> {
   data: T
   errMsg: string | null
 }
+
+export interface CursorPageResult<T> {
+  list: T[]
+  cursor: string
+  hasMore: boolean
+}

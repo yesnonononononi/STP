@@ -1,32 +1,21 @@
 package com.summit.stp.order.application.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.summit.stp.order.application.service.OrderReconciliationAppService;
 import com.summit.stp.order.application.vo.PaymentQueryResultVO;
 import com.summit.stp.order.infrastructure.persistence.mapper.OrderMapper;
 import com.summit.stp.order.infrastructure.persistence.po.OrderPO;
+import com.summit.stp.payment.application.service.PayMessageSender;
 import com.summit.stp.payment.domain.event.PaySuccessEvent;
-import com.summit.stp.shared.exception.BusinessException;
 import com.summit.stp.shared.result.Result;
-import com.summit.stp.shared.util.EncryptUtil;
 import com.summit.stp.shared.util.PaymentSignHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.Map;
-import java.util.StringJoiner;
-import java.util.TreeMap;
 
 @Slf4j
 @Service
@@ -36,7 +25,7 @@ public class OrderReconciliationAppServiceImpl implements OrderReconciliationApp
     private final RestTemplate restTemplate;
     private final OrderMapper orderMapper;
     private final PaymentSignHelper paymentSignHelper;
-    private final RabbitTemplate rabbitTemplate;
+    private final PayMessageSender payMessageSender;
 
     @Value("${payment.pid}")
     private Integer pid;
@@ -77,7 +66,7 @@ public class OrderReconciliationAppServiceImpl implements OrderReconciliationApp
             // 三方已支付，本地未支付/已取消
             log.warn("【订单对账】检测到掉单！三方已支付，本地为待支付/已取消，开始进行状态补偿。订单ID: {}", orderId);
             // 补偿订单状态并分发权益
-            rabbitTemplate.convertAndSend("pay.exchange", "pay.queue.success", new PaySuccessEvent(orderId));
+            payMessageSender.sendPaySuccess(new PaySuccessEvent(orderId));
             return Result.success("对账发现掉单，已成功触发补偿分发逻辑！");
         } else {
             log.error("三方支付平台查询状态为: {}，订单未支付完成", getThirdPartyStatusDesc(thirdPartyStatus));

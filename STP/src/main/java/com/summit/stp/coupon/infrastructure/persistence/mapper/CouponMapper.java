@@ -8,7 +8,6 @@ import org.apache.ibatis.annotations.Select;
 
 @Mapper
 public interface CouponMapper extends BaseMapper<CouponPO> {
-    @Select("select id,name,amount,status,discount,type from coupon where id = #{couponId}")
-    CouponPO findCouponById(@Param("couponId") Long couponId);
+
 
 }

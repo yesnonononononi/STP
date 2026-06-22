@@ -3,7 +3,11 @@ package com.summit.stp.shared.util;
 import cn.hutool.core.util.StrUtil;
 import com.summit.stp.shared.exception.FileDeleteException;
 import com.summit.stp.shared.exception.FileUploadException;
-import io.minio.*;
+import io.minio.BucketExistsArgs;
+import io.minio.MinioClient;
+import io.minio.ObjectWriteResponse;
+import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +64,12 @@ public class FileUploadUtil {
         try {
             if (StrUtil.isBlank(bucketName)) {
                 bucketName = defaultBucket;
+            } else if (!bucketName.equals(defaultBucket)) {
+                boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+                if (!exists) {
+                    fileName = bucketName + "/" + fileName;
+                    bucketName = defaultBucket;
+                }
             }
             minioClient.removeObject(RemoveObjectArgs.builder().bucket(bucketName).object(fileName).build());
         }catch (Exception e){

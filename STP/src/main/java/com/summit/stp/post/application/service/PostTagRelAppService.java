@@ -1,7 +1,7 @@
 package com.summit.stp.post.application.service;
 
 import com.summit.stp.post.application.vo.PostTagRelVO;
-import com.summit.stp.post.infrastructure.persistence.po.PostTagRelPO;
+
 import java.util.List;
 
 public interface PostTagRelAppService {

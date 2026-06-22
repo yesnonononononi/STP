@@ -53,6 +53,20 @@ export const useUserInfoStore = defineStore(
       }
     }
 
+    //Actions - 计算用户信息完整度
+    const calculateCompleteness = () => {
+      const all = 5
+      let count = 0
+      if (!user.value) return
+      count =
+        (user.value.nick ? 1 : 0) +
+        (user.value.avatar ? 1 : 0) +
+        (user.value.gender !== null && user.value.gender !== undefined ? 1 : 0) +
+        (user.value.age ? 1 : 0) +
+        (user.value.introduction ? 1 : 0)
+      return (count / all) * 100
+    }
+
     return {
       // State
       user,
@@ -70,6 +84,7 @@ export const useUserInfoStore = defineStore(
       clearUser,
       flush,
       setLoading,
+      calculateCompleteness,
       setError,
       updateUserInfo,
     }

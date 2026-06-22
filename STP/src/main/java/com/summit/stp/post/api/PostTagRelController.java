@@ -2,7 +2,6 @@ package com.summit.stp.post.api;
 
 import com.summit.stp.post.application.service.PostTagRelAppService;
 import com.summit.stp.post.application.vo.PostTagRelVO;
-import com.summit.stp.post.infrastructure.persistence.po.PostTagRelPO;
 import com.summit.stp.shared.result.Result;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;

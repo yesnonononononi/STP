@@ -1,6 +1,5 @@
 package com.summit.stp.userAuth.domain.service;
 
-import com.summit.stp.shared.domain.model.Password;
 import com.summit.stp.userAuth.domain.exception.PasswordErrorException;
 import com.summit.stp.userAuth.domain.exception.RefreshTokenNoValidException;
 import com.summit.stp.userAuth.domain.exception.RefuseProvidingTokenException;

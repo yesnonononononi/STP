@@ -1,5 +1,6 @@
 package com.summit.stp.shared.config;
 
+import com.summit.stp.shared.constants.MqConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
@@ -14,12 +15,9 @@ import org.springframework.amqp.rabbit.retry.RepublishMessageRecoverer;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tools.jackson.databind.json.JsonMapper;
-
-import java.io.IOException;
 
 
 @Slf4j
@@ -92,7 +90,7 @@ public class MqConfig {
         });
 
         // 消息退回回调 (ReturnsCallback)
-        // 执行时机：当消息成功到达交换机，但没有匹配的队列时触发（通常因为 routingKey 错误或队列不存在）
+        // 执行时机：当消息成功到达交换机，但没有匹配 of 队列时触发（通常因为 routingKey 错误或队列不存在）
         rabbitTemplate.setReturnsCallback(returned -> {
             log.error("消息路由失败退回 (Return): replyCode={}, replyText={}, exchange={}, routingKey={}, message={}",
                     returned.getReplyCode(),
@@ -138,84 +136,104 @@ public class MqConfig {
                 .backOffOptions(1000,2.0,10000)
                 .recoverer(new RepublishMessageRecoverer(
                         rabbitTemplate,
-                        "pay.exchange",      // 指定用于转发失败消息的交换机名称
-                        "pay.queue.fail.recoverer" // 指定路由键，消息将被路由到绑定此路由键的死信/错误队列
+                        MqConstants.Pay.EXCHANGE,      // 指定用于转发失败消息的交换机名称
+                        MqConstants.Pay.ROUTING_KEY_FAIL_RECOVERER // 指定路由键，消息将被路由到绑定此路由键的死信/错误队列
                 )).build();
 
     }
 
     // ==================== 1. 支付相关 Exchange, Queue & Binding ====================
     @Bean
-    public DirectExchange payExchange() {
-        return new DirectExchange("pay.exchange", true, false);
+    public TopicExchange payExchange() {
+        return new TopicExchange(MqConstants.Pay.EXCHANGE, true, false);
     }
 
     @Bean
     public Queue paySuccessQueue() {
-        return QueueBuilder.durable("pay.queue.success")
-                .deadLetterExchange("pay.exchange")
-                .deadLetterRoutingKey("pay.queue.fail.recoverer")
+        return QueueBuilder.durable(MqConstants.Pay.QUEUE_SUCCESS)
+                .deadLetterExchange(MqConstants.Pay.EXCHANGE)
+                .deadLetterRoutingKey(MqConstants.Pay.ROUTING_KEY_FAIL_RECOVERER)
                 .build();
     }
 
     @Bean
     public Queue payFailQueue() {
-        return QueueBuilder.durable("pay.queue.fail")
-                .deadLetterExchange("pay.exchange")
-                .deadLetterRoutingKey("pay.queue.fail.recoverer")
+        return QueueBuilder.durable(MqConstants.Pay.QUEUE_FAIL)
+                .deadLetterExchange(MqConstants.Pay.EXCHANGE)
+                .deadLetterRoutingKey(MqConstants.Pay.ROUTING_KEY_FAIL_RECOVERER)
                 .build();
     }
 
     @Bean
     public Queue payFailRecovererQueue() {
-        return QueueBuilder.durable("pay.queue.fail.recoverer").build();
+        return QueueBuilder.durable(MqConstants.Pay.QUEUE_FAIL_RECOVERER).build();
     }
 
     @Bean
-    public Binding paySuccessBinding(Queue paySuccessQueue, DirectExchange payExchange) {
-        return BindingBuilder.bind(paySuccessQueue).to(payExchange).with("pay.queue.success");
+    public Binding paySuccessBinding(Queue paySuccessQueue, TopicExchange payExchange) {
+        return BindingBuilder.bind(paySuccessQueue).to(payExchange).with(MqConstants.Pay.ROUTING_KEY_SUCCESS);
     }
 
     @Bean
-    public Binding payFailBinding(Queue payFailQueue, DirectExchange payExchange) {
-        return BindingBuilder.bind(payFailQueue).to(payExchange).with("pay.queue.fail");
+    public Binding payFailBinding(Queue payFailQueue, TopicExchange payExchange) {
+        return BindingBuilder.bind(payFailQueue).to(payExchange).with(MqConstants.Pay.ROUTING_KEY_FAIL);
     }
 
     @Bean
-    public Binding payFailRecovererBinding(Queue payFailRecovererQueue, DirectExchange payExchange) {
-        return BindingBuilder.bind(payFailRecovererQueue).to(payExchange).with("pay.queue.fail.recoverer");
+    public Binding payFailRecovererBinding(Queue payFailRecovererQueue, TopicExchange payExchange) {
+        return BindingBuilder.bind(payFailRecovererQueue).to(payExchange).with(MqConstants.Pay.ROUTING_KEY_FAIL_RECOVERER);
     }
 
     // ==================== 2. 会员权益相关 Exchange, Queue & Binding ====================
     @Bean
-    public DirectExchange memberExchange() {
-        return new DirectExchange("member.exchange.pay", true, false);
+    public TopicExchange memberExchange() {
+        return new TopicExchange(MqConstants.Member.EXCHANGE, true, false);
     }
 
     @Bean
     public Queue memberPayQueue() {
-        return QueueBuilder.durable("member.queue.pay").build();
+        return QueueBuilder.durable(MqConstants.Member.QUEUE).build();
     }
 
     @Bean
-    public Binding memberPayBinding(Queue memberPayQueue, DirectExchange memberExchange) {
-        return BindingBuilder.bind(memberPayQueue).to(memberExchange).with("member.queue.pay");
+    public Binding memberPayBinding(Queue memberPayQueue, TopicExchange memberExchange) {
+        return BindingBuilder.bind(memberPayQueue).to(memberExchange).with(MqConstants.Member.ROUTING_KEY);
     }
 
-    // ==================== 3. 用户注册相关 Exchange, Queue & Binding ====================
+    // ==================== 3. 用户注册及统计相关 Exchange, Queue & Binding ====================
     @Bean
-    public DirectExchange userExchange() {
-        return new DirectExchange("user.exchange.register", true, false);
+    public TopicExchange userExchange() {
+        return new TopicExchange(MqConstants.User.EXCHANGE, true, false);
     }
 
     @Bean
     public Queue userRegisterQueue() {
-        return QueueBuilder.durable("user.queue.register").build();
+        return QueueBuilder.durable(MqConstants.User.QUEUE_REGISTER).build();
     }
 
     @Bean
-    public Binding userRegisterBinding(Queue userRegisterQueue, DirectExchange userExchange) {
-        return BindingBuilder.bind(userRegisterQueue).to(userExchange).with("user.queue.register");
+    public Queue userFansQueue() {
+        return QueueBuilder.durable(MqConstants.User.QUEUE_FANS).build();
+    }
+
+    @Bean
+    public Queue userLikedQueue() {
+        return QueueBuilder.durable(MqConstants.User.QUEUE_LIKED).build();
+    }
+
+    @Bean
+    public Binding userRegisterBinding(Queue userRegisterQueue, TopicExchange userExchange) {
+        return BindingBuilder.bind(userRegisterQueue).to(userExchange).with(MqConstants.User.ROUTING_KEY_REGISTER);
+    }
+
+    @Bean
+    public Binding userFansBinding(Queue userFansQueue, TopicExchange userExchange) {
+        return BindingBuilder.bind(userFansQueue).to(userExchange).with(MqConstants.User.ROUTING_KEY_FANS);
+    }
+
+    @Bean
+    public Binding userLikedBinding(Queue userLikedQueue, TopicExchange userExchange) {
+        return BindingBuilder.bind(userLikedQueue).to(userExchange).with(MqConstants.User.ROUTING_KEY_LIKED);
     }
 
     static class ToolsJacksonMessageConverter implements MessageConverter {
@@ -263,19 +281,19 @@ public class MqConfig {
     // =================================4,帖子相关==================================
     @Bean
     public TopicExchange topicExchange() {
-        return new TopicExchange("post.topic.exchange", true, false);
+        return new TopicExchange(MqConstants.Post.EXCHANGE, true, false);
     }
 
     //帖子 - 用户 队列
     @Bean
     public Queue postQueue() {
-        return QueueBuilder.durable("post.user.queue").build();
+        return QueueBuilder.durable(MqConstants.Post.QUEUE).build();
     }
 
     //帖子 - 用户 绑定
     @Bean
     public Binding postUserBinding(Queue postQueue, TopicExchange topicExchange) {
-        return BindingBuilder.bind(postQueue).to(topicExchange).with("post.user.queue");
+        return BindingBuilder.bind(postQueue).to(topicExchange).with(MqConstants.Post.ROUTING_KEY);
     }
 
 

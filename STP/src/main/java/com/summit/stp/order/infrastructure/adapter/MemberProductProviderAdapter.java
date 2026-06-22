@@ -4,10 +4,11 @@ import com.summit.stp.member.application.service.MemberAppService;
 import com.summit.stp.member.application.vo.MemberVO;
 import com.summit.stp.order.application.service.ProductProvider;
 import com.summit.stp.order.application.vo.ProductVO;
+import com.summit.stp.shared.exception.ParameterException;
 import com.summit.stp.shared.result.Result;
 import lombok.RequiredArgsConstructor;
+import java.math.BigDecimal;
 import org.springframework.stereotype.Component;
-import com.summit.stp.shared.exception.ParameterException;
 
 /**
  * 针对会员套餐的商品信息查询适配器（防腐层 ACL 实现）
@@ -31,6 +32,7 @@ public class MemberProductProviderAdapter implements ProductProvider {
                 .id(memberVO.getId())
                 .name(memberVO.getName())
                 .price(memberVO.getPrice())
+                .discount(memberVO.getDiscount() != null ? BigDecimal.valueOf(memberVO.getDiscount()) : BigDecimal.ONE)
                 .build();
     }
 }

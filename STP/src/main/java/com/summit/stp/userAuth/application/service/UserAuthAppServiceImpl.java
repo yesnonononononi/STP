@@ -2,19 +2,20 @@ package com.summit.stp.userAuth.application.service;
 
 import cn.hutool.core.util.IdUtil;
 import com.summit.stp.shared.ThreadContext.UserHolder;
-import com.summit.stp.shared.constant.UserAuthConstants;
 import com.summit.stp.shared.domain.model.Password;
 import com.summit.stp.shared.domain.model.PhoneNumber;
 import com.summit.stp.shared.domain.model.Username;
 import com.summit.stp.shared.domain.service.CaptchaService;
-import com.summit.stp.shared.result.Result;
 import com.summit.stp.shared.exception.ParameterException;
+import com.summit.stp.shared.result.Result;
+import com.summit.stp.shared.util.IpUtil;
+import com.summit.stp.user.domain.model.User;
+import com.summit.stp.user.domain.repository.UserRepository;
 import com.summit.stp.userAuth.application.UserAuthApplicationService;
 import com.summit.stp.userAuth.application.command.ForgetCommand;
 import com.summit.stp.userAuth.application.command.LoginCommand;
 import com.summit.stp.userAuth.application.command.RefreshTokenCommand;
 import com.summit.stp.userAuth.application.command.RegisterCommand;
-import com.summit.stp.userAuth.application.service.UserRegisterEventPublishProvider;
 import com.summit.stp.userAuth.application.vo.LoginVO;
 import com.summit.stp.userAuth.application.vo.RefreshTokenVO;
 import com.summit.stp.userAuth.domain.event.UserRegisterEvent;
@@ -22,16 +23,13 @@ import com.summit.stp.userAuth.domain.exception.RefreshTokenNoValidException;
 import com.summit.stp.userAuth.domain.exception.ResetPasswordException;
 import com.summit.stp.userAuth.domain.model.AuthToken;
 import com.summit.stp.userAuth.domain.model.AuthUser;
+import com.summit.stp.userAuth.domain.model.ResetType;
 import com.summit.stp.userAuth.domain.model.UserSession;
 import com.summit.stp.userAuth.domain.repository.AuthUserRepository;
 import com.summit.stp.userAuth.domain.repository.TokenRepository;
-import com.summit.stp.shared.util.IpUtil;
-import com.summit.stp.user.domain.model.User;
-import com.summit.stp.user.domain.repository.UserRepository;
 import com.summit.stp.userAuth.domain.service.ResetPasswordStrategy;
 import com.summit.stp.userAuth.domain.service.ResetStrategyRegistry;
 import com.summit.stp.userAuth.domain.service.UserAuthDomainService;
-import com.summit.stp.userAuth.domain.model.ResetType;
 import com.summit.stp.userAuth.infrastructure.config.AuthProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -102,13 +100,18 @@ public class UserAuthAppServiceImpl implements UserAuthApplicationService {
         log.info("用户刷新 Token 请求: {}", refreshTokenCommand.getUsername());
 
         // 1. 根据 Token 检索 Session
-        UserSession session = tokenRepository.findSessionByToken(refreshTokenCommand.getRefreshToken())
+        UserSession session = tokenRepository.findSessionByToken(refreshTokenCommand.getRefreshToken(), "refresh")
                 .orElseThrow(RefreshTokenNoValidException::new);
 
-        // 2. 安全的一致性比对校验
+        // 2. 校验 Token 类型是否为 REFRESH
+        if (!"REFRESH".equals(session.getTokenType())) {
+            throw new RefreshTokenNoValidException();
+        }
+
+        // 3. 安全的一致性比对校验
         userAuthDomainService.verifySessionUsername(session.getUsername(), refreshTokenCommand.getUsername());
 
-        // 3. 签发新 Access Token 与 Refresh Token 并更新
+        // 4. 签发新 Access Token 与 Refresh Token 并更新
         AuthToken authToken = issueToken(
                 refreshTokenCommand.getUsername(),
                 refreshTokenCommand.getIp(),
@@ -129,10 +132,10 @@ public class UserAuthAppServiceImpl implements UserAuthApplicationService {
         // 登出操作的流程编排 (清理 Token 以及 Session 缓存)
         UserSession user = UserHolder.getUser();
         String value = user.getUsername();
-        tokenRepository.deleteByUsername(value);
-        tokenRepository.deleteByUsername(UserAuthConstants.REFRESH_TOKEN_PREFIX + value);
+        tokenRepository.deleteByUsername(value, "access");
+        tokenRepository.deleteByUsername(value, "refresh");
         String token = user.getToken();
-        tokenRepository.deleteByToken(token);
+        tokenRepository.deleteByToken(token, "access");
     }
 
     @Override
@@ -204,21 +207,21 @@ public class UserAuthAppServiceImpl implements UserAuthApplicationService {
     private AuthToken issueToken(String username, String ip,  boolean requireRefreshToken,Long userId) {
         String refreshToken = "", accessToken;
         // 删除旧 Session
-        tokenRepository.deleteByUsername(username);
+        tokenRepository.deleteByUsername(username, "access");
 
         // 获取 accessToken
-        accessToken = acquireAccessToken(username, username, ip, authProperties.getTokenExpireSeconds(),userId);
+        accessToken = acquireAccessToken(username, username, ip, authProperties.getTokenExpireSeconds(),userId, "ACCESS", "access");
 
         // 如果需要刷新令牌,则删除原有映射,使 token 失效
         if (requireRefreshToken) {
-            tokenRepository.deleteByUsername(UserAuthConstants.REFRESH_TOKEN_PREFIX + username);
-            // 获取刷新令牌 (缓存键为带前缀的名称，但 Session 内存储的仍为真实用户名)
-            refreshToken = acquireAccessToken(UserAuthConstants.REFRESH_TOKEN_PREFIX + username, username, ip, authProperties.getRefreshTokenExpireSeconds(),userId);
+            tokenRepository.deleteByUsername(username, "refresh");
+            // 获取刷新令牌
+            refreshToken = acquireAccessToken(username, username, ip, authProperties.getRefreshTokenExpireSeconds(),userId, "REFRESH", "refresh");
         }
         return AuthToken.builder().accessToken(accessToken).refreshToken(refreshToken).build();
     }
 
-    private String acquireAccessToken(String cacheKey, String realUsername, String ip, long expireSeconds,Long userId) {
+    private String acquireAccessToken(String cacheKey, String realUsername, String ip, long expireSeconds,Long userId, String tokenType, String type) {
         // 生成新 Token
         String accessToken = IdUtil.fastSimpleUUID();
 
@@ -230,14 +233,15 @@ public class UserAuthAppServiceImpl implements UserAuthApplicationService {
                 .loginTime(LocalDateTime.now())
                 .onlineStatus("ONLINE")
                 .token(accessToken)
+                .tokenType(tokenType)
                 .build();
 
         // 保存映射
         // 1. token -> session
-        tokenRepository.saveSession(accessToken, session, expireSeconds);
+        tokenRepository.saveSession(accessToken, session, expireSeconds, type);
 
         // 2. cacheKey -> token (用于后续查找)
-        tokenRepository.saveUserToken(cacheKey, accessToken, expireSeconds);
+        tokenRepository.saveUserToken(cacheKey, accessToken, expireSeconds, type);
 
         return accessToken;
     }

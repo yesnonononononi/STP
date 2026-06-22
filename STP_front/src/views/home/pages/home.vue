@@ -7,27 +7,32 @@
       <member :visible="toMember" @close="toMember = false" />
     </div>
     <div class="tab bg-white shadow-md sticky top-0 z-13">
-      <div class="w-350 h-16 m-auto flex items-center  gap-8">
-        <span class="flex-3 flex w-72 items-center justify-between">
-          <div class="flex items-center gap-2">
-            <img src="/logo.png" class="w-12 h-12" alt="logo" />
+      <div class="w-full max-w-[1400px] px-2 md:px-4 h-16 m-auto flex items-center justify-between gap-2 md:gap-8">
+        <span class="flex flex-row items-center w-auto gap-2 md:gap-4 shrink-0">
+          <div class="flex items-center gap-1.5 md:gap-2">
+            <img src="/logo.png" class="w-8 h-8 md:w-12 md:h-12" alt="logo" />
             <span
-              class="bg-clip-text text-transparent bg-linear-to-r from-blue-300 via-blue-200 to-blue-300 font-semibold text-2xl  ">STP</span>
+              class="bg-clip-text text-transparent bg-linear-to-r from-blue-300 via-blue-200 to-blue-300 font-semibold text-lg md:text-2xl hidden sm:inline">STP</span>
           </div>
-          <span @click="router.push({ name: 'home' })" class="cursor-pointer hover:text-blue-200">首页</span>
-          <span>关注</span>
+          <span @click="toggleTab('home')" class="cursor-pointer hover:text-blue-200 text-xs md:text-base shrink-0"
+            :class="curTab === 'home' ? 'text-blue-300 font-semibold' : ''">首页</span>
+          <span @click="toggleTab('coupon')" class="cursor-pointer hover:text-blue-200 text-xs md:text-base shrink-0"
+            :class="curTab === 'coupon' ? 'text-blue-300 font-semibold' : ''">福利</span>
         </span>
-        <div class="flex-3 search p-2 w-96">
+        <div class="hidden lg:block flex-3 search p-2 w-96 shrink">
           <el-input placeholder="请输入内容" class="w-96">
             <template #suffix>
-              <el-icon>
-                <Search />
-              </el-icon>
+              <svg t="1781494755543" class="icon size-4" viewBox="0 0 1024 1024" version="1.1"
+                xmlns="http://www.w3.org/2000/svg" p-id="5766">
+                <path
+                  d="M644.096 251.904a277.333333 277.333333 0 1 0-392.192 392.192 277.333333 277.333333 0 0 0 392.192-392.192zM191.573333 191.573333a362.666667 362.666667 0 0 1 541.269334 480.938667l228.053333 228.053333-60.330667 60.330667-228.053333-228.053333A362.709333 362.709333 0 0 1 191.573333 191.573333z"
+                  fill="#bfbfbf" p-id="5767"></path>
+              </svg>
             </template>
           </el-input>
         </div>
-        <div class="flex-1 avatar h-14 flex flex-col group items-center relative gap-2">
-          <img class="h-12 w-12 rounded-full bg-gray-300 relative z-20 cursor-pointer object-cover"
+        <div class="avatar h-14 flex flex-col group items-center justify-center relative gap-2 shrink-0">
+          <img class="h-8 w-8 md:h-12 md:w-12 rounded-full bg-gray-300 relative z-20 cursor-pointer object-cover"
             :src="userProfile?.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
             alt="Avatar" referrerpolicy="no-referrer" />
           <div
@@ -42,12 +47,7 @@
                 <div class="introduce-info flex flex-col w-full p-2 m-2">
                   <div class="nick flex items-center gap-2">
                     <span class="font-semibold  text-gray-800">{{ userProfile?.nick || '未登录' }}</span>
-                    <img v-if="userProfile?.vipConfigIcon" :src="userProfile?.vipConfigIcon" alt=""
-                      class="vip-level w-5 h-5 ">
-                    <span v-else
-                      class="w-auto rounded-lg bg-linear-to-r from-blue-100 to-blue-200 text-xs text-stone-500 p-1">{{
-                        userProfile?.memberLevel
-                      }}</span>
+
                   </div>
                   <div class="auhor text-xs text-gray-400">
                     <span>IP: {{ userProfile?.ip || '未知' }}</span>
@@ -69,7 +69,7 @@
                       </div>
                     </div>
                     <span class="text-gray-400 text-xs mt-1">
-                      {{ userProfile?.vipExpireDate ? '到期时间: ' + userProfile.vipExpireDate.split(' ')[0] : 'STP一路长虹'
+                      {{ userProfile?.vipExpireDate ? '到期时间: ' + userProfile.vipExpireDate.split(' ')[0] : '您还未开通会员服务'
                       }}
                     </span>
                   </div>
@@ -112,29 +112,36 @@
             </div>
           </div>
         </div>
-        <div class="flex-3 right flex items-center justify-around cursor-pointer w-64">
-          <div class="hover:text-blue-400 flex flex-col group items-center jsutify-center" @click="toMember = true">
-            <img class="w-6 h-6 rounded-full group-hover:animate-bounce "
+        <div class="right flex items-center justify-end gap-2 md:gap-6 cursor-pointer shrink-0">
+          <div class="hover:text-blue-400 flex flex-col group items-center justify-center shrink-0"
+            @click="toMember = true">
+            <img class="w-5 h-5 md:w-6 md:h-6 rounded-full group-hover:animate-bounce "
               src="https://static.nowcoder.com/fe/file/oss/1675240070182OPBSB.png" alt="" />
-            <span class="">会员</span>
+            <span class="hidden sm:inline text-[10px] md:text-xs">会员</span>
           </div>
-          <div class="flex flex-col  items-center justify-center hover:text-blue-400 cursor-pointer">
-            <svg focusable="false" viewBox="0 0 80 80" fill="currentColor" width="20" height="20" aria-hidden="true"
-              data-v-79ba69ea="">
+          <div class="flex flex-col  items-center justify-center hover:text-blue-400 cursor-pointer shrink-0">
+            <svg focusable="false" viewBox="0 0 80 80" fill="currentColor" class="w-5 h-5 md:w-6 md:h-6"
+              aria-hidden="true" data-v-79ba69ea="">
               <g fill="none" fill-rule="evenodd" stroke="currentColor">
                 <rect width="67.2" height="55.2" x="6.4" y="12.4" stroke-width="4.8" rx="12"></rect>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="5.2"
                   d="m10 18 25.2696 18.531c2.8157 2.0649 6.6453 2.065 9.4611.0006L70.0067 18h0"></path>
               </g>
             </svg>
-            <span>消息</span>
+            <span class="hidden sm:inline text-[10px] md:text-xs">消息</span>
           </div>
-          <span>
-            <img src="" alt="" />
-            <span>设置</span>
-          </span>
+          <div class="flex flex-col items-center justify-center hover:text-blue-400 cursor-pointer shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 md:w-6 md:h-6">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+              </path>
+            </svg>
+            <span class="hidden sm:inline text-[10px] md:text-xs">设置</span>
+          </div>
           <div
-            class="hover:text-white cursor-pointer rounded-lg px-3 py-1  bg-linear-to-r from-blue-200 via-blue-100 to-blue-300"
+            class="hover:text-white cursor-pointer rounded-lg px-2 md:px-3 py-1 text-xs md:text-sm bg-linear-to-r from-blue-200 via-blue-100 to-blue-300 shrink-0"
             @click="newPageWithId(undefined, 'post')">
             发布
           </div>
@@ -160,6 +167,7 @@ import { Auther } from '@/views/auth/composables/Auth'
 import router from '@/router'
 import { newPageWithId } from '@/utils/page'
 
+const curTab = ref("home");
 const toMember = ref(false)
 const user = useUserInfoStore();
 const userProfile = computed(() => user.user)
@@ -195,5 +203,11 @@ async function logout() {
 function toUserProfile(id: number | undefined) {
   if (!id) return;
   router.push({ name: 'userProfile', params: { id: id } })
+}
+
+
+async function toggleTab(name: string) {
+  curTab.value = name;
+  router.push({ name: name });
 }
 </script>

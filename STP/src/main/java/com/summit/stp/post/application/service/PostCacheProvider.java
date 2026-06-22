@@ -76,6 +76,9 @@ public interface PostCacheProvider {
      * 标记缓存被修改
      */
     void markCacheChanged(Object postId);
+    void markLikeCollectChanged(Object postId);
+    void markViewChanged(Object postId);
+    void markReplyChanged(Object postId);
     /**
      * 获取指定帖子所有点赞的用户ID列表（排除了占位符）
      */
@@ -84,4 +87,19 @@ public interface PostCacheProvider {
      * 获取指定帖子所有收藏的用户ID列表（排除了占位符）
      */
     java.util.Set<Long> getCollectUserIds(Long postId);
+
+    /**
+     * 增加浏览数
+     */
+    void incrViewCount(Long postId);
+
+    /**
+     * 获取浏览数
+     */
+    Long getViewCount(Long postId);
+
+    /**
+     * 批量获取浏览数
+     */
+    java.util.Map<Long, Long> getViewCounts(java.util.List<Long> postIds);
 }

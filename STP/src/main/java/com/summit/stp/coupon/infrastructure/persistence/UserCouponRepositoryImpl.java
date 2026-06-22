@@ -3,10 +3,10 @@ package com.summit.stp.coupon.infrastructure.persistence;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.coupon.domain.model.Coupon;
+import com.summit.stp.coupon.domain.model.CouponStatus;
 import com.summit.stp.coupon.domain.model.UserCoupon;
 import com.summit.stp.coupon.domain.repository.CouponRepository;
 import com.summit.stp.coupon.domain.repository.UserCouponRepository;
-import com.summit.stp.coupon.domain.model.CouponStatus;
 import com.summit.stp.coupon.infrastructure.persistence.mapper.UserCouponMapper;
 import com.summit.stp.coupon.infrastructure.persistence.po.UserCouponPO;
 import lombok.RequiredArgsConstructor;
@@ -37,10 +37,11 @@ public class UserCouponRepositoryImpl implements UserCouponRepository {
         po.setUserId(userCoupon.getUserId());
         po.setCouponId(userCoupon.getCouponTemplateId());
         po.setStatus(userCoupon.getStatus().getCode());
-        po.setOrderId(userCoupon.getOrderId());
         po.setUsedTime(userCoupon.getUsedTime());
         po.setCreateTime(userCoupon.getCreateTime());
         po.setUpdateTime(userCoupon.getUpdateTime());
+        po.setEndTime(userCoupon.getEndTime());
+        po.setOrderId(userCoupon.getOrderId());
 
         if (po.getId() == null) {
             userCouponMapper.insert(po);
@@ -81,6 +82,11 @@ public class UserCouponRepositoryImpl implements UserCouponRepository {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public Integer countUnUsedByCouponId(Long couponId) {
+        return Math.toIntExact(userCouponMapper.selectCount(new LambdaQueryWrapper<UserCouponPO>().eq(UserCouponPO::getCouponId, couponId).eq(UserCouponPO::getStatus, CouponStatus.NOT_USE.getCode())));
+    }
+
     /**
      * 获取领域模型对象
      * @param po
@@ -92,10 +98,11 @@ public class UserCouponRepositoryImpl implements UserCouponRepository {
                 .userId(po.getUserId())
                 .couponTemplateId(po.getCouponId())
                 .status(CouponStatus.fromCode(po.getStatus()))
-                .orderId(po.getOrderId())
                 .usedTime(po.getUsedTime())
                 .createTime(po.getCreateTime())
                 .updateTime(po.getUpdateTime())
+                .orderId(po.getOrderId())
+                .endTime(po.getEndTime())
                 .build();
         Coupon template = couponRepository.findCouponById(po.getCouponId());
         if (template != null) {

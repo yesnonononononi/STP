@@ -1,10 +1,12 @@
 <template>
-    <div class="relative z-12 w-full min-h-screen bg-linear-to-tl from-blue-100 via-blue-300 to-blue-200 py-10">
+    <div class="relative z-12 w-full min-h-screen py-10 bg-cover bg-center bg-no-repeat"
+        :class="userInfo?.bgImage ? '' : 'bg-linear-to-tl from-blue-100 via-blue-300 to-blue-200'"
+        :style="userInfo?.bgImage ? `background-image: url('${userInfo.bgImage}');` : ''">
 
         <!-- 账号设置和更换背景按钮 -->
-        <div class="w-2/3   h-12 m-auto flex text-white font-semibold items-center justify-end gap-4 px-4 select-none">
-            <div class="cursor-pointer hover:underline flex items-center gap-1"
-                @click="router.push({ name: 'userSettings' })">
+        <div class="w-2/3   h-12 m-auto flex text-white font-semibold items-center justify-end gap-4 px-4 select-none"
+            v-if="isme">
+            <div class="cursor-pointer hover:underline flex items-center gap-1 overflow-hidden " @click="handleResetBg">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
@@ -12,15 +14,22 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
-                <span>账号设置</span>
+                <span>重置背景</span>
             </div>
-            <div class="cursor-pointer hover:underline flex items-center gap-1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
-                    </path>
-                </svg>
-                <span>更换主页背景</span>
+            <div class="cursor-pointer ">
+                <el-upload class=" flex items-center justify-center" :show-file-list="false" :auto-upload="false"
+                    :on-change="handleBgImageChange" accept=".png,.jpg,.jpeg">
+                    <template v-slot:trigger>
+                        <div class="cursor-pointer  flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                </path>
+                            </svg>
+                            <span>更换背景</span>
+                        </div>
+                    </template>
+                </el-upload>
             </div>
         </div>
         <div class="w-2/3 min-h-200  m-auto bg-white/70 ">
@@ -39,11 +48,16 @@
                     <div class="avatar-introduce   flex  justify-between px-8 pt-4">
                         <div class="left ml-32 h-12 flex items-center gap-1 select-none">
                             <span class="font-bold text-gray-800 text-xl">{{ userInfo?.nick || '' }}</span>
-                            <div class="bg-blue-200 h-5 w-20 rounded-2xl flex items-center " v-if="userInfo">
-                                <img class="w-5 h-5" v-if="userInfo?.vipConfigIcon" :src="userInfo?.vipConfigIcon"
+                            <div v-if="userInfo && userInfo.memberLevel"
+                                class="bg-blue-200 h-5 w-20 rounded-2xl flex items-center justify-center ">
+                                <img class="size-4" v-if="userInfo?.vipConfigIcon" :src="userInfo?.vipConfigIcon"
                                     alt="">
-                                <span class="text-xs shrink-0 text-blue-500 p-1">{{ userInfo?.memberLevel || 'Lv.1'
-                                }}</span>
+                                <span class="text-xs shrink-0 text-blue-500 p-1">{{
+                                    userInfo.memberLevel }}</span>
+                            </div>
+                            <div v-if="userInfo && userInfo.vipConfigIcon"
+                                class="bg-linear-to-br from-yellow-200 via-amber-300 to-yellow-400 text-stone-500 rounded-full px-2 h-5 font-semibold  text-xs flex items-center justify-center">
+                                <span>{{ userInfo.vipType }}</span>
                             </div>
                         </div>
                         <div class="right w-1/3 h-full flex items-center ">
@@ -76,14 +90,19 @@
                         {{ userInfo?.introduction || (isme ? '添加简介,让大家认识你' : '该用户暂无简介') }}
                     </div>
                     <div class="right w-1/2 text-right flex justify-center items-center gap-12 mb-6" v-if="!isme">
-                        <button
-                            class="bg-linear-to-bl rounded-md shadow-md from-blue-100 to-blue-200 w-24 h-10 cursor-pointer hover:scale-[1.05]">关注</button>
+                        <button @click="handleFollow"
+                            class="rounded-md shadow-md w-24 h-10 cursor-pointer hover:scale-[1.05] transition-all duration-300 font-semibold"
+                            :class="userInfo?.followed
+                                ? 'bg-gray-100 text-gray-500 border border-gray-300 hover:bg-gray-200'
+                                : 'bg-linear-to-bl from-blue-400 to-blue-500 text-white hover:shadow-lg'">
+                            {{ userInfo?.followed ? '已关注' : '关注' }}
+                        </button>
                         <button
                             class="bg-linear-to-bl rounded-md shadow-md from-blue-100 to-blue-200 w-24 h-10 cursor-pointer hover:scale-[1.05]">私信</button>
                     </div>
                     <div v-else class="flex items-center gap-4 px-4">
                         <span>个人信息完善度</span>
-                        <span class="text-blue-300">{{ 70 }}%</span>
+                        <span class="text-blue-300">{{ profileCompleteness }}%</span>
                         <span class="cursor-pointer hover:text-blue-600 text-blue-500"
                             @click="edit_profile = true">编辑资料></span>
                     </div>
@@ -95,29 +114,23 @@
             <div class="h-150 bg-gay-100 rounded-md flex">
                 <div class="left w-[75%] p-2 pb-0 h-full ">
                     <div
-                        class=" w-full h-[10%]  rounded-md bg-white p-3  flex gap-18 text-2xl text-gray-500 font-semibold">
+                        class=" w-full h-[10%]  rounded-md bg-white p-3  flex gap-18 text-xl text-gray-500 font-semibold select-none">
                         <span
                             class="hover:text-blue-200 transition-all duration-300 cursor-pointer flex items-center justify-center"
-                            :class="curTab == PostStatus.NORMAL ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-200 to-blue-300' : ''"
-                            @click="curTab = PostStatus.NORMAL">发布</span>
-                        <div class="flex items-center gap-18 h-full" v-if="isme">
-                            <span class="hover:text-blue-200 cursor-pointer transition-all duration-300"
-                                @click="curTab = PostStatus.DRAFT"
-                                :class="curTab == PostStatus.DRAFT ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-200 to-blue-300' : ''">草稿</span>
-                            <span class="hover:text-blue-200 cursor-pointer transition-all duration-300"
-                                @click="curTab = PostStatus.DELETED"
-                                :class="curTab == PostStatus.DELETED ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-200 to-blue-300' : ''">已删除</span>
-                            <span class="hover:text-blue-200 cursor-pointer transition-all duration-300"
-                                @click="curTab = PostStatus.BLOCKED"
-                                :class="curTab == PostStatus.BLOCKED ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-200 to-blue-300' : ''">禁用</span>
-                            <span class="hover:text-blue-200 cursor-pointer transition-all duration-300"
-                                @click="curTab = PostStatus.REPORTED"
-                                :class="curTab == PostStatus.REPORTED ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-200 to-blue-300' : ''">被举报</span>
-
-                        </div>
+                            :class="curTab === 0 ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-200 to-blue-300' : ''"
+                            @click="curTab = 0">帖子</span>
+                        <span
+                            class="hover:text-blue-200 transition-all duration-300 cursor-pointer flex items-center justify-center"
+                            :class="curTab === PostStatus.LIKED ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-200 to-blue-300' : ''"
+                            @click="curTab = PostStatus.LIKED">赞过</span>
+                        <span
+                            class="hover:text-blue-200 transition-all duration-300 cursor-pointer flex items-center justify-center"
+                            :class="curTab === PostStatus.COLLECTED ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-200 to-blue-300' : ''"
+                            @click="curTab = PostStatus.COLLECTED">收藏</span>
                     </div>
                     <div class="w-full mt-2 h-[90%]">
-                        <UserProfileTabPublish ref="publishTabRef" :status="curTab" @delete="handleDelete" />
+                        <UserProfileTabPublish ref="publishTabRef" :status="curTab" :creator-id="uid" :self="isme"
+                            @delete="handleDelete" />
                     </div>
                 </div>
                 <div class="right w-[25%] bg-white h-full mt-2"></div>
@@ -145,7 +158,7 @@
                 <div class="w-2/3 h-full " @click="edit_profile = false"></div>
                 <div class="body  bg-white w-1/3 h-full flex flex-col gap-4 p-8">
                     <span>基本资料 完善度
-                        <span class="text-blue-300">{{ 70 }}%</span>
+                        <span class="text-blue-300">{{ profileCompleteness }}%</span>
                     </span>
                     <span class=" flex justify-between w-full">
                         <span class="text-xl">基本信息</span>
@@ -257,8 +270,30 @@ const route = useRoute();
 const uid = computed(() => route.params.id as string);
 const userStore = useUserInfoStore();
 const currentUser = computed(() => userStore.user);
+const bgImage = ref<File | null>(null);
 const isme = computed(() => uid.value === currentUser?.value?.id.toString());
-const curTab = ref();
+const profileCompleteness = computed(() => {
+    if (!userInfo.value) return 0;
+    const fields = [
+        userInfo.value.avatar,
+        userInfo.value.nick,
+        userInfo.value.gender,
+        userInfo.value.age,
+        userInfo.value.introduction
+    ];
+    let completedCount = 0;
+    fields.forEach(val => {
+        if (val !== null && val !== undefined && val !== '') {
+            // 如果是默认占位头像，不计入完善度统计
+            if (typeof val === 'string' && val.includes('cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png')) {
+                return;
+            }
+            completedCount++;
+        }
+    });
+    return Math.round((completedCount / fields.length) * 100);
+});
+const curTab = ref(0);
 const userInfo = ref<UserProfileData | null>(null);
 const userTag = ref<{ id: number, name: string }[]>([]);
 const pendingDeleteId = ref<number | string | null>(null);
@@ -270,11 +305,12 @@ const handleDelete = (id: number | string) => {
 };
 const editProfileForm = ref<UserProfileUpdateForm>(
     {
-        introduction: userInfo.value?.introduction || '',
-        nick: userInfo.value?.nick || '',
-        avatar: userInfo.value?.avatar || '',
-        age: userInfo.value?.age || 0,
-        gender: userInfo.value?.gender || 0,
+        introduction: userInfo.value?.introduction || null,
+        nick: userInfo.value?.nick,
+        avatar: userInfo.value?.avatar,
+        age: userInfo.value?.age || null,
+        gender: userInfo.value?.gender || null,
+        bgImage: null
     }
 )
 
@@ -315,6 +351,7 @@ watch(is_editing, (newVal) => {
                 avatar: userInfo.value.avatar || '',
                 age: userInfo.value.age || 0,
                 gender: userInfo.value.gender || 0,
+                bgImage: null
             };
         }
     }
@@ -361,7 +398,12 @@ async function saveProfile() {
             return;
         }
     }
-
+    if (bgImage.value) {
+        const uploadRes = await CommonAPI.upload(bgImage.value, 'bgImage');
+        if (uploadRes.code === 1 && uploadRes.data?.url) {
+            editProfileForm.value.bgImage = uploadRes.data.url;
+        }
+    }
     try {
         const { code, errMsg } = await UserAPI.updateProfile(editProfileForm.value)
         if (code != 1) {
@@ -377,10 +419,66 @@ async function saveProfile() {
         log.error(error.message || "更新失败");
     }
 }
+async function handleBgImageChange(uploadFile: any) {
+    if (!uploadFile || !uploadFile.raw) return;
+    const file = uploadFile.raw;
+    try {
+        const uploadRes = await CommonAPI.upload(file, 'bgImage');
+        if (uploadRes.code === 1 && uploadRes.data?.url) {
+            const newBgUrl = uploadRes.data.url;
+            const updateForm: UserProfileUpdateForm = {
+                nick: userInfo.value?.nick,
+                avatar: userInfo.value?.avatar,
+                gender: userInfo.value?.gender,
+                age: userInfo.value?.age,
+                introduction: userInfo.value?.introduction,
+                bgImage: newBgUrl
+            };
+            const { code, errMsg } = await UserAPI.updateProfile(updateForm);
+            if (code !== 1) {
+                log.error(errMsg || "更换背景失败");
+            } else {
+                if (uid.value) {
+                    await loadUserProfile(uid.value);
+                }
+                await userStore.flush();
+            }
+        } else {
+            log.error(uploadRes.errMsg || "图片上传失败");
+        }
+    } catch (error: any) {
+        log.error(error.message || "更换背景失败");
+    }
+}
+async function handleResetBg() {
+    try {
+        const updateForm: UserProfileUpdateForm = {
+            nick: userInfo.value?.nick,
+            avatar: userInfo.value?.avatar,
+            gender: userInfo.value?.gender,
+            age: userInfo.value?.age,
+            introduction: userInfo.value?.introduction,
+            bgImage: ""
+        };
+        const { code, errMsg } = await UserAPI.updateProfile(updateForm);
+        if (code !== 1) {
+            log.error(errMsg || "重置背景失败");
+        } else {
+            bgImage.value = null;
+            if (uid.value) {
+                await loadUserProfile(uid.value);
+            }
+            await userStore.flush();
+        }
+    } catch (error: any) {
+        log.error(error.message || "重置背景失败");
+    }
+}
 async function loadUserProfile(targetUid: string) {
     if (!targetUid) return;
     try {
         const res = await UserAPI.getUserById(Number(targetUid));
+
         if (res.code === 1 && res.data) {
             userInfo.value = res.data;
             userTag.value = [
@@ -389,26 +487,16 @@ async function loadUserProfile(targetUid: string) {
                     name: res.data.ip || "未知",
                 }
             ];
+
         } else {
             log.error('未找到该用户信息');
             router.push({ name: 'home' });
         }
-
-        await loadSelfPost();
     } catch (e) {
         console.error('获取用户信息失败', e);
         log.error('未找到该用户信息');
         router.push({ name: 'home' });
     }
-}
-async function loadSelfPost(status: PostStatus = PostStatus.NORMAL) {
-    const res = await PostAPI.getPage({
-        cursor: '',
-        self: isme.value,
-        creatorId: Number(uid.value),
-        status: status,
-    });
-    console.log('用户动态列表: ', res.data);
 }
 
 onMounted(() => {
@@ -420,6 +508,34 @@ watch(uid, (newUid) => {
         loadUserProfile(newUid);
     }
 });
+
+async function handleFollow() {
+    if (!currentUser.value?.id) {
+        log.error("请先登录");
+        router.push({ name: 'login' });
+        return;
+    }
+    if (!userInfo.value?.id) return;
+    try {
+        const followerId = currentUser.value.id;
+        const followeeId = userInfo.value.id;
+        const res = await UserAPI.toggleFollow(followerId, followeeId, 'profile');
+        if (res.code === 1) {
+            const oldFollowed = !!userInfo.value.followed;
+            userInfo.value.followed = !oldFollowed;
+
+            // 动态增加/减少当前显示的粉丝数，增加交互体验
+            const fansNum = Number(userInfo.value.fans || 0);
+            userInfo.value.fans = String(oldFollowed ? Math.max(0, fansNum - 1) : fansNum + 1);
+
+        } else {
+            log.error(res.errMsg || "操作失败");
+        }
+    } catch (e: any) {
+        console.error('关注/取消关注异常:', e);
+        log.error(e.message || "操作失败");
+    }
+}
 </script>
 
 <style scoped>

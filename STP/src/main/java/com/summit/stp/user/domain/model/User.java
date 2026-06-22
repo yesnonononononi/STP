@@ -3,6 +3,7 @@ package com.summit.stp.user.domain.model;
 import com.summit.stp.shared.domain.model.Password;
 import com.summit.stp.shared.domain.model.PhoneNumber;
 import com.summit.stp.shared.domain.model.Username;
+import com.summit.stp.shared.exception.ParameterException;
 import com.summit.stp.user.domain.exception.UserPasswordErrorException;
 import io.netty.util.internal.StringUtil;
 import jakarta.annotation.Nullable;
@@ -11,6 +12,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.sql.Timestamp;
+import com.summit.stp.shared.constants.BusinessRuleConstants;
 
 @Getter
 @EqualsAndHashCode
@@ -23,6 +25,7 @@ public class User {
     private String ip;
     private Email email;
     private Long liked;
+    private String bgImage;
     private Long topic;
     private Long fans;
     private String introduction;
@@ -42,11 +45,31 @@ public class User {
         this.ip = ip;
     }
 
+    public void updateBgImage(String bgImage) {
+        if(StringUtil.isNullOrEmpty(bgImage)){
+            throw new ParameterException("背景图片不能为空");
+        }
+        this.bgImage = bgImage;
+    }
+
+    public void clearBgImage() {
+        this.bgImage = null;
+    }
 
     public void updateProfile(String nick, String avatar, String email, @Nullable String introduction, @Nullable String verifyCode, Integer gender, Integer age) {
-        if (!StringUtil.isNullOrEmpty(nick)) this.nick = nick;
+        if (!StringUtil.isNullOrEmpty(nick)) {
+            if (nick.length() > BusinessRuleConstants.User.MAX_NICK_LENGTH) {
+                throw new IllegalArgumentException("昵称长度不能超过" + BusinessRuleConstants.User.MAX_NICK_LENGTH + "字");
+            }
+            this.nick = nick;
+        }
         if (!StringUtil.isNullOrEmpty(avatar)) this.avatar = avatar;
-        if (introduction != null) this.introduction = introduction;
+        if (introduction != null) {
+            if (introduction.length() > BusinessRuleConstants.User.MAX_INTRODUCE_LENGTH) {
+                throw new IllegalArgumentException("个人简介长度不能超过" + BusinessRuleConstants.User.MAX_INTRODUCE_LENGTH + "字");
+            }
+            this.introduction = introduction;
+        }
         if (!StringUtil.isNullOrEmpty(email) && !StringUtil.isNullOrEmpty(verifyCode)) {
             if (this.email == null) {
                 this.email = Email.of(email);

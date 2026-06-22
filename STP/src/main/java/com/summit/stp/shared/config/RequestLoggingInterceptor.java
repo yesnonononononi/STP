@@ -6,9 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import java.util.Enumeration;
-import java.util.Map;
-
 @Slf4j
 @Component
 public class RequestLoggingInterceptor implements HandlerInterceptor {

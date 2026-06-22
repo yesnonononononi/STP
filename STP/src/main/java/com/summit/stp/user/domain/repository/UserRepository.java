@@ -2,6 +2,9 @@ package com.summit.stp.user.domain.repository;
 
 import com.summit.stp.user.domain.model.User;
 
+import java.util.Collection;
+import java.util.Map;
+
 public interface UserRepository {
     public void save(User user);
 
@@ -12,4 +15,6 @@ public interface UserRepository {
     User findUserById(Long id);
 
     void updateProfile(User user);
+
+    Map<Long, User> findUserByIds(Collection<Long> userIds);
 }

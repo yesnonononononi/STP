@@ -30,9 +30,9 @@ public class Interceptor implements HandlerInterceptor {
         String authorization = request.getHeader("Authorization");
         if (authorization != null && authorization.startsWith("Bearer ")) {
              String token = authorization.substring(7);
-             Optional<UserSession> sessionOpt = tokenRepository.findSessionByToken(token);
+             Optional<UserSession> sessionOpt = tokenRepository.findSessionByToken(token, "access");
              
-             if (sessionOpt.isPresent()) {
+             if (sessionOpt.isPresent() && "ACCESS".equals(sessionOpt.get().getTokenType())) {
                  // 将用户信息存入 Request 作用域，或使用 ThreadLocal
                  UserHolder.setUser(sessionOpt.get());
                  return true;

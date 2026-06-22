@@ -4,6 +4,8 @@ import com.rabbitmq.client.Channel;
 import com.summit.stp.order.application.service.OrderAppService;
 import com.summit.stp.payment.domain.event.PayFailEvent;
 import com.summit.stp.payment.domain.event.PaySuccessEvent;
+import com.summit.stp.shared.constants.MqConstants;
+import com.summit.stp.shared.constants.RedisConstants;
 import com.summit.stp.shared.util.DistributedLockUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,19 +26,18 @@ public class OrderPaySuccessQueueListener {
     private final StringRedisTemplate stringRedisTemplate;
     private final DistributedLockUtil distributedLockUtil;
 
-    private final String REDIS_KEY = "order:pay:success:";
     private final Long TIMEOUT = 3L; // 3 seconds
 
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(name = "pay.queue.success", durable = "true",
+            value = @Queue(name = MqConstants.Pay.QUEUE_SUCCESS, durable = "true",
                     arguments = {
-                            @Argument(name = "x-dead-letter-exchange", value = "pay.exchange"),
-                            @Argument(name = "x-dead-letter-routing-key", value = "pay.queue.fail.recoverer")
+                            @Argument(name = "x-dead-letter-exchange", value = MqConstants.Pay.EXCHANGE),
+                            @Argument(name = "x-dead-letter-routing-key", value = MqConstants.Pay.ROUTING_KEY_FAIL_RECOVERER)
                     }
             ),
-            exchange = @Exchange(name = "pay.exchange", type = "direct"),
-            key = "pay.queue.success"
+            exchange = @Exchange(name = MqConstants.Pay.EXCHANGE, type = "topic"),
+            key = MqConstants.Pay.ROUTING_KEY_SUCCESS
     ))
     public void onOrderPaySuccess(PaySuccessEvent event, Message message, Channel channel) {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
@@ -44,7 +45,7 @@ public class OrderPaySuccessQueueListener {
         log.info("【MQ-order】收到支付成功事件，订单ID: {}, DeliveryTag: {}", orderId, deliveryTag);
 
         // 1. 获取分布式锁，防止并发回调和对账冲突 (不设 leaseTime 以便让 Redisson Watchdog 自动续期，防提前释放)
-        String lockKey = "lock:order:pay:" + orderId;
+        String lockKey = RedisConstants.Order.LOCK_PAY + orderId;
         RLock lock = distributedLockUtil.getLock(lockKey);
         try {
             // 尝试获取锁，等待5秒，超时则重新入队列
@@ -80,20 +81,20 @@ public class OrderPaySuccessQueueListener {
     }
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(name = "pay.queue.fail", durable = "true",
+            value = @Queue(name = MqConstants.Pay.QUEUE_FAIL, durable = "true",
                     arguments = {
-                            @Argument(name = "x-dead-letter-exchange", value = "pay.exchange"),
-                            @Argument(name = "x-dead-letter-routing-key", value = "pay.queue.fail.recoverer")
+                            @Argument(name = "x-dead-letter-exchange", value = MqConstants.Pay.EXCHANGE),
+                            @Argument(name = "x-dead-letter-routing-key", value = MqConstants.Pay.ROUTING_KEY_FAIL_RECOVERER)
                     }),
-            exchange = @Exchange(name = "pay.exchange", type = "direct"),
-            key = "pay.queue.fail"
+            exchange = @Exchange(name = MqConstants.Pay.EXCHANGE, type = "topic"),
+            key = MqConstants.Pay.ROUTING_KEY_FAIL
     ))
     public void onOrderPayFail(PayFailEvent event, Message message, Channel channel) {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         Long orderId = event.getOrderId();
         log.info("【MQ-order】收到支付失败事件，订单ID: {}, DeliveryTag: {}", orderId, deliveryTag);
 
-        String lockKey = "lock:order:pay:" + orderId;
+        String lockKey = RedisConstants.Order.LOCK_PAY + orderId;
         RLock lock = distributedLockUtil.getLock(lockKey);
         try {
             if (lock.tryLock(5, TimeUnit.SECONDS)) {
@@ -130,7 +131,7 @@ public class OrderPaySuccessQueueListener {
      * @return true表示第一次消费且抢占成功；false表示已被消费或正在消费中
      */
     private boolean tryConsume(Long orderId) {
-        String key = REDIS_KEY + orderId;
+        String key = RedisConstants.Order.PAY_SUCCESS_MARK + orderId;
         // setIfAbsent 代表原子的 SETNX 语义
         Boolean success = stringRedisTemplate.opsForValue().setIfAbsent(key, "1", TIMEOUT, TimeUnit.SECONDS);
         return Boolean.TRUE.equals(success);

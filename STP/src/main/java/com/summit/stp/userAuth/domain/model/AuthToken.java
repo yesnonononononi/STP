@@ -1,6 +1,7 @@
 package com.summit.stp.userAuth.domain.model;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
 
 @Getter
 @Builder

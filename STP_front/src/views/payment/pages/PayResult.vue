@@ -17,8 +17,9 @@
                     <span v-if="info?.status == OrderStatus.PAID" class="block h-12">订单支付成功</span>
                     <span v-else-if="info?.status == OrderStatus.CANCELLED" class="block h-12">订单已取消</span>
                     <span v-else-if="info?.status == OrderStatus.COMPLETED" class="block h-12">订单已完成</span>
-                    <span v-else-if="info?.status == OrderStatus.PENDING" class="block h-12">支付结果查询中,请稍后 {{ timeout
-                    }}</span>
+                    <span v-else-if="info?.status == OrderStatus.PENDING" class="block h-12">
+                        {{ isPolling ? '支付结果查询中，请稍后...' : '暂未查询到支付成功状态，请尝试手动刷新' }}
+                    </span>
 
                     <span v-else class="block h-12">订单异常</span>
                 </div>
@@ -43,114 +44,21 @@
             </div>
         </div>
     </div>
+    <Loading v-model="showLoading" :prompt="loadingPrompt" />
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { PayType } from '@/views/payment/types/payType'
-import { TimeUtils } from '@/utils/time'
-import { OrderAPI, type OrderQueryVO } from '@/services/order'
 import router from '@/router'
-import { OrderStatus } from '@/views/payment/types/orderStatus'
-import { log } from '@/utils/log'
-import { useUserInfoStore } from '@/stores/userInfo'
+import Loading from '@/presentation/components/loading.vue'
+import { usePayResult } from '../composables/usePayResult'
 
-
-
-import { UserAPI } from '@/services/user'
-
-const route = useRoute()
-const info = ref<OrderQueryVO | undefined>(undefined)
-const loading = ref(false)
-const timeout = ref(0)
-const userStore = useUserInfoStore()
-const isUpdated = ref(false)
-let timerId: any = null
-const orderId = route.query.orderId as string
-
-watch(info, async (newVal) => {
-    if (newVal) {
-        // 如果订单状态已经不是待支付（如已支付、已完成、已取消等），则立即停止轮询
-        if (newVal.status !== OrderStatus.PENDING) {
-            stopTimeout()
-        }
-        
-        // 支付成功时，同步更新本地用户信息
-        if (newVal.status == OrderStatus.PAID && !isUpdated.value) {
-            isUpdated.value = true
-            try {
-                // 从服务器重新获取最新的用户信息并更新本地 store
-                const userRes = await UserAPI.getCurrentUser()
-                if (userRes.code === 1 && userRes.data) {
-                    userStore.setUser(userRes.data)
-                }
-            } catch (e) {
-                console.error('获取/同步最新用户信息失败:', e)
-            }
-        }
-    }
-})
-const startCountdown = () => {
-    if (timerId) {
-        stopTimeout();
-    }
-    timerId = setInterval(() => {
-
-        if (timeout.value % 5 === 0) {
-            loadOrder(orderId)
-        }
-        timeout.value = timeout.value + 1
-        if (timeout.value > 60) {
-            stopTimeout();
-        }
-    }, 1000);
-
-}
-const stopTimeout = () => {
-    if (timerId) { clearInterval(timerId); timerId = null; timeout.value = 0 }
-}
-const loadOrder = (orderId: string) => {
-    OrderAPI.queryOrder(orderId).then((res) => {
-        info.value = res.data
-    })
-}
-
-// 从路由参数中获取支付结果数据
-onMounted(() => {
-    if (!orderId) return
-    loadOrder(orderId)
-    startCountdown();
-})
-
-onUnmounted(() => {
-    if (timerId) clearInterval(timerId)
-})
-
-const handleReconcile = async () => {
-    if (!info.value || !info.value.orderId) return
-    loading.value = true
-    try {
-        await OrderAPI.reconcileOrder(info.value.orderId)
-        log.success('对账成功，支付状态已更新！')
-        loadOrder(String(info.value.orderId))
-    } catch (err: any) {
-        console.error(err)
-    } finally {
-        loading.value = false
-    }
-}
-
-const infoList = computed(() => {
-    if (!info.value) return []
-
-    return [
-        ['商品名称', info.value.memberName || '无'],
-        ['订单流水号', info.value.orderId || '无'],
-        ['应付金额', info.value.payableAmount || ''],
-        ['实际支付', info.value.amount || '无'],
-        ['支付时间', TimeUtils.timestampToDate(info.value.payTime || '')],
-        ['支付方式', PayType.getDescription(info.value.payTypeName || '未知')],
-    ]
-})
+const {
+    info,
+    isPolling,
+    showLoading,
+    loadingPrompt,
+    infoList,
+    handleReconcile,
+    OrderStatus,
+} = usePayResult()
 </script>

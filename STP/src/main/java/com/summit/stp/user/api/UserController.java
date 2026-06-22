@@ -1,7 +1,7 @@
 package com.summit.stp.user.api;
 
-import com.summit.stp.shared.result.Result;
 import com.summit.stp.shared.ThreadContext.UserHolder;
+import com.summit.stp.shared.result.Result;
 import com.summit.stp.user.api.dto.request.UserPasswordUpdateRequest;
 import com.summit.stp.user.api.dto.request.UserPhoneBindRequest;
 import com.summit.stp.user.api.dto.request.UserProfileUpdateRequest;
@@ -36,6 +36,7 @@ public class UserController {
                 .introduce(request.getIntroduction())
                 .gender(request.getGender())
                 .age(request.getAge())
+                .bgImage(request.getBgImage())
                 .build();
         userApplicationService.updateProfile(command);
         return Result.success();

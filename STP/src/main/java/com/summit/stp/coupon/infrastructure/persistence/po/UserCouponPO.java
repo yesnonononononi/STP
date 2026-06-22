@@ -13,10 +13,11 @@ public class UserCouponPO {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Long userId;
-    private Long couponId; // 数据库列对应 coupon_id (模板ID)
-    private Integer status;
     private Long orderId;
+    private Long couponId;
+    private Integer status;
     private Timestamp usedTime;
     private Timestamp createTime;
     private Timestamp updateTime;
+    private Timestamp endTime;
 }

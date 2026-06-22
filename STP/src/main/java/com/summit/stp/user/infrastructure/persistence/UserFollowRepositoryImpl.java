@@ -28,6 +28,19 @@ public class UserFollowRepositoryImpl implements UserFollowRepository {
     }
 
     @Override
+    public java.util.List<UserFollowPO> findByFollowerAndFollowees(Long followerId, java.util.Collection<Long> followeeIds) {
+        if (followerId == null || followeeIds == null || followeeIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return userFollowMapper.selectList(
+                new LambdaQueryWrapper<UserFollowPO>()
+                        .eq(UserFollowPO::getFollowerId, followerId)
+                        .in(UserFollowPO::getFolloweeId, followeeIds)
+                        .eq(UserFollowPO::getStatus, 1) // 正常关注
+        );
+    }
+
+    @Override
     public void save(UserFollowPO userFollow) {
         if (userFollow.getId() == null || userFollow.getId() == 0) {
             userFollowMapper.insert(userFollow);

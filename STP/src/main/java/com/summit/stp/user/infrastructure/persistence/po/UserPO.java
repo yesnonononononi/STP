@@ -1,9 +1,13 @@
 package com.summit.stp.user.infrastructure.persistence.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+
+import java.sql.Timestamp;
 
 @Data
 @TableName("user")
@@ -21,7 +25,9 @@ public class UserPO {
     private Integer statusCode;
     private Integer gender;
     private Integer admin;
+    @TableField(value = "bg_image", updateStrategy = FieldStrategy.IGNORED)
+    private String bgImage;
     private Integer age;
-    private java.sql.Timestamp createTime;
-    private java.sql.Timestamp updateTime;
+    private Timestamp createTime;
+    private Timestamp updateTime;
 }

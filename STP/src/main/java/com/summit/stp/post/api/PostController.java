@@ -1,16 +1,14 @@
 package com.summit.stp.post.api;
 
 
+import com.summit.stp.post.api.dto.request.CreatePostRequest;
 import com.summit.stp.post.api.dto.request.QueryPostListPageRequest;
+import com.summit.stp.post.api.dto.request.UpdatePostRequest;
+import com.summit.stp.post.application.command.CreatePostCommand;
 import com.summit.stp.post.application.command.QueryPostListByCursorCommand;
+import com.summit.stp.post.application.command.UpdatePostCommand;
 import com.summit.stp.post.application.service.PostAppService;
 import com.summit.stp.post.application.vo.PostVO;
-import com.summit.stp.post.api.dto.request.CreatePostRequest;
-import com.summit.stp.post.api.dto.request.UpdatePostRequest;
-import com.summit.stp.post.api.dto.request.ImageInfo;
-import com.summit.stp.post.application.command.CreatePostCommand;
-import com.summit.stp.post.application.command.UpdatePostCommand;
-import com.summit.stp.post.domain.model.PostStatus;
 import com.summit.stp.shared.ThreadContext.UserHolder;
 import com.summit.stp.shared.result.Result;
 import io.swagger.annotations.Api;
@@ -19,7 +17,6 @@ import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -48,6 +45,7 @@ public class PostController {
                 .mediaUrls(request.getMediaUrls())
                 .status(request.getStatus())
                 .tagIds(request.getTagIds())
+                .isTop(request.getIsTop())
                 .build();
         return postAppService.createPost(command);
 
@@ -66,9 +64,10 @@ public class PostController {
                 .mediaUrls(request.getMediaUrls())
                 .status(request.getStatus())
                 .tagIds(request.getTagIds())
+                .isTop(request.getIsTop())
                 .build();
         postAppService.updatePost(command);
-        return Result.success(null);
+        return Result.success();
     }
 
     @DeleteMapping("/{id}")
@@ -76,7 +75,7 @@ public class PostController {
     public Result<Void> deletePost(
             @ApiParam(value = "帖子ID", required = true) @PathVariable Long id) {
         postAppService.deletePost(id);
-        return Result.success(null);
+        return Result.success();
     }
 
     @PutMapping("/republish/{id}")
@@ -84,7 +83,7 @@ public class PostController {
     public Result<Void> republishPost(
             @ApiParam(value = "帖子ID", required = true) @PathVariable Long id) {
         postAppService.republishPost(id);
-        return Result.success(null);
+        return Result.success();
     }
 
     @PostMapping("/page")
@@ -103,7 +102,7 @@ public class PostController {
     public Result<Void> likePost(
             @ApiParam(value = "帖子ID", required = true) @PathVariable Long id) {
         postAppService.likePost(id);
-        return Result.success(null);
+        return Result.success();
     }
 
     @PostMapping("/collect/{id}")
@@ -111,7 +110,15 @@ public class PostController {
     public Result<Void> collectPost(
             @ApiParam(value = "帖子ID", required = true) @PathVariable Long id) {
         postAppService.collectPost(id);
-        return Result.success(null);
+        return Result.success();
+    }
+
+    @PostMapping("/view/{id}")
+    @ApiOperation(value = "增加帖子浏览量", notes = "自增指定帖子的浏览次数")
+    public Result<Void> viewPost(
+            @ApiParam(value = "帖子ID", required = true) @PathVariable Long id) {
+        postAppService.viewPost(id);
+        return Result.success();
     }
 
     @GetMapping("/like/status/{id}")
@@ -128,5 +135,39 @@ public class PostController {
         return Result.success(postAppService.isCollected(id));
     }
 
+    @GetMapping("/collect/my")
+    @ApiOperation(value = "获取用户收藏的帖子列表", notes = "获取用户收藏的帖子列表")
+    public Result<List<PostVO>> getMyCollectPostList(
+            @RequestParam(value = "userId", required = false) Long userId,
+            @RequestParam(value = "cursor", required = false) String cursor) {
+        return Result.success(postAppService.getMyCollectPostList(userId, cursor));
+    }
+
+    @GetMapping("/like/my")
+    @ApiOperation(value = "获取用户点赞的帖子列表", notes = "获取用户点赞的帖子列表")
+    public Result<List<PostVO>> getMyLikePostList(
+            @RequestParam(value = "userId", required = false) Long userId,
+            @RequestParam(value = "cursor", required = false) String cursor) {
+        return Result.success(postAppService.getMyLikePostList(userId, cursor));
+    }
+
+    @PutMapping("/top/{id}")
+    @ApiOperation(value = "置顶/取消置顶帖子", notes = "设置或取消帖子的置顶状态")
+    public Result<Void> topPost(
+            @ApiParam(value = "帖子ID", required = true) @PathVariable Long id,
+            @ApiParam(value = "是否置顶: 0否, 1是", required = true) @RequestParam Integer isTop) {
+        postAppService.topPost(id, isTop);
+        return Result.success();
+    }
+
+
+    @GetMapping("/visible/{id}")
+    @ApiOperation(value = "设置帖子可见性", notes = "设置帖子可见性")
+    public Result<Void> setVisible(
+            @ApiParam(value = "帖子ID", required = true) @PathVariable Long id,
+            @ApiParam(required = true) @RequestParam Integer visible) {
+        postAppService.visibleSelf(id, visible);
+        return Result.success();
+    }
 
 }

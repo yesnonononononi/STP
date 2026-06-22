@@ -3,7 +3,6 @@ package com.summit.stp.member.infrastructure.persistence.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.summit.stp.member.infrastructure.persistence.po.UserMemberPO;
 import org.apache.ibatis.annotations.Mapper;
-
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 

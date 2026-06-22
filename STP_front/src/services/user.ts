@@ -12,12 +12,14 @@ export interface UserProfileData {
   liked: string
   topic: string
   fans: string
-  introduction?: string
+  introduction?: string | null
   vipType: string
   phone: string | null
   email: string | null
   vipExpireDate: string
   vipConfigIcon: string
+  followed?: boolean
+  bgImage: string
 }
 
 /**
@@ -47,10 +49,11 @@ export interface UserSimpleData {
 export interface UserProfileUpdateForm {
   nick?: string
   avatar?: string
-  age?: number
-  gender?: number
-  introduction?: string
+  age?: number | null
+  gender?: number | null
+  introduction?: string | null
   email?: string
+  bgImage?: string | null
   verifyCode?: string
 }
 
@@ -111,5 +114,16 @@ export class UserAPI {
    */
   static async updatePassword(form: UserPasswordUpdateForm): Promise<Result<void>> {
     return await request.post('/user/password/update', form)
+  }
+
+  /**
+   * 关注/取消关注用户 (Toggle)
+   */
+  static async toggleFollow(
+    followerId: number,
+    followeeId: number,
+    source: string = 'profile',
+  ): Promise<Result<void>> {
+    return await request.post('/user/follow/follow', { followerId, followeeId, source })
   }
 }

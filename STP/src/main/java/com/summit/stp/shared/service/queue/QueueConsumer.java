@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class QueueConsumer {
     @RabbitListener(bindings = @QueueBinding(
             value = @Queue(name = "queue.order", durable = "true"),
-            exchange = @Exchange(name = "exchange.order", type = "direct"),
+            exchange = @Exchange(name = "order.topic.exchange", type = "topic"),
             key = "queue.order"
     )
     )

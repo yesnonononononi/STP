@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 public class QueryPostListPageRequest {
-    private String cursor;
+    private Long cursor;
     private Boolean self;
     private Long creatorId;
     private Integer status;

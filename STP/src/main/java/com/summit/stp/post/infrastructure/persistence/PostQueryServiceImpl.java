@@ -3,22 +3,23 @@ package com.summit.stp.post.infrastructure.persistence;
 import com.summit.stp.post.application.service.PostCacheProvider;
 import com.summit.stp.post.application.service.PostQueryService;
 import com.summit.stp.post.application.vo.PostImageVO;
-import com.summit.stp.post.application.vo.PostTagRelVO;
 import com.summit.stp.post.application.vo.PostVO;
 import com.summit.stp.post.application.vo.TagVO;
 import com.summit.stp.post.domain.model.PostStatus;
-import com.summit.stp.post.domain.repository.PostImageRepository;
-import com.summit.stp.post.domain.repository.PostTagRelRepository;
-import com.summit.stp.post.domain.repository.TagRepository;
+import com.summit.stp.post.domain.model.PostTag;
+import com.summit.stp.post.domain.model.Tag;
+import com.summit.stp.post.domain.repository.*;
 import com.summit.stp.post.infrastructure.persistence.mapper.PostsMapper;
-import com.summit.stp.post.infrastructure.persistence.po.TagPO;
 import com.summit.stp.shared.ThreadContext.UserHolder;
+import com.summit.stp.user.application.UserFiller;
+import com.summit.stp.user.application.vo.UserSimpleVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -32,32 +33,95 @@ public class PostQueryServiceImpl implements PostQueryService {
     private final PostTagRelRepository postTagRelRepository;
     private final TagRepository tagRepository;
     private final PostCacheProvider postCacheProvider;
+    private final PostLikeRepository postLikeRepository;
+    private final PostCollectRepository postCollectRepository;
+    private final PostRepository postRepository;
+    private final UserFiller userFiller;
 
     @Override
-    public List<PostVO> getPostPage(String cursor, Boolean self, Long creatorId, Integer status) {
+    public List<PostVO> getPostPage(Long cursor, Boolean self, Long creatorId, Integer status, Integer limit) {
         Long currentUserId = UserHolder.getUser().getId();
-        int resolvedStatus = status == null ? PostStatus.NORMAL.getCode() : status;
-        Long resolvedCreatorId = resolveCreatorId(self, creatorId, resolvedStatus, currentUserId);
+        Long resolvedCreatorId = resolveCreatorId(self, creatorId, status != null ? status : PostStatus.NORMAL.getCode(), currentUserId);
+        List<PostVO> postVOList = postsMapper.queryByPage(cursor, resolvedCreatorId, currentUserId, status, limit);
+        return resolveExtraInfo(postVOList);
+    }
 
-        List<PostVO> postVOList = postsMapper.queryByPage(cursor, resolvedCreatorId, currentUserId, resolvedStatus);
+    @Override
+    public List<PostVO> getMyCollectPostList(Long targetUserId, String cursor) {
+        Long currentUserId = UserHolder.getUser().getId();
+        Long resolvedTargetUserId = targetUserId != null ? targetUserId : currentUserId;
+        if (!checkListVisiblePermission(resolvedTargetUserId, currentUserId)) {
+            return Collections.emptyList();
+        }
+        List<Long> posts = postCollectRepository.findByUserId(resolvedTargetUserId, cursor);
+        if (posts.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<PostVO> list = postRepository.queryByPostIds(posts, PostStatus.NORMAL.getCode(), currentUserId);
+        return resolveExtraInfo(list);
+    }
+
+    @Override
+    public List<PostVO> getMyLikePostList(Long targetUserId, String cursor) {
+        Long currentUserId = UserHolder.getUser().getId();
+        Long resolvedTargetUserId = targetUserId != null ? targetUserId : currentUserId;
+        if (!checkListVisiblePermission(resolvedTargetUserId, currentUserId)) {
+            return Collections.emptyList();
+        }
+        List<Long> posts = postLikeRepository.findByUserId(resolvedTargetUserId, cursor);
+        if (posts.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<PostVO> list = postRepository.queryByPostIds(posts, PostStatus.NORMAL.getCode(), currentUserId);
+        return resolveExtraInfo(list);
+    }
+
+    private boolean checkListVisiblePermission(Long targetUserId, Long currentUserId) {
+        // 预留逻辑：便于后期拓展用户设置不准他人查看收藏/点赞信息的功能，默认允许
+        return true;
+    }
+
+    @Override
+    public PostVO findById(Long id, Long uid, Integer status) {
+        List<PostVO> postVOS = postRepository.queryByPostIds(List.of(id), status, uid);
+        return postVOS.isEmpty() ? null : resolveExtraInfo(postVOS).getFirst();
+    }
+
+
+    /**
+     * 填充剩余帖子缺失信息(帖子相关图片,标签,缓存预热,点赞,收藏等)
+     * @param postVOList 待加工帖子列表(包含发帖用户信息,帖子基本信息等核心信息)
+     * @return 帖子列表
+     */
+    private  List<PostVO> resolveExtraInfo(List<PostVO> postVOList){
         if (postVOList == null || postVOList.isEmpty()) {
             return Collections.emptyList();
         }
         //获取帖子id列表
         List<Long> postIds = postVOList.stream().map(PostVO::getId).toList();
-        
+
         // 批量预热并加载缺失的缓存
         postCacheProvider.loadCache(postIds);
-        
+
         // 批量查询附加信息
         Map<Long, List<PostImageVO>> imageMap = batchGetImages(postIds);
         Map<Long, List<TagVO>> tagMap = batchGetTags(postIds);
-        
+
         // 装配数据
         populatePostMetadata(postVOList, imageMap, tagMap);
-        
+
+        // 批量装配发帖人用户信息
+        Set<Long> creatorIds = postVOList.stream()
+                .map(PostVO::getCreatorId)
+                .collect(Collectors.toSet());
+        Map<Long, UserSimpleVO> userMap = userFiller.fillUsers(creatorIds);
+        postVOList.forEach(vo -> vo.setPublisher(userMap.get(vo.getCreatorId())));
+
         return postVOList;
     }
+
+
+
 
     /**
      * 根据查询请求条件（如是否只查询个人、帖子状态等）解析实际应当过滤的创作者ID。
@@ -101,26 +165,26 @@ public class PostQueryServiceImpl implements PostQueryService {
      * @return 帖子ID -> 标签VO列表的映射
      */
     private Map<Long, List<TagVO>> batchGetTags(List<Long> postIds) {
-        List<PostTagRelVO> tagRels = postTagRelRepository.findByPostIds(postIds);
+        List<PostTag> tagRels = postTagRelRepository.findByPostIds(postIds);
         if (tagRels == null || tagRels.isEmpty()) {
             return Collections.emptyMap();
         }
-        List<Long> tagIds = tagRels.stream().map(PostTagRelVO::getTagId).distinct().toList();
-        List<TagPO> tagPOs = tagRepository.findByIds(tagIds);
-        if (tagPOs == null || tagPOs.isEmpty()) {
+        List<Long> tagIds = tagRels.stream().map(PostTag::getTagId).distinct().toList();
+        List<Tag> tags = tagRepository.findByIds(tagIds);
+        if (tags == null || tags.isEmpty()) {
             return Collections.emptyMap();
         }
 
-        // 将 TagPO 转换为 TagVO List -> Map<tagId, TagVO>
-        Map<Long, TagVO> tagVoMap = tagPOs.stream().collect(Collectors.toMap(
-            TagPO::getId,
-            po -> TagVO.builder()
-                    .id(po.getId())
-                    .tagName(po.getTagName())
-                    .sort(po.getSort())
-                    .useCount(po.getUseCount())
-                    .status(po.getStatus())
-                    .createTime(po.getCreateTime())
+        // 将 Tag 转换为 TagVO List -> Map<tagId, TagVO>
+        Map<Long, TagVO> tagVoMap = tags.stream().collect(Collectors.toMap(
+            Tag::getId,
+            tag -> TagVO.builder()
+                    .id(tag.getId())
+                    .tagName(tag.getTagName())
+                    .sort(tag.getSort())
+                    .useCount(tag.getUseCount())
+                    .status(tag.getStatus())
+                    .createTime(tag.getCreateTime())
                     .build(),
             (existing, replacement) -> existing
         ));
@@ -128,7 +192,7 @@ public class PostQueryServiceImpl implements PostQueryService {
         return tagRels.stream()
                 .filter(rel -> tagVoMap.containsKey(rel.getTagId())) // 过滤掉不存在的标签
                 .collect(Collectors.groupingBy(
-                        PostTagRelVO::getPostId,
+                        PostTag::getPostId,
                         Collectors.mapping(rel -> tagVoMap.get(rel.getTagId()), Collectors.toList())
                 ));
     }

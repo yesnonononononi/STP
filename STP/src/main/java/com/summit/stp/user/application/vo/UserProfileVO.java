@@ -46,5 +46,9 @@ public class UserProfileVO {
     private Integer gender;
     @ApiModelProperty("年龄")
     private Integer age;
+    @ApiModelProperty("是否关注")
+    private boolean followed;
+    @ApiModelProperty("背景图")
+    private String bgImage;
 
 }

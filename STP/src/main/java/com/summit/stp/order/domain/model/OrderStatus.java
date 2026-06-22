@@ -1,7 +1,7 @@
 package com.summit.stp.order.domain.model;
 
-import lombok.Getter;
 import com.summit.stp.shared.exception.ParameterException;
+import lombok.Getter;
 
 /**
  * 订单状态值对象 (枚举)

@@ -3,8 +3,8 @@ package com.summit.stp.member.infrastructure.persistence;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.summit.stp.member.domain.model.MemberType;
 import com.summit.stp.member.domain.repository.MemberTypeRepository;
-import com.summit.stp.order.infrastructure.persistence.mapper.MemberTypeMapper;
 import com.summit.stp.member.infrastructure.persistence.po.MemberTypePO;
+import com.summit.stp.order.infrastructure.persistence.mapper.MemberTypeMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 

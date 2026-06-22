@@ -3,25 +3,24 @@ package com.summit.stp.payment.application.service.impl;
 import com.summit.stp.payment.application.command.PayCallbackCheckCommand;
 import com.summit.stp.payment.application.command.PayCommand;
 import com.summit.stp.payment.application.service.PayAppService;
+import com.summit.stp.payment.application.service.PayEventPublishProvider;
 import com.summit.stp.payment.application.vo.PayVO;
 import com.summit.stp.payment.domain.PayDomainService;
-import com.summit.stp.payment.domain.model.*;
-import com.summit.stp.payment.domain.event.PaySuccessEvent;
 import com.summit.stp.payment.domain.event.PayFailEvent;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import com.summit.stp.payment.application.service.PayEventPublishProvider;
+import com.summit.stp.payment.domain.event.PaySuccessEvent;
+import com.summit.stp.payment.domain.model.PayType;
 import com.summit.stp.shared.exception.BusinessException;
 import com.summit.stp.shared.result.Result;
 import lombok.RequiredArgsConstructor;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +42,7 @@ public class PayAppServiceImpl implements PayAppService {
         Timestamp timestamp = payCommand.getTimestamp();
         String memberName = payCommand.getMemberName();
         BigDecimal amount = payCommand.getAmount();
+        amount = amount.equals(BigDecimal.ZERO) ? new BigDecimal("0.01") : amount;
         PayType payType = payCommand.getPayType();
         // 6. 生成签名
         String sign = payService.generateSign(payType, orderId, memberName, amount, timestamp);

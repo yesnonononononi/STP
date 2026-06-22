@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.summit.stp.post.domain.repository.PostCollectRepository;
 import com.summit.stp.post.infrastructure.persistence.mapper.PostCollectMapper;
 import com.summit.stp.post.infrastructure.persistence.po.PostCollectPO;
-import java.util.List;
+import io.netty.util.internal.StringUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
@@ -71,5 +73,14 @@ public class PostCollectRepositoryImpl implements PostCollectRepository {
                 PostCollectPO::getPostId,
                 java.util.stream.Collectors.mapping(PostCollectPO::getUserId, java.util.stream.Collectors.toList())
         ));
+    }
+
+    @Override
+    public List<Long> findByUserId(Long userId,String cursor) {
+        LambdaQueryWrapper<PostCollectPO> eq = new LambdaQueryWrapper<PostCollectPO>().eq(PostCollectPO::getUserId, userId).last("limit 10");
+        if(!StringUtil.isNullOrEmpty(cursor)){
+            eq.le(PostCollectPO::getPostId, cursor);
+        }
+        return postCollectMapper.selectList(eq).stream().map(PostCollectPO::getPostId).toList();
     }
 }

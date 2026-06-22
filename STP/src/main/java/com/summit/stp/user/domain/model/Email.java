@@ -1,11 +1,9 @@
 package com.summit.stp.user.domain.model;
 
-import cn.hutool.core.util.StrUtil;
-import io.netty.util.internal.StringUtil;
-import lombok.*;
-
-
 import com.summit.stp.shared.exception.ParameterException;
+import io.netty.util.internal.StringUtil;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 @EqualsAndHashCode
 @Getter

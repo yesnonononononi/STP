@@ -3,10 +3,14 @@ import request from '@/services/request'
 
 export interface MemberConfig {
   id: number
-  name: string
   price: string
+  name: string
+  discount: number
+  quantity: number
   duration: number
-  description: string
+  typeId: string
+  typeName: string
+  description?: string
 }
 
 export interface MemberType {
@@ -20,7 +24,11 @@ export class MemberAPI {
     return request.get(`/member/get/type/${typeId}`)
   }
 
-  static async queryMemberType(): Promise<Result<[MemberType]>> {
+  static async queryMemberType(): Promise<Result<MemberType[]>> {
     return request.get('/member/list')
+  }
+
+  static async queryMemberById(id: string): Promise<Result<MemberConfig>> {
+    return request.get(`/member/get/${id}`)
   }
 }

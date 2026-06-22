@@ -1,15 +1,35 @@
 import type { Result } from '@/types/result'
 import request from '@/services/request'
-import type { PostPO, PostVO, TagPO, PostTagRelPO, PageResult, CreatePostRequest, UpdatePostRequest, CreateTagRequest, UpdateTagRequest, TagVO } from './types'
+import type {
+  PostPO,
+  PostVO,
+  TagPO,
+  PostTagRelPO,
+  PageResult,
+  CreatePostRequest,
+  UpdatePostRequest,
+  CreateTagRequest,
+  UpdateTagRequest,
+  TagVO,
+  TopicTag,
+  suggestion,
+} from './types'
+import { XssUtils } from '@/utils/xss'
 
 /**
  * 帖子管理接口 (PostAPI)
  */
 export class PostAPI {
   /**
+   * 设置帖子可见性
+   */
+  static async setVisible(id: string, visible: number): Promise<Result<void>> {
+    return await request.get(`/post/visible/${id}`, { params: { visible: visible } })
+  }
+  /**
    * 根据帖子ID获取帖子详情 (已升级为 VO)
    */
-  static async getById(id: number): Promise<Result<PostVO>> {
+  static async getById(id: string): Promise<Result<PostVO>> {
     return await request.get(`/post/${id}`)
   }
 
@@ -17,7 +37,7 @@ export class PostAPI {
    * 分页获取帖子列表 (对接后端游标分页VO接口)
    */
   static async getPage(query: {
-    cursor: string
+    cursor: string | number | null
     self: boolean
     creatorId?: string | number
     status?: number
@@ -29,6 +49,9 @@ export class PostAPI {
    * 发布新帖子
    */
   static async create(post: CreatePostRequest): Promise<Result<void>> {
+    if (post && post.content) {
+      post.content = XssUtils.filter(post.content)
+    }
     return await request.post('/post/create', post)
   }
 
@@ -36,6 +59,9 @@ export class PostAPI {
    * 编辑/更新帖子
    */
   static async update(post: UpdatePostRequest): Promise<Result<void>> {
+    if (post && post.content) {
+      post.content = XssUtils.filter(post.content)
+    }
     return await request.put('/post/update', post)
   }
 
@@ -49,14 +75,14 @@ export class PostAPI {
   /**
    * 点赞/取消点赞指定帖子
    */
-  static async like(id: number): Promise<Result<void>> {
+  static async like(id: string): Promise<Result<void>> {
     return await request.post(`/post/like/${id}`)
   }
 
   /**
    * 收藏/取消收藏指定帖子
    */
-  static async collect(id: number): Promise<Result<void>> {
+  static async collect(id: string): Promise<Result<void>> {
     return await request.post(`/post/collect/${id}`)
   }
 
@@ -73,6 +99,34 @@ export class PostAPI {
   static async getCollectStatus(id: number): Promise<Result<boolean>> {
     return await request.get(`/post/collect/status/${id}`)
   }
+
+  /**
+   * 获取当前用户收藏的帖子列表
+   */
+  static async getMyCollectList(userId: string | number | null, cursor: string | number | null): Promise<Result<PostVO[]>> {
+    return await request.get(`/post/collect/my`, { params: { userId, cursor } })
+  }
+
+  /**
+   * 获取当前用户点赞的帖子列表
+   */
+  static async getMyLikeList(userId: string | number | null, cursor: string | number | null): Promise<Result<PostVO[]>> {
+    return await request.get(`/post/like/my`, { params: { userId, cursor } })
+  }
+
+  /**
+   * 置顶/取消置顶指定帖子
+   */
+  static async top(id: string, isTop: number): Promise<Result<void>> {
+    return await request.put(`/post/top/${id}`, null, { params: { isTop } })
+  }
+
+  /**
+   * 增加帖子浏览数
+   */
+  static async view(id: number | string): Promise<Result<void>> {
+    return await request.post(`/post/view/${id}`)
+  }
 }
 
 /**
@@ -84,6 +138,17 @@ export class TagAPI {
    */
   static async getById(id: number): Promise<Result<TagVO>> {
     return await request.get(`/post/tag/${id}`)
+  }
+
+  static async getSearchSuggest(keyword: string, limit: number): Promise<Result<suggestion>> {
+    return await request.get(`/post/tag/search`, { params: { keyword, limit } })
+  }
+
+  /**
+   * 获取最近使用标签
+   */
+  static async getRecentTags(limit: number): Promise<Result<TagVO[]>> {
+    return await request.get(`/post/tag/recent`, { params: { limit } })
   }
 
   /**
@@ -112,7 +177,7 @@ export class TagAPI {
    */
   static async getPage(page: number, pageSize: number): Promise<Result<PageResult<TagVO>>> {
     return await request.get('/post/tag/page', {
-      params: { page, pageSize }
+      params: { page, pageSize },
     })
   }
 }
@@ -126,7 +191,7 @@ export class PostTagRelAPI {
    */
   static async bind(postId: number, tagId: number): Promise<Result<void>> {
     return await request.post('/post/relation/bind', null, {
-      params: { postId, tagId }
+      params: { postId, tagId },
     })
   }
 

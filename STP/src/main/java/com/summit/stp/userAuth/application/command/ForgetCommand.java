@@ -1,7 +1,6 @@
 package com.summit.stp.userAuth.application.command;
 
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 
 import java.sql.Timestamp;

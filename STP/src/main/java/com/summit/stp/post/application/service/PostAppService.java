@@ -1,6 +1,5 @@
 package com.summit.stp.post.application.service;
 
-import com.github.pagehelper.Page;
 import com.summit.stp.post.application.command.CreatePostCommand;
 import com.summit.stp.post.application.command.QueryPostListByCursorCommand;
 import com.summit.stp.post.application.command.UpdatePostCommand;
@@ -72,4 +71,22 @@ public interface PostAppService {
      */
     boolean isCollected(Long postId);
 
+
+    List<PostVO> getMyCollectPostList(Long targetUserId, String cursor);
+    List<PostVO> getMyLikePostList(Long targetUserId, String cursor);
+
+    /**
+     * 置顶/取消置顶帖子
+     */
+    void topPost(Long id, Integer isTop);
+
+    /**
+     * 增加帖子浏览数
+     */
+    void viewPost(Long id);
+
+    /**
+     * 帖子可见性
+     */
+    void visibleSelf(Long id, Integer visible);
 }

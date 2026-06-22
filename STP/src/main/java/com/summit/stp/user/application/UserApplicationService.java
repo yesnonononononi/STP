@@ -6,6 +6,9 @@ import com.summit.stp.user.application.command.UserProfileUpdateCommand;
 import com.summit.stp.user.application.vo.UserProfileVO;
 import com.summit.stp.user.application.vo.UserSimpleVO;
 
+import java.util.Collection;
+import java.util.Map;
+
 public interface UserApplicationService {
     void updateProfile(UserProfileUpdateCommand command);
     void bindPhone(UserPhoneBindCommand command);
@@ -24,4 +27,6 @@ public interface UserApplicationService {
      * @return 用户简单公开信息
      */
     UserSimpleVO findSimpleUserById(Long id);
+
+    Map<Long, UserSimpleVO> findSimpleUserByIds(Collection<Long> userIds);
 }

@@ -88,4 +88,42 @@ CREATE TABLE IF NOT EXISTS `comment_like` (
 ALTER TABLE `posts` DROP COLUMN `like_count`;
 ALTER TABLE `posts` DROP COLUMN `collect_count`;
 
+-- 13. 补齐 comments 表的缺失字段以匹配 CommentVO
+ALTER TABLE `comments` 
+    ADD COLUMN `is_audit` TINYINT(1) DEFAULT 0 COMMENT '是否审核: 0否, 1是',
+    ADD COLUMN `type` INT NOT NULL DEFAULT 1 COMMENT '评论类型: 1文字, 2图片, 3视频, 4音频',
+    ADD COLUMN `is_top` INT NOT NULL DEFAULT 0 COMMENT '是否置顶: 0否, 1是',
+    ADD COLUMN `status` INT NOT NULL DEFAULT 1 COMMENT '评论状态: 0已删除, 1正常',
+    ADD COLUMN `extra` TEXT DEFAULT NULL COMMENT '额外扩展信息 (JSON 格式，包含媒体类型、图片元数据、媒体URL等)',
+    ADD COLUMN `reply_count` INT NOT NULL DEFAULT 0 COMMENT '回复数/子评论数',
+    ADD COLUMN `update_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+    ADD COLUMN `ip_location` VARCHAR(64) DEFAULT NULL COMMENT 'IP归属地',
+    ADD COLUMN `client_type` VARCHAR(32) DEFAULT NULL COMMENT '客户端类型: ios, android, web等';
 
+-- 14. 新建优惠券投放活动表
+CREATE TABLE IF NOT EXISTS `coupon_activity` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '活动ID',
+    `coupon_id` BIGINT NOT NULL COMMENT '关联优惠券ID',
+    `name` VARCHAR(128) NOT NULL COMMENT '活动名称',
+    `stock` INT NOT NULL DEFAULT 0 COMMENT '活动剩余库存',
+    `activity_start_time` DATETIME NOT NULL COMMENT '活动开始时间（秒杀开始时间）',
+    `activity_end_time` DATETIME NOT NULL COMMENT '活动结束时间',
+    `status` INT NOT NULL DEFAULT 1 COMMENT '活动状态: 1可用, 0禁用',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    KEY `idx_coupon_id` (`coupon_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='优惠券投放活动表';
+
+-- 插入通用优惠券活动 (已开始，持续30天)
+INSERT INTO `coupon_activity` (`coupon_id`, `name`, `stock`, `activity_start_time`, `activity_end_time`, `status`)
+VALUES (1, '新用户福利通用领取活动', 100, NOW() - INTERVAL 1 DAY, NOW() + INTERVAL 30 DAY, 1);
+
+-- 插入优惠券秒杀活动 (90秒后开始)
+INSERT INTO `coupon_activity` (`coupon_id`, `name`, `stock`, `activity_start_time`, `activity_end_time`, `status`)
+VALUES (1, '福利券限量秒杀大放送', 10, NOW() + INTERVAL 90 SECOND, NOW() + INTERVAL 1 DAY, 1);
+
+-- 15. 移除优惠券配置表的库存冗余字段
+ALTER TABLE `coupon` DROP COLUMN `stock`;
+
+-- 16. 移除优惠券配置表的起止时间冗余字段
+ALTER TABLE `coupon` DROP COLUMN `start_time`, DROP COLUMN `end_time`, DROP COLUMN `end_time_show`;

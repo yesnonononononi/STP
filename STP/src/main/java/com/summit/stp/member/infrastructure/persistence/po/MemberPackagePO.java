@@ -20,6 +20,7 @@ public class MemberPackagePO {
     private Timestamp updateTime;
     private String description;
     private Long typeId;
+    private Integer stock;
     private Double discount;
     private BigDecimal dailyRate;
     private Integer priority;

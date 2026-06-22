@@ -13,13 +13,14 @@ import com.summit.stp.shared.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class MemberAppServiceImpl implements MemberAppService {
     private final MemberRepository memberRepository;
-    private final MemberTypeMapper memberTypeMapper;
     private static final MemberVOConverter VO_CONVERTER = MemberVOConverter.INSTANCE;
     private final MemberTypeRepository memberTypeRepository;
 
@@ -32,6 +33,7 @@ public class MemberAppServiceImpl implements MemberAppService {
 
     @Override
     public Result<List<MemberVO>> queryMemberByType(Long typeId, int status) {
+
         List<Member> list = memberRepository.findMemberByType(typeId, status);
         List<MemberVO> voList = VO_CONVERTER.toVOList(list);
         return Result.success(voList);
@@ -50,5 +52,28 @@ public class MemberAppServiceImpl implements MemberAppService {
                         .build()
                 ).toList();
         return Result.success(res);
+    }
+
+    @Override
+    public Result<MemberTypeVO> queryMemberTypeById(Long id) {
+        MemberType memberType = memberTypeRepository.selectById(id);
+        if (memberType == null) {
+            return Result.success(null);
+        }
+        MemberTypeVO vo = MemberTypeVO.builder()
+                .id(memberType.getTypeId())
+                .name(memberType.getTypeName())
+                .description(memberType.getDescription())
+                .build();
+        return Result.success(vo);
+    }
+
+    @Override
+    public Result<Map<Long, MemberVO>> queryMemberByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Result.success(new HashMap<>());
+        }
+        Map<Long, MemberVO> map = memberRepository.findMemberByIds(ids);
+        return Result.success(map);
     }
 }

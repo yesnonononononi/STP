@@ -7,6 +7,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Data;
+
 import java.sql.Timestamp;
 
 @Data
@@ -14,7 +15,7 @@ import java.sql.Timestamp;
 @Builder
 @ApiModel(value = "PostsPO", description = "帖子数据持久化实体")
 public class PostsPO {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.INPUT)
     @ApiModelProperty(value = "帖子ID")
     private Long id;
 
@@ -44,4 +45,19 @@ public class PostsPO {
 
     @ApiModelProperty(value = "更新时间")
     private Timestamp updateTime;
+
+    @ApiModelProperty(value = "是否置顶: 0否, 1是")
+    private Integer isTop;
+
+    @ApiModelProperty(value = "浏览数")
+    private Long viewCount;
+
+    @ApiModelProperty(value = "点赞数")
+    private Long likeCount;
+
+    @ApiModelProperty(value = "热度")
+    private Long hotScore;
+
+    @ApiModelProperty(value = "可见范围 1-全局可见 2-仅自己可见 3-仅好友可见 ")
+    private Integer visibleScope;
 }

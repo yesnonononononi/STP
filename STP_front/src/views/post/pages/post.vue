@@ -16,8 +16,19 @@
                 class="text-gray-400 flex-1 max-h-10 border-b w-full p-6 border-gray-300 font-semibold text-md md:text-2xl outline-none"
                 maxlength="50" placeholder="好的标题会获得更多曝光欧~" />
             <div class="set-content flex-1   p-4 pb-1 flex flex-col gap-2  mt-2">
-                <el-input type="textarea" :rows="8" max="400" autosize placeholder="此刻你想说什么"
-                    class="custom-textarea w-full max-h-2/3 " v-model="userPostContent" />
+                <div class="relative w-full">
+                    <el-input ref="textareaRef" type="textarea" :rows="8" max="400" autosize placeholder="此刻你想说什么"
+                        class="custom-textarea w-full max-h-2/3 " v-model="userPostContent"
+                        @keydown="handleTextareaKeydown" />
+                    <!-- 光标下方弹出的话题选择器 -->
+                    <teleport to="body">
+                        <div v-if="visibleCaretSelector"
+                            :style="{ position: 'absolute', left: popupPos.x + 'px', top: popupPos.y + 'px', zIndex: 9999 }">
+                            <TopicTagSelector :visible="visibleCaretSelector" :new-tag="newTag || null"
+                                @add-tag="handleAddTag" @click.stop />
+                        </div>
+                    </teleport>
+                </div>
 
                 <div class="selected-tags flex gap-2 flex-wrap mb-2" v-if="selectedTags.length > 0">
                     <el-tag v-for="tag in selectedTags" :key="tag.id" closable @close="removeTag(tag)" type="primary"
@@ -63,38 +74,44 @@
                             `${fileList.length}/10` }}
                     </span>
                 </div>
-                <div class="set-page/video w-full flex tems-center gap-2">
-                    <div class="relative z-10">
-                        <span class="cursor-pointer hover:text-blue-200 shrink-0 font-semibold">请选择话题</span>
-                        <div class="absolute z-10 top-6 w-96 h-72 bg-blue-400/60 flex flex-col">
-                            <div class="search"></div>
-                            <div class="tab"></div>
-                            <div class="selectItem w-full max-h-2/3 overflow-y-auto">
-                                <div class="flex justify-between items-center">
-                                    <div class="name"></div>
-                                    <div class="like"></div>
-                                </div>
-                            </div>
+                <div class="set-page/video w-full flex items-center gap-2 justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="relative z-10 min-w-30  ">
+                            <span
+                                class="cursor-pointer rounded-lg hover:bg-gray-200 px-1 shrink-0 font-semibold flex items-center "
+                                @click.stop="handleSelectTopicClick">
+                                请选择话题
+                                <svg :class="visibleLocalSelector ? '-rotate-90' : ''" t="1780036219758"
+                                    class="icon w-4 h-4" viewBox="0 0 1024 1024" version="1.1"
+                                    xmlns="http://www.w3.org/2000/svg" p-id="5990">
+                                    <path
+                                        d="M878.592 250.88q29.696 0 48.128 11.264t24.576 29.696 0 41.472-26.624 45.568q-82.944 92.16-159.744 180.224t-148.48 164.864q-19.456 20.48-45.568 31.744t-53.76 11.776-53.248-8.704-43.008-28.672q-39.936-44.032-82.944-90.112l-88.064-92.16q-43.008-46.08-85.504-90.624t-79.36-86.528q-17.408-19.456-22.528-40.448t1.024-38.4 23.552-28.672 45.056-11.264q35.84 0 98.816-0.512t137.728-0.512l153.6 0 150.528 0 125.952 0 79.872 0z"
+                                        p-id="5991" fill="#707070"></path>
+                                </svg>
+                            </span>
+                            <TopicTagSelector :visible="visibleLocalSelector" @add-tag="handleAddTag" @click.stop />
                         </div>
+                        <span class=" text-blue-300 flex  shrink-0 items-center  cursor-pointer hover:text-blue-500"
+                            v-for="tag in tagList?.slice(0, Math.min(tagList.length, 4))" :key="tag.id"
+                            @click="toggleTag(tag)">
+                            #{{ tag.tagName }}
+                        </span>
                     </div>
-                    <span class="text-blue-300 cursor-pointer hover:text-blue-500" v-for="tag in tagList" :key="tag.id"
-                        @click="toggleTag(tag)">
-                        #{{ tag.tagName }}
-                    </span>
-                </div>
-                <div class="extra w-full h-12 flex items-center gap-2">
-                    <span class="flex items-center gap-2 cursor-pointer hover:text-blue-400">
-                        <el-icon>
-                            <Star />
-                        </el-icon>
-                        表情
-                    </span>
+                    <div class="flex items-center pr-2">
+                        <svg t="1781687995848" class="icon cursor-pointer w-6 h-6 text-gray-500 hover:text-blue-500 transition-colors" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5646" width="200" height="200" @click="showSettingsModal = true"><path d="M439.264 208a16 16 0 0 0-16 16v67.968a239.744 239.744 0 0 0-46.496 26.896l-58.912-34a16 16 0 0 0-21.856 5.856l-80 138.56a16 16 0 0 0 5.856 21.856l58.896 34a242.624 242.624 0 0 0 0 53.728l-58.88 34a16 16 0 0 0-6.72 20.176l0.848 1.68 80 138.56a16 16 0 0 0 21.856 5.856l58.912-34a239.744 239.744 0 0 0 46.496 26.88V800a16 16 0 0 0 16 16h160a16 16 0 0 0 16-16v-67.968a239.744 239.744 0 0 0 46.512-26.896l58.912 34a16 16 0 0 0 21.856-5.856l80-138.56a16 16 0 0 0-4.288-20.832l-1.568-1.024-58.896-34a242.624 242.624 0 0 0 0-53.728l58.88-34a16 16 0 0 0 6.72-20.176l-0.848-1.68-80-138.56a16 16 0 0 0-21.856-5.856l-58.912 34a239.744 239.744 0 0 0-46.496-26.88V224a16 16 0 0 0-16-16h-160z m32 48h96v67.376l28.8 12.576c13.152 5.76 25.632 12.976 37.184 21.52l25.28 18.688 58.448-33.728 48 83.136-58.368 33.68 3.472 31.2a194.624 194.624 0 0 1 0 43.104l-3.472 31.2 58.368 33.68-48 83.136-58.432-33.728-25.296 18.688c-11.552 8.544-24.032 15.76-37.184 21.52l-28.8 12.576V768h-96v-67.376l-28.784-12.576c-13.152-5.76-25.632-12.976-37.184-21.52l-25.28-18.688-58.448 33.728-48-83.136 58.368-33.68-3.472-31.2a194.624 194.624 0 0 1 0-43.104l3.472-31.2-58.368-33.68 48-83.136 58.432 33.728 25.296-18.688a191.744 191.744 0 0 1 37.184-21.52l28.8-12.576V256z m47.28 144a112 112 0 1 0 0 224 112 112 0 0 0 0-224z m0 48a64 64 0 1 1 0 128 64 64 0 0 1 0-128z" fill="#5A626A" p-id="5647"></path></svg>
+                    </div>
                 </div>
             </div>
             <div class="w-full h-12 flex items-center justify-end p-12">
                 <span @click="submit(1)"
-                    class="w-16 h-8 rounded-xl bg-linear-to-r hover:scale-[1.05] cursor-pointer shadow-md from-blue-100 via-blue-200 to-blue-300 flex items-center justify-center">发布</span>
+                    class="w-16 h-8 rounded-xl  bg-linear-to-r hover:scale-[1.05] cursor-pointer shadow-md from-blue-100 via-blue-200 to-blue-300 flex items-center justify-center">发布</span>
             </div>
+            <PostVisibilitySettings
+                :visible="showSettingsModal"
+                :post="postFormVO"
+                @close="showSettingsModal = false"
+                @update-scope="form.visibleScope = $event"
+            />
         </div>
 
         <!-- 媒体预览弹窗 -->
@@ -110,361 +127,44 @@
 </template>
 
 <script lang="ts" setup>
+import { ref, computed } from 'vue';
 import router from '@/router';
-import { Star, Plus, ZoomIn, Delete } from '@element-plus/icons-vue';
-import { PostAPI, PostType, PostStatus, TagAPI, type CreatePostRequest, type TagPO, type TagVO } from '@/services/post';
-import { CommonAPI } from '@/services/common/api';
-import { onMounted, onUnmounted, ref, computed } from 'vue';
-import { log } from '@/utils/log';
-import { onBeforeRouteLeave, useRoute } from 'vue-router';
-import { useUserInfoStore } from '@/stores/userInfo';
-const route = useRoute();
-const postId = route.query.postId as string;
-const uploadError = ref('');
-const dialogVisible = ref(false);
-const previewImageUrl = ref('');
-const previewVideoUrl = ref('');
-const isSubmitSuccess = ref(false);
-const user = useUserInfoStore().user;
-const form = ref<CreatePostRequest>({
-    title: '',
-    type: PostType.TEXT,
-    content: '',
-    mediaUrls: [],
-    status: PostStatus.NORMAL
-});
-const userPostContent = ref('');
-const selectedTags = ref<TagVO[]>([]);
-const tagList = ref<TagVO[]>();
-const fileList = ref<any[]>([]);
+import { Plus, ZoomIn, Delete } from '@element-plus/icons-vue';
+import TopicTagSelector from '@/presentation/components/TopicTagSelector.vue';
+import PostVisibilitySettings from '@/views/post/components/PostVisibilitySettings.vue';
+import { usePost } from '../composables/usePost';
+import type { PostVO } from '@/services/post';
 
+const showSettingsModal = ref(false);
 
-onMounted(async () => {
-    if (postId) {
-        const res = await PostAPI.getById(Number(postId));
-        const postData = res.data;
+const {
+    form,
+    userPostContent,
+    selectedTags,
+    tagList,
+    fileList,
+    uploadError,
+    dialogVisible,
+    previewImageUrl,
+    previewVideoUrl,
+    visibleLocalSelector,
+    visibleCaretSelector,
+    newTag,
+    popupPos,
+    textareaRef,
+    handleAddTag,
+    handleSelectTopicClick,
+    handleTextareaKeydown,
+    isVideo,
+    handlePictureCardPreview,
+    handleChange,
+    handleRemove,
+    submit,
+    toggleTag,
+    removeTag
+} = usePost();
 
-        // 复制基本属性，避免类型覆盖冲突
-        form.value.title = postData.title;
-        form.value.type = postData.type;
-        form.value.content = postData.content || '';
-        form.value.status = postData.status as PostStatus || PostStatus.NORMAL;
-
-        userPostContent.value = postData.content || '';
-
-        // 转换并回显媒体文件列表
-        if (postData.type === PostType.IMAGE && postData.mediaUrls && Array.isArray(postData.mediaUrls)) {
-            form.value.mediaUrls = postData.mediaUrls.map((item: any) => ({
-                url: item.imageUrl || item.url,
-                width: item.width,
-                height: item.height
-            }));
-            fileList.value = postData.mediaUrls.map((item: any, index: number) => {
-                return {
-                    name: `file_${index}`,
-                    url: item.imageUrl || item.url,
-                    type: 'image/jpeg',
-                    uid: Date.now() + index,
-                    width: item.width,
-                    height: item.height
-                };
-            });
-        }
-        else if (postData.type === PostType.VIDEO && postData.extraMediaUrl && fileList.value.length == 0) {
-            fileList.value.push({
-                name: ' video.mp4',
-                url: postData.extraMediaUrl,
-                type: 'video/mp4',
-                uid: Date.now()
-            });
-            form.value.mediaUrls = [{
-                url: postData.extraMediaUrl,
-                width: 0,
-                height: 0
-            }];
-        }
-        else {
-            form.value.mediaUrls = [];
-            fileList.value = [];
-        }
-
-        if (postData.tags) {
-            selectedTags.value = postData.tags;
-        }
-    }
-    loadTags();
-});
-
-function isVideo(file: any): boolean {
-    const rawFile = file.raw || file;
-    if (rawFile.type) {
-        return rawFile.type.startsWith('video/');
-    }
-    const name = rawFile.name || '';
-    return /\.(mp4|webm|ogg|mov)$/i.test(name);
-}
-
-function handlePictureCardPreview(file: any) {
-    previewImageUrl.value = '';
-    previewVideoUrl.value = '';
-    const url = file.url || (file.raw ? URL.createObjectURL(file.raw) : '');
-    if (isVideo(file)) {
-        previewVideoUrl.value = url;
-    } else {
-        previewImageUrl.value = url;
-    }
-    dialogVisible.value = true;
-}
-
-
-
-function handleChange(file: any, files: any[]) {
-    const video = isVideo(file);
-    if (fileList.value.length === 0) {
-        form.value.type = video ? PostType.VIDEO : PostType.IMAGE;
-    } else {
-        if (form.value.type === PostType.VIDEO) {
-            if (video) {
-                log.warning("请勿上传多个视频文件");
-            } else {
-                log.warning("多种类型文件不能同时上传");
-            }
-            URL.revokeObjectURL(file.url);
-            fileList.value = files.filter(f => f.uid !== file.uid);
-            return;
-        }
-        if (form.value.type === PostType.IMAGE && video) {
-            log.warning("多种类型文件不能同时上传");
-            URL.revokeObjectURL(file.url);
-            fileList.value = files.filter(f => f.uid !== file.uid);
-            return;
-        }
-    }
-
-    // 校验：文件大小
-    const sizeMB = file.size / 1024 / 1024;
-    if (video) {
-        if (sizeMB > 50) {
-            log.error(`视频文件 [${file.name}] 不能超过 50MB`);
-            URL.revokeObjectURL(file.url);
-            fileList.value = files.filter(f => f.uid !== file.uid);
-            return;
-        }
-    } else {
-        if (sizeMB > 10) {
-            log.error(`图片文件 [${file.name}] 不能超过 10MB`);
-            URL.revokeObjectURL(file.url);
-            fileList.value = files.filter(f => f.uid !== file.uid);
-            return;
-        }
-    }
-
-    if (file.status === 'ready') {
-        file.url = URL.createObjectURL(file.raw);
-    }
-    fileList.value = files;
-
-}
-
-function handleRemove(file: any) {
-    if (file.url && file.url.startsWith('blob:')) {
-        URL.revokeObjectURL(file.url);
-    }
-    fileList.value = fileList.value.filter((item) => item.uid !== file.uid);
-    if (fileList.value.length === 0) {
-        form.value.type = PostType.TEXT;
-    }
-}
-
-const getImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
-    return new Promise((resolve) => {
-        if (!file.type.startsWith('image/')) {
-            resolve({ width: 0, height: 0 });
-            return;
-        }
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(file);
-        img.src = objectUrl;
-        img.onload = () => {
-            resolve({ width: img.naturalWidth, height: img.naturalHeight });
-            URL.revokeObjectURL(objectUrl);
-        };
-        img.onerror = () => {
-            resolve({ width: 0, height: 0 });
-            URL.revokeObjectURL(objectUrl);
-        };
-    });
-};
-
-async function submit(status: PostStatus = PostStatus.NORMAL) {
-    if (!beforeCreateCheck()) return;
-    form.value!.status = status;
-    form.value.tagIds = selectedTags.value.map(t => t.id).filter(id => id !== undefined) as number[];
-    let res;
-    if (fileList.value.length > 0) {
-        uploadError.value = '';
-        try {
-            const uploadPromises = fileList.value.map(async (file) => {
-                if (file.url && !file.url.startsWith('blob:')) {
-                    return {
-                        url: file.url,
-                        width: file.width || 0,
-                        height: file.height || 0
-                    };
-                }
-                
-                let dims = { width: 0, height: 0 };
-                if (file.raw && file.raw.type.startsWith('image/')) {
-                    dims = await getImageDimensions(file.raw);
-                }
-
-                //如果是视频且大小大于5mb
-                if (file.raw.type.startsWith('video/') && file.size > 5 * 1024 * 1024) {
-                    res = await CommonAPI.uploadLargeFile(file.raw, "post-media");
-                } else {
-                    res = await CommonAPI.upload(file.raw, "post-media");
-                }
-                if (res.code === 1 && res.data) {
-                    return {
-                        url: res.data.url,
-                        width: dims.width,
-                        height: dims.height
-                    };
-                } else {
-                    throw new Error(res.errMsg || `${file.name} 上传失败`);
-                }
-            });
-
-            const imageInfos = await Promise.all(uploadPromises);
-            form.value.mediaUrls = imageInfos;
-
-        } catch (err: any) {
-            log.error('文件上传失败');
-            console.error(err);
-            return; // 拦截发帖
-        }
-    } else {
-        form.value.type = PostType.TEXT;
-        form.value.mediaUrls = [];
-    }
-
-    return PostAPI.create(form.value!).then(() => {
-        if (status === PostStatus.NORMAL) {
-            log.success('发布成功');
-            isSubmitSuccess.value = true;
-            router.push('/');
-        } else {
-            log.success('已自动保存至草稿');
-        }
-    });
-}
-
-function toggleTag(tag: TagVO) {
-    const isExist = selectedTags.value.some(t => t.id === tag.id);
-    if (!isExist) {
-        selectTag(tag);
-    } else {
-        removeTag(tag);
-    }
-}
-
-function selectTag(tag: TagVO) {
-    if (!tag || !tag.id) return;
-    if (selectedTags.value.some(t => t.id === tag.id)) return;
-    selectedTags.value.push(tag);
-}
-async function loadTags() {
-    tagList.value = (await TagAPI.getPage(1, 5)).data.records;
-}
-function removeTag(tag: TagVO) {
-    if (!tag || !tag.id) return;
-    selectedTags.value = selectedTags.value.filter(t => t.id !== tag.id);
-
-    // 防御性清除可能没有带空格的话题文字
-    userPostContent.value = userPostContent.value.replace(`#${tag.tagName}`, '').trim();
-}
-
-const beforeCreateCheck = () => {
-    form.value.content = userPostContent.value;
-    if (!form.value) {
-        log.error('未输入任何内容');
-        return false;
-    } else if (!form.value.title) {
-        log.error('请输入标题');
-        return false;
-    } else if (!form.value.content) {
-        log.error('请输入内容');
-        return false;
-    }
-
-    if (fileList.value.length > 10) {
-        log.error('最多只能上传 10 个媒体文件');
-        return false;
-    }
-
-    for (const file of fileList.value) {
-        const rawFile = file.raw;
-        if (!rawFile) continue;
-        const isVideoFile = isVideo(file);
-        const sizeMB = rawFile.size / 1024 / 1024;
-        if (isVideoFile) {
-            if (sizeMB > 50) {
-                log.error(`视频文件 [${rawFile.name}] 不能超过 50MB`);
-                return false;
-            }
-        } else {
-            if (sizeMB > 10) {
-                log.error(`图片文件 [${rawFile.name}] 不能超过 10MB`);
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-    if (isSubmitSuccess.value) return;
-    const hasContent = (userPostContent.value && userPostContent.value.trim().length > 0) ||
-        (form.value.title && form.value.title.trim().length > 0) ||
-        (fileList.value && fileList.value.length > 0);
-    if (hasContent) {
-        e.preventDefault();
-        e.returnValue = '';
-    }
-};
-
-onMounted(() => {
-    window.addEventListener('beforeunload', handleBeforeUnload);
-});
-
-onUnmounted(() => {
-    window.removeEventListener('beforeunload', handleBeforeUnload);
-});
-
-onBeforeRouteLeave(async (to, from, next) => {
-    if (isSubmitSuccess.value) {
-        next();
-        return;
-    }
-    const hasContent = (userPostContent.value && userPostContent.value.trim().length > 0) ||
-        (form.value.title && form.value.title.trim().length > 0) ||
-        (fileList.value && fileList.value.length > 0);
-    if (hasContent) {
-        if (confirm('有未发布的内容，将会保存至草稿')) {
-            try {
-                await submit(PostStatus.DRAFT);
-            } catch (err) {
-                console.error('保存草稿失败:', err);
-            }
-            next();
-        } else {
-            next();
-        }
-    } else {
-        next();
-    }
-})
-
+const postFormVO = computed(() => form.value as unknown as PostVO);
 </script>
 
 <style scoped>

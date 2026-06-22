@@ -1,5 +1,6 @@
 package com.summit.stp.shared.service.TextSafe;
 
+import cn.hutool.http.HtmlUtil;
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -11,5 +12,13 @@ public class TextSafeServiceProviderImpl implements TextSafeServiceProvider{
     @Override
     public boolean sensitiveDetect(String text ) {
         return sensitiveWordBs.contains(text);
+    }
+
+    @Override
+    public String xssFilter(String text) {
+        if (text == null) {
+            return null;
+        }
+        return HtmlUtil.cleanHtmlTag(text);
     }
 }

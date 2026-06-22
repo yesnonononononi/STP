@@ -1,5 +1,6 @@
 package com.summit.stp.post.application.vo;
 
+import com.summit.stp.post.domain.model.Post;
 import com.summit.stp.user.application.vo.UserSimpleVO;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -7,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.sql.Timestamp;
 import java.util.List;
 
@@ -66,4 +68,12 @@ public class PostVO {
 
     @ApiModelProperty("帖子关联的标签详情列表")
     private List<TagVO> tags;
+
+    @ApiModelProperty("是否置顶: 0否, 1是")
+    private Integer isTop;
+
+    @ApiModelProperty("浏览量")
+    private Long viewCount;
+
+    private Integer visibleScope;
 }

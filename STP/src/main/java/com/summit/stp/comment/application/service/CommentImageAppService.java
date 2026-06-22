@@ -3,6 +3,7 @@ package com.summit.stp.comment.application.service;
 import com.summit.stp.comment.application.command.CreateCommentImageCommand;
 import com.summit.stp.comment.application.command.UpdateCommentImageCommand;
 import com.summit.stp.comment.application.vo.CommentImageVO;
+
 import java.util.List;
 
 public interface CommentImageAppService {

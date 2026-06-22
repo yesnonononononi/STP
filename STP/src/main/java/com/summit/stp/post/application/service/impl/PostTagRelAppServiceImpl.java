@@ -4,6 +4,7 @@ import com.summit.stp.post.application.service.PostTagRelAppService;
 import com.summit.stp.post.application.vo.PostTagRelVO;
 import com.summit.stp.post.domain.model.Post;
 import com.summit.stp.post.domain.model.PostStatus;
+import com.summit.stp.post.domain.model.PostTag;
 import com.summit.stp.post.domain.repository.PostRepository;
 import com.summit.stp.post.domain.repository.PostTagRelRepository;
 import com.summit.stp.shared.exception.BusinessException;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,12 +40,14 @@ public class PostTagRelAppServiceImpl implements PostTagRelAppService {
     @Override
     public List<PostTagRelVO> getRelationsByPostId(Long postId) {
         checkPostActive(postId);
-        return postTagRelRepository.findByPostId(postId);
+        List<PostTag> relations = postTagRelRepository.findByPostId(postId);
+        return relations.stream().map(this::convertToVO).collect(Collectors.toList());
     }
 
     @Override
     public List<PostTagRelVO> getRelationsByTagId(Long tagId) {
-        return postTagRelRepository.findByTagId(tagId);
+        List<PostTag> relations = postTagRelRepository.findByTagId(tagId);
+        return relations.stream().map(this::convertToVO).collect(Collectors.toList());
     }
 
     private void checkPostActive(Long postId) {
@@ -51,5 +55,16 @@ public class PostTagRelAppServiceImpl implements PostTagRelAppService {
         if (post == null || post.getStatus() != PostStatus.NORMAL) {
             throw new BusinessException("帖子已被删除!");
         }
+    }
+
+    private PostTagRelVO convertToVO(PostTag domain) {
+        if (domain == null) {
+            return null;
+        }
+        return PostTagRelVO.builder()
+                .id(domain.getId())
+                .postId(domain.getPostId())
+                .tagId(domain.getTagId())
+                .build();
     }
 }

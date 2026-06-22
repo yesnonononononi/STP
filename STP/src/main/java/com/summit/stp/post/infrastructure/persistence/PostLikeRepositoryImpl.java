@@ -6,6 +6,9 @@ import com.summit.stp.post.infrastructure.persistence.mapper.PostLikeMapper;
 import com.summit.stp.post.infrastructure.persistence.po.PostLikePO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -48,7 +51,7 @@ public class PostLikeRepositoryImpl implements PostLikeRepository {
     }
 
     @Override
-    public java.util.List<Long> findUserIdsByPostId(Long postId) {
+    public List<Long> findUserIdsByPostId(Long postId) {
         return postLikeMapper.selectList(
                 new LambdaQueryWrapper<PostLikePO>()
                         .select(PostLikePO::getUserId)
@@ -57,7 +60,7 @@ public class PostLikeRepositoryImpl implements PostLikeRepository {
     }
 
     @Override
-    public java.util.Map<Long, java.util.List<Long>> findUserIdsByPostIds(java.util.List<Long> postIds) {
+    public Map<Long, List<Long>> findUserIdsByPostIds(java.util.List<Long> postIds) {
         if (postIds == null || postIds.isEmpty()) {
             return java.util.Collections.emptyMap();
         }
@@ -68,7 +71,20 @@ public class PostLikeRepositoryImpl implements PostLikeRepository {
         );
         return list.stream().collect(java.util.stream.Collectors.groupingBy(
                 PostLikePO::getPostId,
-                java.util.stream.Collectors.mapping(PostLikePO::getUserId, java.util.stream.Collectors.toList())
+                Collectors.mapping(PostLikePO::getUserId, Collectors.toList())
         ));
     }
+
+    @Override
+    public List<Long> findByUserId(Long userId, String cursor) {
+        LambdaQueryWrapper<PostLikePO> eq = new LambdaQueryWrapper<PostLikePO>()
+                .eq(PostLikePO::getUserId, userId)
+                .orderByDesc(PostLikePO::getPostId)
+                .last("limit 10");
+        if (cursor != null && !cursor.isEmpty()) {
+            eq.lt(PostLikePO::getPostId, cursor);
+        }
+        return postLikeMapper.selectList(eq).stream().map(PostLikePO::getPostId).collect(Collectors.toList());
+    }
 }
+

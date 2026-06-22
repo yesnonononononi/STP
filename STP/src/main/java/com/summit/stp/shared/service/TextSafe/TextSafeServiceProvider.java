@@ -7,4 +7,10 @@ public interface TextSafeServiceProvider {
      * @param text 文本
      */
     boolean sensitiveDetect(String text);
+
+
+    /**
+     * xss过滤
+     */
+    String xssFilter(String text);
 }

@@ -1,15 +1,16 @@
 package com.summit.stp.member.infrastructure.persistence;
 
-import tools.jackson.core.type.TypeReference;
 import com.summit.stp.member.domain.model.MemberLevelConfig;
 import com.summit.stp.member.domain.repository.MemberLevelConfigRepository;
 import com.summit.stp.member.infrastructure.persistence.mapper.MemberLevelConfigMapper;
 import com.summit.stp.member.infrastructure.persistence.po.MemberLevelConfigPO;
+import com.summit.stp.shared.constants.RedisConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
@@ -22,7 +23,6 @@ import java.util.stream.Collectors;
 public class MemberLevelConfigRepositoryImpl implements MemberLevelConfigRepository {
     private final StringRedisTemplate stringRedisTemplate;
     private final MemberLevelConfigMapper mapper;
-    private final String REDIS_KEY_MEMBER_LEVEL_CONFIG = "member:level_config:";
     private final JsonMapper objectMapper;
 
     @Value("${member.level.cache.ttl-days:1}")
@@ -41,7 +41,7 @@ public class MemberLevelConfigRepositoryImpl implements MemberLevelConfigReposit
             mapper.insert(po);
         }
         // 数据变更时清除缓存，保证一致性
-        stringRedisTemplate.delete(REDIS_KEY_MEMBER_LEVEL_CONFIG);
+        stringRedisTemplate.delete(RedisConstants.Member.LEVEL_CONFIG);
     }
 
     @Override
@@ -55,7 +55,7 @@ public class MemberLevelConfigRepositoryImpl implements MemberLevelConfigReposit
 
     @Override
     public List<MemberLevelConfig> findAll() {
-        String res = stringRedisTemplate.opsForValue().get(REDIS_KEY_MEMBER_LEVEL_CONFIG);
+        String res = stringRedisTemplate.opsForValue().get(RedisConstants.Member.LEVEL_CONFIG);
         if (res != null) {
             try {
                 List<MemberLevelConfigPO> list = objectMapper.readValue(res, new TypeReference<>() {
@@ -72,7 +72,7 @@ public class MemberLevelConfigRepositoryImpl implements MemberLevelConfigReposit
         if (pos != null && !pos.isEmpty()) {
             try {
                 String json = objectMapper.writeValueAsString(pos);
-                stringRedisTemplate.opsForValue().set(REDIS_KEY_MEMBER_LEVEL_CONFIG, json, cacheTtlDays, TimeUnit.DAYS);
+                stringRedisTemplate.opsForValue().set(RedisConstants.Member.LEVEL_CONFIG, json, cacheTtlDays, TimeUnit.DAYS);
             } catch (Exception e) {
                 log.error("【会员等级配置】缓存写入会员等级配置列表失败", e);
             }
@@ -87,7 +87,7 @@ public class MemberLevelConfigRepositoryImpl implements MemberLevelConfigReposit
         if (level != null) {
             mapper.deleteById(level);
             // 删除时同步清空缓存
-            stringRedisTemplate.delete(REDIS_KEY_MEMBER_LEVEL_CONFIG);
+            stringRedisTemplate.delete(RedisConstants.Member.LEVEL_CONFIG);
         }
     }
 

@@ -3,6 +3,7 @@ package com.summit.stp.post.application.service;
 import com.summit.stp.post.application.command.CreatePostImageCommand;
 import com.summit.stp.post.application.command.UpdatePostImageCommand;
 import com.summit.stp.post.application.vo.PostImageVO;
+
 import java.util.List;
 
 public interface PostImageAppService {

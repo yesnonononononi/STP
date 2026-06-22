@@ -1,8 +1,7 @@
 package com.summit.stp.payment.domain.model;
 
-import lombok.Getter;
-
 import com.summit.stp.shared.exception.ParameterException;
+import lombok.Getter;
 
 @Getter
 public enum PayType {

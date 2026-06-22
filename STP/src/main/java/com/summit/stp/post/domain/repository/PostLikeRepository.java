@@ -1,6 +1,8 @@
 package com.summit.stp.post.domain.repository;
 
 import com.summit.stp.post.infrastructure.persistence.po.PostLikePO;
+import java.util.List;
+import java.util.Map;
 
 public interface PostLikeRepository {
     void save(PostLikePO postLike);
@@ -8,5 +10,7 @@ public interface PostLikeRepository {
     boolean exists(Long postId, Long userId);
     long countByPostId(Long postId);
     java.util.List<Long> findUserIdsByPostId(Long postId);
-    java.util.Map<Long, java.util.List<Long>> findUserIdsByPostIds(java.util.List<Long> postIds);
+    Map<Long,List<Long>> findUserIdsByPostIds(List<Long> postIds);
+    List<Long> findByUserId(Long userId, String cursor);
 }
+

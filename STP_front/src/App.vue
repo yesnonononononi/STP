@@ -1,9 +1,26 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { onMounted, watch } from 'vue';
+import { loadEmojiCache } from '@/utils/emoji';
+import { useAuthStore } from '@/views/auth/store';
+
+const authStore = useAuthStore();
+
+onMounted(() => {
+  loadEmojiCache();
+});
+
+watch(() => authStore.token, (token) => {
+  if (token) {
+    loadEmojiCache();
+  }
+});
+</script>
 
 <template>
-  <div class="app w-screen min-h-screen" id="app">
+  <div class="app min-w-screen min-h-screen" id="app">
     <router-view :key="$route.fullPath"></router-view>
   </div>
+  <div id="overlay"></div>
 </template>
 
 <style scoped></style>

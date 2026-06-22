@@ -1,10 +1,10 @@
 package com.summit.stp.member.domain.model;
 
+import com.summit.stp.shared.exception.ParameterException;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
-import com.summit.stp.shared.exception.ParameterException;
 
 /**
  * 会员等级配置 (领域聚合根)

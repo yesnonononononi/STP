@@ -5,7 +5,6 @@ import com.summit.stp.member.infrastructure.persistence.po.MemberPackagePO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 

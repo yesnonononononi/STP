@@ -27,9 +27,6 @@ public class MemberVO {
     @ApiModelProperty(value = "折扣")
     private Double discount;
 
-    @ApiModelProperty(value = "是否为超级会员标志")
-    private Boolean isSuper;
-
     @ApiModelProperty(value = "数量")
     private Integer quantity;
 
@@ -45,8 +42,6 @@ public class MemberVO {
     @ApiModelProperty(value = "会员分类名称")
     private String typeName;
 
-    @ApiModelProperty(value = "套餐日折算单价")
-    private BigDecimal dailyRate;
 
     @ApiModelProperty(value = "会员优先级，数值越大优先级越高")
     private Integer priority;

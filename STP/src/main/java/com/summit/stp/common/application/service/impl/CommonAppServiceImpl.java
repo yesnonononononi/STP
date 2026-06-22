@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
+import com.summit.stp.shared.constants.BusinessRuleConstants;
 
 @Service
 public class CommonAppServiceImpl implements CommonAppService {
@@ -227,11 +227,11 @@ public class CommonAppServiceImpl implements CommonAppService {
         }
 
         double sizeMB = size / 1024.0 / 1024.0;
-        if (isImage && sizeMB > 10.0) {
-            throw new ParameterException("图片文件大小不能超过 10MB!");
+        if (isImage && sizeMB > BusinessRuleConstants.File.MAX_IMAGE_SIZE_MB) {
+            throw new ParameterException("图片文件大小不能超过 " + BusinessRuleConstants.File.MAX_IMAGE_SIZE_MB + "MB!");
         }
-        if (isVideo && sizeMB > 50.0) {
-            throw new ParameterException("视频文件大小不能超过 50MB!");
+        if (isVideo && sizeMB > BusinessRuleConstants.File.MAX_VIDEO_SIZE_MB) {
+            throw new ParameterException("视频文件大小不能超过 " + BusinessRuleConstants.File.MAX_VIDEO_SIZE_MB + "MB!");
         }
 
     }

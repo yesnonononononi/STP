@@ -1,13 +1,12 @@
 package com.summit.stp.post.domain.model;
 
+import com.summit.stp.shared.exception.ParameterException;
 import jakarta.annotation.Nullable;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.sql.Timestamp;
-
-import com.summit.stp.shared.exception.ParameterException;
 
 @EqualsAndHashCode
 @Getter

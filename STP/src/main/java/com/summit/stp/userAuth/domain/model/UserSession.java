@@ -19,6 +19,7 @@ public class UserSession {
     private String onlineStatus;
     private final String token;
     private final Integer admin;
+    private final String tokenType;
     public void updateIp(String newIp){
         ip = newIp;
     }

@@ -1,8 +1,8 @@
 package com.summit.stp.order.application.service.impl;
 
+import com.summit.stp.member.application.service.MemberMessageSender;
 import com.summit.stp.order.domain.event.OrderPaidEvent;
 import lombok.RequiredArgsConstructor;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -10,7 +10,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @Service
 @RequiredArgsConstructor
 public class EventPublishProvider implements com.summit.stp.order.application.service.EventPublishProvider {
-    private final RabbitTemplate rabbitTemplate;
+    private final MemberMessageSender memberMessageSender;
 
     /**
      * 在事务提交后发布订单支付事件。
@@ -27,12 +27,12 @@ public class EventPublishProvider implements com.summit.stp.order.application.se
                 @Override
                 public void afterCommit() {
                     // 事务提交成功后，发送消息到 RabbitMQ
-                    rabbitTemplate.convertAndSend("member.exchange.pay", "member.queue.pay", orderPaidEvent);
+                    memberMessageSender.sendMemberPay(orderPaidEvent);
                 }
             });
         } else {
             // 如果没有活跃事务，直接发送消息（视业务需求而定，通常建议在有事务上下文时调用此方法）
-            rabbitTemplate.convertAndSend("member.exchange.pay", "member.queue.pay", orderPaidEvent);
+            memberMessageSender.sendMemberPay(orderPaidEvent);
         }
     }
 }

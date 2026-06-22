@@ -17,12 +17,16 @@ import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
 import java.util.List;
+import com.summit.stp.shared.constants.BusinessRuleConstants;
+import org.springframework.context.ApplicationEventPublisher;
+import com.summit.stp.shared.event.FileDeleteEvent;
 
 @Service
 @RequiredArgsConstructor
 public class PostImageAppServiceImpl implements PostImageAppService {
     private final PostImageRepository postImageRepository;
     private final PostRepository postRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public PostImageVO getPostImageById(Long id) {
@@ -66,7 +70,7 @@ public class PostImageAppServiceImpl implements PostImageAppService {
         checkPostActive(postId);
         Long curImageCount = postImageRepository.countByPostId(postId);
         if (Post.isLimited(curImageCount + imageUrls.size())) {
-            throw new BusinessException("图片数量已到达上限!");
+            throw new BusinessException("图片数量已到达上限 " + BusinessRuleConstants.Post.MAX_IMAGE_NUM + "张!");
         }
         List<PostImage> postImages = imageUrls.stream().map(url -> 
             PostImage.builder()
@@ -94,13 +98,29 @@ public class PostImageAppServiceImpl implements PostImageAppService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public void deletePostImage(Long id) {
+       PostImageVO imageVO = postImageRepository.findById(id);
        postImageRepository.delete(id);
+       if (imageVO != null && imageVO.getImageUrl() != null) {
+           applicationEventPublisher.publishEvent(new FileDeleteEvent(this, java.util.List.of(imageVO.getImageUrl())));
+       }
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public void deleteImagesByPostId(Long postId) {
-      postImageRepository.deleteByPostId(postId);
+       List<PostImageVO> images = postImageRepository.findByPostId(postId);
+       postImageRepository.deleteByPostId(postId);
+       if (images != null && !images.isEmpty()) {
+           List<String> urls = images.stream()
+                   .map(PostImageVO::getImageUrl)
+                   .filter(java.util.Objects::nonNull)
+                   .toList();
+           if (!urls.isEmpty()) {
+               applicationEventPublisher.publishEvent(new FileDeleteEvent(this, urls));
+           }
+       }
     }
 
     private PostImage convertToDomain(PostImageVO vo) {

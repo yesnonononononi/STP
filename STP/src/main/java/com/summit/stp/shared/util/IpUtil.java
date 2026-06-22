@@ -1,11 +1,9 @@
 package com.summit.stp.shared.util;
 
-import cn.hutool.core.net.Ipv4Util;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.lionsoul.ip2region.xdb.Searcher;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 @Slf4j

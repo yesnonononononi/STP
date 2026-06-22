@@ -2,7 +2,7 @@ export class TimeUtils {
   /**
    * 统一解析 Date 对象的辅助方法，处理不同格式和浏览器兼容性（特别是 Safari）
    */
-  private static parseDate(time: any): Date | null {
+  public static parseDate(time: any): Date | null {
     if (!time) return null
     if (time instanceof Date) return time
 
@@ -33,7 +33,7 @@ export class TimeUtils {
         formattedStr = str.replace(/-/g, '/')
       }
     }
-    
+
     const parsedDate = new Date(formattedStr)
     if (isNaN(parsedDate.getTime())) {
       return new Date(str) // 降级直接解析原字符串
@@ -61,12 +61,24 @@ export class TimeUtils {
       return '未知'
     }
 
+    //当前时间
+    const now = new Date()
+    const curDate = now.getDate()
+
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
+
     const hours = String(date.getHours()).padStart(2, '0')
     const minutes = String(date.getMinutes()).padStart(2, '0')
     const seconds = String(date.getSeconds()).padStart(2, '0')
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+    const recent =
+      date.getDate() === curDate &&
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth()
+    if (recent) {
+      return `${hours}:${minutes}`
+    }
+    return `${year}-${month}-${day} ${hours}:${minutes}`
   }
 }

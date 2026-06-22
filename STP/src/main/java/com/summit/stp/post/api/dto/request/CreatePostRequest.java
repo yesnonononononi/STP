@@ -3,6 +3,7 @@ package com.summit.stp.post.api.dto.request;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+
 import java.util.List;
 
 @Data
@@ -25,4 +26,7 @@ public class CreatePostRequest {
 
     @ApiModelProperty(value = "帖子关联的标签ID列表")
     private List<Long> tagIds;
+
+    @ApiModelProperty(value = "是否置顶: 0否, 1是")
+    private Integer isTop;
 }

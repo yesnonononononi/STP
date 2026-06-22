@@ -29,9 +29,9 @@ public class UserFollowController {
     }
 
     @PostMapping("/follow")
-    @ApiOperation(value = "关注用户", notes = "创建或重新激活与某个用户的关注关系")
+    @ApiOperation(value = "关注/取消关注用户 (Toggle开关)", notes = "一键切换关注关系：若未关注则执行关注，若已关注则执行取消关注，实现状态互转并异步更新粉丝数。")
     public Result<Void> follow(
-            @ApiParam(value = "关注请求参数", required = true) @RequestBody CreateUserFollowRequest request) {
+            @ApiParam(value = "关注/取消关注请求参数", required = true) @RequestBody CreateUserFollowRequest request) {
         CreateUserFollowCommand command = CreateUserFollowCommand.builder()
                 .followerId(request.getFollowerId())
                 .followeeId(request.getFolloweeId())

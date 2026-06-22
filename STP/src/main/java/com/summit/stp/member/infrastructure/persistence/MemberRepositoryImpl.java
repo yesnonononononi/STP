@@ -1,19 +1,22 @@
 package com.summit.stp.member.infrastructure.persistence;
 
-import cn.hutool.core.bean.BeanUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.summit.stp.order.domain.exception.NoSuchMemberException;
+import cn.hutool.cache.Cache;
+import cn.hutool.cache.CacheUtil;
+import com.summit.stp.member.application.vo.MemberVO;
 import com.summit.stp.member.domain.model.Member;
 import com.summit.stp.member.domain.model.MemberType;
 import com.summit.stp.member.domain.repository.MemberRepository;
 import com.summit.stp.member.domain.repository.MemberTypeRepository;
-import com.summit.stp.order.infrastructure.persistence.mapper.MemberMapper;
 import com.summit.stp.member.infrastructure.persistence.po.MemberPackagePO;
+import com.summit.stp.order.domain.exception.NoSuchMemberException;
+import com.summit.stp.order.infrastructure.persistence.mapper.MemberMapper;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -22,9 +25,8 @@ public class MemberRepositoryImpl implements MemberRepository {
     private final MemberTypeRepository memberTypeRepository;
 
     // 缓存会员详情，有效期 5 分钟 (300,000 毫秒)
-    private final cn.hutool.cache.Cache<Long, MemberPackagePO> memberCache = cn.hutool.cache.CacheUtil.newTimedCache(300000);
-    // 缓存会员分类详情，有效期 5 分钟
-    private final cn.hutool.cache.Cache<Long, MemberType> typeCache = cn.hutool.cache.CacheUtil.newTimedCache(300000);
+    private final Cache<Long, MemberPackagePO> memberCache = CacheUtil.newTimedCache(300000);
+    private final Cache<Long, MemberType> typeCache = CacheUtil.newTimedCache(300000);
 
     @Override
     public Member findMemberById(Long id) {
@@ -44,10 +46,17 @@ public class MemberRepositoryImpl implements MemberRepository {
 
     @Override
     public List<Member> findMemberByType(Long typeId, int status) {
+
         List<MemberPackagePO> membersWithType = memberMapper.findMemberByType(typeId, status);
         return membersWithType.stream()
                 .map(po -> convertToDomain(po, null))
                 .toList();
+    }
+
+    @Override
+    public Map<Long, MemberVO> findMemberByIds(List<Long> packageIds) {
+        List<MemberPackagePO> members = memberMapper.selectByIds(packageIds);
+        return members.stream().collect(Collectors.toMap(MemberPackagePO::getId, po->MemberVO.builder().name(po.getName()).build()));
     }
 
     private Member convertToDomain(MemberPackagePO po, @Nullable MemberType type) {
@@ -59,8 +68,10 @@ public class MemberRepositoryImpl implements MemberRepository {
                 .discount(po.getDiscount())
                 .description(po.getDescription())
                 .type(type)
+                .typeId(po.getTypeId())
                 .dailyRate(po.getDailyRate())
                 .priority(po.getPriority())
+                .stock(po.getStock())
                 .build();
     }
 }

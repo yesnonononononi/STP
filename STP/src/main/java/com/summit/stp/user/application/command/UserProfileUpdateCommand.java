@@ -12,5 +12,6 @@ public class UserProfileUpdateCommand {
     private final String verifyCode;
     private final String introduce;
     private final Integer gender;
+    private final String bgImage;
     private final Integer age;
 }

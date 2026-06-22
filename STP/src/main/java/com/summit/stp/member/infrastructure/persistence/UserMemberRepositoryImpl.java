@@ -1,8 +1,6 @@
 package com.summit.stp.member.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.baomidou.mybatisplus.extension.conditions.update.UpdateChainWrapper;
 import com.summit.stp.member.domain.model.MemberLevelConfig;
 import com.summit.stp.member.domain.model.MemberType;
 import com.summit.stp.member.domain.model.UserMember;
@@ -12,8 +10,14 @@ import com.summit.stp.member.domain.repository.UserMemberRepository;
 import com.summit.stp.member.infrastructure.persistence.mapper.UserMemberMapper;
 import com.summit.stp.member.infrastructure.persistence.po.UserMemberPO;
 import lombok.RequiredArgsConstructor;
-import org.apache.ibatis.reflection.wrapper.BaseWrapper;
 import org.springframework.stereotype.Repository;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.List;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 
 @Repository
@@ -70,5 +74,30 @@ public class UserMemberRepositoryImpl implements UserMemberRepository {
                 .expireTime(po.getExpireTime())
                 .dailyRate(po.getDailyRate())
                 .build();
+    }
+
+    @Override
+    public Map<Long, UserMember> queryUserMemberByUserIds(Collection<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        LambdaQueryWrapper<UserMemberPO> wrapper = new LambdaQueryWrapper<UserMemberPO>()
+                .in(UserMemberPO::getUserId, userIds);
+        List<UserMemberPO> poList = userMemberMapper.selectList(wrapper);
+        if (poList == null || poList.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<MemberLevelConfig> allConfigs = memberLevelConfigRepository.findAll();
+        Map<Long, MemberLevelConfig> configMap = allConfigs != null
+                ? allConfigs.stream().collect(Collectors.toMap(MemberLevelConfig::getLevel, c -> c, (v1, v2) -> v1))
+                : Collections.emptyMap();
+
+        return poList.stream()
+                .collect(Collectors.toMap(
+                        UserMemberPO::getUserId,
+                        po -> convertToDomain(po, configMap.get(po.getVipLevel())),
+                        (v1, v2) -> v1
+                ));
     }
 }

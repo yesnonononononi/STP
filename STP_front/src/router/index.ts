@@ -7,15 +7,20 @@ const forget = () => import('@/views/auth/pages/forgetPage.vue')
 const home = () => import('@/views/home/pages/home.vue')
 const payResult = () => import('@/views/payment/pages/PayResult.vue')
 const userProfile = () => import('@/views/user/pages/user-profile.vue')
-const homeTabMain = () => import('@/views/home/pages/home-tab-main.vue')
+const homeFeed = () => import('@/views/home/pages/home-feed.vue')
 const userSettings = () => import('@/views/user/pages/user-settings.vue')
 const post = () => import('@/views/post/pages/post.vue')
 const postInfo = () => import('@/views/post/pages/postInfo.vue')
+const pay = () => import('@/views/payment/pages/pay.vue')
+const rank_board = () => import('@/views/rank_board/pages/rank_layout.vue')
+
+const coupon = () => import('@/views/coupon/pages/coupon.vue')
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     redirect: '/home',
   },
+
   {
     path: '/post',
     component: post,
@@ -27,7 +32,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/home',
     component: home,
-    redirect: '/home/homeTabMain',
+    redirect: '/home/homeFeed',
     name: 'home',
 
     children: [
@@ -37,8 +42,8 @@ const routes: RouteRecordRaw[] = [
         name: 'userSettings',
       },
       {
-        path: 'homeTabMain',
-        component: homeTabMain,
+        path: 'homeFeed',
+        component: homeFeed,
         name: 'homeMain',
         meta: {
           title: '首页',
@@ -49,7 +54,17 @@ const routes: RouteRecordRaw[] = [
         component: userProfile,
         name: 'userProfile',
       },
+      {
+        path: '/coupon',
+        component: coupon,
+        name: 'coupon',
+      },
     ],
+  },
+  {
+    path: '/payment',
+    name: 'payment',
+    component: pay,
   },
 
   {
@@ -85,6 +100,12 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '支付结果',
     },
+  },
+  {
+    path: '/rank',
+    component: rank_board,
+    name: 'rank_board',
+    meta: {},
   },
 ]
 

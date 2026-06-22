@@ -1,12 +1,12 @@
 package com.summit.stp.comment.api;
 
-import com.summit.stp.shared.result.Result;
 import com.summit.stp.comment.api.dto.request.CreateCommentImageRequest;
 import com.summit.stp.comment.api.dto.request.UpdateCommentImageRequest;
 import com.summit.stp.comment.application.command.CreateCommentImageCommand;
 import com.summit.stp.comment.application.command.UpdateCommentImageCommand;
 import com.summit.stp.comment.application.service.CommentImageAppService;
 import com.summit.stp.comment.application.vo.CommentImageVO;
+import com.summit.stp.shared.result.Result;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;

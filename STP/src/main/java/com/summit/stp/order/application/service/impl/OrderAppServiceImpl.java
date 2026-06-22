@@ -5,10 +5,8 @@ import com.summit.stp.coupon.application.vo.CouponQueryVO;
 import com.summit.stp.member.application.service.MemberAppService;
 import com.summit.stp.member.application.vo.MemberVO;
 import com.summit.stp.order.api.dto.OrderCreateRequest;
-import com.summit.stp.order.application.service.OrderAppService;
-import com.summit.stp.order.application.service.OrderReconciliationAppService;
-import com.summit.stp.order.application.service.OrderTimeoutProvider;
-import com.summit.stp.order.application.service.ProductProvider;
+import com.summit.stp.order.application.service.*;
+import com.summit.stp.order.application.service.EventPublishProvider;
 import com.summit.stp.order.application.vo.OrderQueryVO;
 import com.summit.stp.order.application.vo.ProductVO;
 import com.summit.stp.order.domain.event.OrderPaidEvent;
@@ -17,29 +15,25 @@ import com.summit.stp.order.domain.model.OrderStatus;
 import com.summit.stp.order.domain.repository.OrderRepository;
 import com.summit.stp.order.domain.service.OrderDomainService;
 import com.summit.stp.payment.application.command.PayCommand;
-import com.summit.stp.payment.application.command.RefundCommand;
 import com.summit.stp.payment.application.service.PayAppService;
 import com.summit.stp.payment.application.service.RefundAppService;
 import com.summit.stp.payment.application.vo.PayVO;
-import com.summit.stp.payment.application.vo.RefundResultVO;
 import com.summit.stp.payment.domain.model.PayType;
-import com.summit.stp.order.application.service.EventPublishProvider;
 import com.summit.stp.shared.ThreadContext.UserHolder;
-import com.summit.stp.shared.result.Result;
 import com.summit.stp.shared.exception.ParameterException;
+import com.summit.stp.shared.result.Result;
 import com.summit.stp.userAuth.domain.model.UserSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * 订单应用服务实现类
@@ -156,7 +150,25 @@ public class OrderAppServiceImpl implements OrderAppService {
 
         //优惠后的金额
         Long couponId = orderCreateRequest.getCouponId();
-        BigDecimal amount = couponAppService.calculateAmount(product.getPrice(), orderCreateRequest.getQuantity(), couponId);
+
+        // 前置强校验：优惠券适用范围校验
+        if (couponId != null) {
+            try {
+                MemberVO member = memberAppService.queryMemberById(orderCreateRequest.getPackageId()).getData();
+                if (member == null) {
+                    return Result.error("未找到会员套餐信息");
+                }
+                couponAppService.validateCouponApplicability(couponId, member.getTypeId(), member.getId());
+            } catch (ParameterException e) {
+                return Result.error(e.getMessage());
+            }
+        }
+
+        BigDecimal discountedPrice = product.getPrice();
+        if (product.getDiscount() != null) {
+            discountedPrice = discountedPrice.multiply(product.getDiscount());
+        }
+        BigDecimal amount = couponAppService.calculateAmount(discountedPrice, orderCreateRequest.getQuantity(), couponId);
 
 
 

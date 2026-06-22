@@ -1,6 +1,6 @@
 <template>
     <div class="w-full min-h-screen bg-linear-to-tl from-blue-100 via-blue-300 to-blue-200 flex justify-center p-8">
-        <div class="w-full max-w-2xl bg-white rounded-md shadow-sm border border-gray-200 self-start">
+        <div class="w-full md:max-w-2xl bg-white rounded-md shadow-sm border border-gray-200 self-start">
             <div class="phone-setting w-full p-6">
                 <!-- 头部标题 -->
                 <div class="border-b border-gray-200 pb-4 mb-8">
@@ -162,12 +162,12 @@
 
 <script lang="ts" setup>
 import { useUserInfoStore } from '@/stores/userInfo';
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { UserAPI } from '@/services/user';
 import { log } from '@/utils/log';
 
 const userStore = useUserInfoStore();
-const user = userStore.user;
+const user = computed(() => userStore.user);
 const canRecommend = ref(true)
 
 // 登录手机绑定表单

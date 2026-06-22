@@ -1,18 +1,20 @@
 package com.summit.stp.post.api;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.summit.stp.post.application.service.TagAppService;
 import com.summit.stp.post.api.dto.request.CreateTagRequest;
 import com.summit.stp.post.api.dto.request.UpdateTagRequest;
-import com.summit.stp.post.application.command.CreateTagCommand;
 import com.summit.stp.post.application.command.UpdateTagCommand;
+import com.summit.stp.post.application.service.TagAppService;
 import com.summit.stp.post.application.vo.TagVO;
 import com.summit.stp.shared.result.Result;
+import com.summit.stp.shared.service.SearchSuggest.SuggestVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/post/tag")
@@ -32,12 +34,8 @@ public class TagController {
     @ApiOperation(value = "创建新标签", notes = "创建一个新标签供帖子使用")
     public Result<Void> createTag(
             @ApiParam(value = "创建标签参数", required = true) @RequestBody CreateTagRequest request) {
-        CreateTagCommand command = CreateTagCommand.builder()
-                .tagName(request.getTagName())
-                .sort(request.getSort())
-                .status(request.getStatus())
-                .build();
-        tagAppService.createTag(command);
+
+        tagAppService.createTag(request.getTagName());
         return Result.success(null);
     }
 
@@ -69,5 +67,20 @@ public class TagController {
             @ApiParam(value = "页码 (默认1)", required = false) @RequestParam(defaultValue = "1") long page,
             @ApiParam(value = "每页大小 (默认10)", required = false) @RequestParam(defaultValue = "10") long pageSize) {
         return Result.success(tagAppService.getTagPage(page, pageSize));
+    }
+    @GetMapping("/search")
+    @ApiOperation(value = "搜索标签建议", notes = "根据标签名称搜索标签")
+    public Result<SuggestVO> searchTag(
+            @ApiParam(value = "标签名称", required = true) @RequestParam("keyword") String keyword,
+            @ApiParam(value = "每页大小 (默认10)", required = false) @RequestParam(defaultValue = "10") Integer limit) {
+        return  tagAppService.searchTag(keyword, limit);
+    }
+
+
+    @GetMapping("/recent")
+    @ApiOperation(value = "获取最近使用标签", notes = "获取最近使用标签，默认返回10个")
+    public Result<List<TagVO>> getRecentTag(
+            @ApiParam(value = "每页大小 (默认10)", required = false) @RequestParam(defaultValue = "10") Integer limit) {
+        return Result.success(tagAppService.getRecentTag(limit));
     }
 }

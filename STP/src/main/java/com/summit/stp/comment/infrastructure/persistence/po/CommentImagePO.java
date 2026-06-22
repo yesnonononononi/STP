@@ -5,16 +5,21 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
 import lombok.Data;
+
 import java.sql.Timestamp;
 
 @Data
+@Builder
 @TableName("comment_image")
 @ApiModel(value = "CommentImagePO", description = "评论图片数据持久化实体")
 public class CommentImagePO {
     @TableId(type = IdType.AUTO)
     @ApiModelProperty(value = "自增主键")
     private Long id;
+
+    private String name;
 
     @ApiModelProperty(value = "所属评论ID")
     private Long commentId;

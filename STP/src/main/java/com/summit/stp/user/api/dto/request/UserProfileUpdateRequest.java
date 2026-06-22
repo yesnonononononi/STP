@@ -27,4 +27,6 @@ public class UserProfileUpdateRequest {
 
     @ApiModelProperty(value = "年龄", example = "25")
     private Integer age;
+
+    private String bgImage;
 }

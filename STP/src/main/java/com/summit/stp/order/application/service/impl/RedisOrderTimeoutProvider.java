@@ -2,6 +2,7 @@ package com.summit.stp.order.application.service.impl;
 
 import com.summit.stp.order.application.service.OrderAppService;
 import com.summit.stp.order.application.service.OrderTimeoutProvider;
+import com.summit.stp.shared.constants.RedisConstants;
 import com.summit.stp.shared.util.DistributedLockUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -21,8 +22,6 @@ import java.util.Set;
 public class RedisOrderTimeoutProvider implements OrderTimeoutProvider {
     private final StringRedisTemplate stringRedisTemplate;
     private final OrderAppService orderAppService;
-    private final String ORDER_TIMEOUT_KEY = "order:timeout:";
-    private final String ORDER_TIMEOUT_KEY_LOCK = "order:timeout:lock";
     private final DistributedLockUtil distributedLockUtil;
 
     public RedisOrderTimeoutProvider(StringRedisTemplate stringRedisTemplate, @Lazy OrderAppService orderAppService, DistributedLockUtil distributedLockUtil) {
@@ -35,13 +34,13 @@ public class RedisOrderTimeoutProvider implements OrderTimeoutProvider {
     public void registerTimeout(Long duration, Long orderId) {
         Timestamp timeout = new Timestamp(System.currentTimeMillis() + duration);
         ZSetOperations<String, String> zset = stringRedisTemplate.opsForZSet();
-        zset.add(ORDER_TIMEOUT_KEY, String.valueOf(orderId), (double) timeout.getTime());
+        zset.add(RedisConstants.Order.TIMEOUT_ZSET, String.valueOf(orderId), (double) timeout.getTime());
     }
 
     @Override
     public void cancelTimeout(Long orderId) {
         ZSetOperations<String, String> zset = stringRedisTemplate.opsForZSet();
-        zset.remove(ORDER_TIMEOUT_KEY, String.valueOf(orderId));
+        zset.remove(RedisConstants.Order.TIMEOUT_ZSET, String.valueOf(orderId));
     }
 
     /**
@@ -50,15 +49,14 @@ public class RedisOrderTimeoutProvider implements OrderTimeoutProvider {
     @Scheduled(cron = "0/5 * * * * ?")
     public void checkOrderTimeout() {
         ZSetOperations<String, String> zset = stringRedisTemplate.opsForZSet();
-        distributedLockUtil.executeWithLock(ORDER_TIMEOUT_KEY_LOCK, () -> {
-            Set<String> orderIds = zset.rangeByScore(ORDER_TIMEOUT_KEY, 0, System.currentTimeMillis());
+        distributedLockUtil.executeWithLock(RedisConstants.Order.TIMEOUT_LOCK, () -> {
+            Set<String> orderIds = zset.rangeByScore(RedisConstants.Order.TIMEOUT_ZSET, 0, System.currentTimeMillis());
             if (orderIds != null && !orderIds.isEmpty()) {
                 log.info("【Redis超时检测】发现超时未支付订单: {}", orderIds);
                 orderAppService.timeoutOrder(orderIds);
-                zset.remove(ORDER_TIMEOUT_KEY, orderIds.toArray());
+                zset.remove(RedisConstants.Order.TIMEOUT_ZSET, orderIds.toArray());
             }
         });
 
     }
 }
-

@@ -25,11 +25,11 @@ public class MemberVOConverter {
                 .discount(member.getDiscount())
                 .description(member.getDescription())
                 .duration(member.getDuration())
-                .dailyRate(member.getDailyRate())
+                .quantity(member.getStock())
+                .typeId(member.getTypeId())
                 .priority(member.getPriority());
                 
         if (member.getType() != null) {
-            builder.typeId(member.getType().getTypeId());
             builder.typeName(member.getType().getTypeName());
         }
         

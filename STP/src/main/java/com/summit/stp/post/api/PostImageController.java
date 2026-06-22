@@ -1,12 +1,12 @@
 package com.summit.stp.post.api;
 
-import com.summit.stp.shared.result.Result;
 import com.summit.stp.post.api.dto.request.CreatePostImageRequest;
 import com.summit.stp.post.api.dto.request.UpdatePostImageRequest;
 import com.summit.stp.post.application.command.CreatePostImageCommand;
 import com.summit.stp.post.application.command.UpdatePostImageCommand;
 import com.summit.stp.post.application.service.PostImageAppService;
 import com.summit.stp.post.application.vo.PostImageVO;
+import com.summit.stp.shared.result.Result;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;

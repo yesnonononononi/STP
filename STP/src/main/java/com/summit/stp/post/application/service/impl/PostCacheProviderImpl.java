@@ -1,8 +1,13 @@
 package com.summit.stp.post.application.service.impl;
 
 import com.summit.stp.post.application.service.PostCacheProvider;
-import com.summit.stp.post.domain.repository.PostLikeRepository;
 import com.summit.stp.post.domain.repository.PostCollectRepository;
+import com.summit.stp.post.domain.repository.PostLikeRepository;
+import com.summit.stp.post.infrastructure.persistence.mapper.PostsMapper;
+import com.summit.stp.post.infrastructure.persistence.po.PostsPO;
+import com.summit.stp.shared.constants.RedisConstants;
+import com.summit.stp.shared.ThreadContext.UserHolder;
+import com.summit.stp.shared.util.IpUtil;
 import org.jspecify.annotations.NonNull;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
@@ -10,10 +15,18 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.sql.Time;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Component
 @SuppressWarnings("unchecked")
@@ -22,15 +35,18 @@ public class PostCacheProviderImpl implements PostCacheProvider {
     private final ZSetOperations<Object, Object> redisSet;
     private final PostLikeRepository postLikeRepository;
     private final PostCollectRepository postCollectRepository;
+    private final PostsMapper postsMapper;
     private final Long CACHE_TTL = 7L;
 
     public PostCacheProviderImpl(RedisTemplate<Object, Object> redisTemplate,
                                  PostLikeRepository postLikeRepository,
-                                 PostCollectRepository postCollectRepository) {
+                                 PostCollectRepository postCollectRepository,
+                                 PostsMapper postsMapper) {
         this.redisTemplate = redisTemplate;
         this.redisSet = redisTemplate.opsForZSet();
         this.postLikeRepository = postLikeRepository;
         this.postCollectRepository = postCollectRepository;
+        this.postsMapper = postsMapper;
     }
 
     @Override
@@ -108,16 +124,10 @@ public class PostCacheProviderImpl implements PostCacheProvider {
         if (!Boolean.TRUE.equals(redisTemplate.hasKey(collectKey))) {
             loadSet(collectKey, postCollectRepository.findUserIdsByPostId(postId));
         }
+
+        loadViewCache(postId);
     }
 
-    /**
-     * 业务流程: <br>
-     * 1. 配合 Redis 管道（Pipeline）技术的 hasKey 方法，批量检查传入的帖子 ID 列表中，有哪些帖子的点赞/收藏 ZSet 缓存不存在（即未初始化或已过期淘汰）；<br>
-     * 2. 过滤并统计出缓存失效的帖子 ID 列表，【仅针对这部分失效的帖子】批量从数据库中一次性查询其对应的点赞用户和收藏用户关系（使用 SQL IN 子句，规避循环 N+1 SQL 查询）；<br>
-     * 3. 再次利用 Pipeline 管道技术，批量将查询出的用户 ID 装配入 Redis 的 ZSet 缓存中（写入 -1L 占位符以防缓存穿透），并统一设置过期时间。
-     *
-     * @param postIds 帖子ID列表
-     */
     @Override
     public void loadCache(List<Long> postIds) {
         if (postIds == null || postIds.isEmpty()) {
@@ -213,13 +223,11 @@ public class PostCacheProviderImpl implements PostCacheProvider {
             resMap.put("COLLECT", collectCount);
         }
         return map;
-
-
     }
 
     @Override
-    public Map<Long, Map<String,Boolean>> getIsCollectedOrLiked(List<Long> postIdList, Long userId) {
-        Map<Long, Map<String,Boolean>> map = new HashMap<>(postIdList.size());
+    public Map<Long, Map<String, Boolean>> getIsCollectedOrLiked(List<Long> postIdList, Long userId) {
+        Map<Long, Map<String, Boolean>> map = new HashMap<>(postIdList.size());
         List<Object> result = redisTemplate.executePipelined(new SessionCallback<>() {
             @Override
             public Object execute(RedisOperations operations) throws DataAccessException {
@@ -229,8 +237,8 @@ public class PostCacheProviderImpl implements PostCacheProvider {
                     String collectKey = buildCollectKey(postId);
                     String likeKey = buildLikeKey(postId);
                     ZSetOperations set = operations.opsForZSet();
-                    set.score(collectKey,userId); // 获取收藏数
-                    set.score(likeKey,userId);
+                    set.score(collectKey, userId); // 获取收藏数
+                    set.score(likeKey, userId);
                 }
                 return null;
             }
@@ -244,14 +252,12 @@ public class PostCacheProviderImpl implements PostCacheProvider {
             stringBooleanMap.put(PostCacheProvider.LIKE, isLike);
         }
         return map;
-
     }
 
-
     final String key = "post:changed";
+
     @Override
     public List<Object> getChangedList() {
-
         Set<Object> members = redisTemplate.opsForSet().members(key);
         return new ArrayList<>(members);
     }
@@ -262,45 +268,46 @@ public class PostCacheProviderImpl implements PostCacheProvider {
     }
 
     @Override
+    public void markLikeCollectChanged(Object postId) {
+        redisTemplate.opsForSet().add(RedisConstants.Post.LIKE_COLLECT_CHANGED, postId);
+    }
+
+    @Override
+    public void markViewChanged(Object postId) {
+        redisTemplate.opsForSet().add(RedisConstants.Post.VIEW_CHANGED, postId);
+    }
+
+    @Override
+    public void markReplyChanged(Object postId) {
+        redisTemplate.opsForSet().add(RedisConstants.Post.REPLY_CHANGED, postId);
+    }
+
+    @Override
     public Set<Long> getLikeUserIds(Long postId) {
         String likeKey = buildLikeKey(postId);
-        Set<Object> members = redisSet.range(likeKey, 0, -1);
-        if (members == null) {
-            return Collections.emptySet();
-        }
-        Set<Long> userIds = new HashSet<>();
-        for (Object member : members) {
-            if (member instanceof Long) {
-                Long userId = (Long) member;
-                if (!userId.equals(-1L)) {
-                    userIds.add(userId);
-                }
-            } else if (member instanceof Integer) {
-                Long userId = ((Integer) member).longValue();
-                if (!userId.equals(-1L)) {
-                    userIds.add(userId);
-                }
-            }
-        }
-        return userIds;
+        return getLongs(likeKey);
     }
 
     @Override
     public Set<Long> getCollectUserIds(Long postId) {
         String collectKey = buildCollectKey(postId);
+        return getLongs(collectKey);
+    }
+
+    @NonNull
+    private Set<Long> getLongs(String collectKey) {
         Set<Object> members = redisSet.range(collectKey, 0, -1);
         if (members == null) {
             return Collections.emptySet();
         }
         Set<Long> userIds = new HashSet<>();
         for (Object member : members) {
-            if (member instanceof Long) {
-                Long userId = (Long) member;
+            if (member instanceof Long userId) {
                 if (!userId.equals(-1L)) {
                     userIds.add(userId);
                 }
-            } else if (member instanceof Integer) {
-                Long userId = ((Integer) member).longValue();
+            } else if (member instanceof Integer userIdInt) {
+                Long userId = userIdInt.longValue();
                 if (!userId.equals(-1L)) {
                     userIds.add(userId);
                 }
@@ -330,7 +337,7 @@ public class PostCacheProviderImpl implements PostCacheProvider {
                 redisSet.add(key, userId, System.currentTimeMillis());
             }
         }
-        redisTemplate.expire(key, CACHE_TTL, TimeUnit.DAYS);  //7天的缓存过期时间,在这个期间,如果没有人点赞或者收藏本帖子,则缓存就会过期,下次访问时,会重新加载缓存
+        redisTemplate.expire(key, CACHE_TTL, TimeUnit.DAYS);  //7天的缓存过期时间
     }
 
     private String buildLikeKey(Long postId) {
@@ -341,5 +348,150 @@ public class PostCacheProviderImpl implements PostCacheProvider {
     private String buildCollectKey(Long postId) {
         String REDIS_COLLECT_POST_KEY = "post:collect:";
         return REDIS_COLLECT_POST_KEY + postId;
+    }
+
+    // Tip: 浏览数防刷及加载逻辑实现
+
+    private String buildViewKey(Long postId) {
+        return RedisConstants.Post.VIEW + postId;
+    }
+
+    private void loadViewCache(Long postId) {
+        String viewKey = buildViewKey(postId);
+        if (!Boolean.TRUE.equals(redisTemplate.hasKey(viewKey))) {
+            PostsPO po = postsMapper.selectById(postId);
+            long dbViewCount = (po != null && po.getViewCount() != null) ? po.getViewCount() : 0L;
+            redisTemplate.opsForValue().set(viewKey, dbViewCount, CACHE_TTL, TimeUnit.DAYS);
+        }
+    }
+
+    @Override
+    public void incrViewCount(Long postId) {
+        if (postId == null) return;
+        
+        Long userId = (UserHolder.getUser() != null) ? UserHolder.getUser().getId() : null;
+        String limitKey;
+        if (userId != null) {
+            // Tip: 登录用户防刷 limit key，结构为 post:view:limit:{userid}，有效防止同一用户刷屏
+            limitKey = "post:view:limit:" + userId;
+        } else {
+            // Tip: 游客防刷 limit key，结构为 post:view:limit:{ip}，根据请求IP防刷
+            String ip = "unknown";
+            try {
+                ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+                if (attributes != null) {
+                    ip = IpUtil.getIpAddr(attributes.getRequest());
+                }
+            } catch (Exception ignored) {}
+            limitKey = "post:view:limit:" + ip;
+        }
+
+        // Tip: 判断当前帖子 ID 是否已存在于该用户/IP 今日浏览记录 Set 中
+        Boolean hasVisited = redisTemplate.opsForSet().isMember(limitKey, postId);
+        if (Boolean.TRUE.equals(hasVisited)) {
+            // Tip: 重复访问则直接拦截自增
+            return;
+        }
+
+        // Tip: 将帖子 ID 计入该 Set 集合
+        redisTemplate.opsForSet().add(limitKey, postId);
+        
+        // Tip: 若今日第一次产生浏览记录，为 Set 设置 1 天的过期时间
+        Long size = redisTemplate.opsForSet().size(limitKey);
+        if (size != null && size == 1) {
+            redisTemplate.expire(limitKey, 1, TimeUnit.DAYS);
+        }
+
+        // Tip: 帖子总浏览数的 String 缓存自增 1
+        String key = buildViewKey(postId);
+        Boolean hasKey = redisTemplate.hasKey(key);
+        if (Boolean.FALSE.equals(hasKey)) {
+            loadViewCache(postId);
+        }
+        redisTemplate.opsForValue().increment(key);
+        
+        // Tip: 标记帖子状态发生改变，待定时同步任务同步到数据库
+        markViewChanged(postId);
+    }
+
+    @Override
+    public Long getViewCount(Long postId) {
+        if (postId == null) return 0L;
+        String key = buildViewKey(postId);
+        Object val = redisTemplate.opsForValue().get(key);
+        if (val == null) {
+            loadViewCache(postId);
+            val = redisTemplate.opsForValue().get(key);
+        }
+        if (val instanceof Number num) {
+            return num.longValue();
+        } else if (val instanceof String str) {
+            try {
+                return Long.parseLong(str);
+            } catch (NumberFormatException ignored) {}
+        }
+        return 0L;
+    }
+
+    @Override
+    public Map<Long, Long> getViewCounts(List<Long> postIds) {
+        if (postIds == null || postIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        
+        // Tip: 批量 Pipeline 从 Redis 的 String 缓存中获取各帖子的浏览计数值
+        List<Object> results = redisTemplate.executePipelined(new SessionCallback<>() {
+            @Override
+            public Object execute(@NonNull RedisOperations operations) {
+                for (Long postId : postIds) {
+                    operations.opsForValue().get(buildViewKey(postId));
+                }
+                return null;
+            }
+        });
+
+        Map<Long, Long> viewMap = new HashMap<>(postIds.size());
+        List<Long> missingIds = new ArrayList<>();
+        
+        for (int i = 0; i < postIds.size(); i++) {
+            Long postId = postIds.get(i);
+            Object val = results.get(i);
+            if (val == null) {
+                missingIds.add(postId);
+            } else {
+                if (val instanceof Number num) {
+                    viewMap.put(postId, num.longValue());
+                } else if (val instanceof String str) {
+                    try {
+                        viewMap.put(postId, Long.parseLong(str));
+                    } catch (NumberFormatException e) {
+                        viewMap.put(postId, 0L);
+                    }
+                } else {
+                    viewMap.put(postId, 0L);
+                }
+            }
+        }
+
+        // Tip: 如果存在缺失的缓存，批量查库回源并使用 Pipeline 重新热装配入 Redis
+        if (!missingIds.isEmpty()) {
+            List<PostsPO> pos = postsMapper.selectBatchIds(missingIds);
+            Map<Long, Long> dbViews = pos.stream().collect(Collectors.toMap(PostsPO::getId, po -> po.getViewCount() != null ? po.getViewCount().longValue() : 0L));
+            
+            redisTemplate.executePipelined(new SessionCallback<>() {
+                @Override
+                public Object execute(@NonNull RedisOperations operations) {
+                    for (Long postId : missingIds) {
+                        long dbView = dbViews.getOrDefault(postId, 0L);
+                        operations.opsForValue().set(buildViewKey(postId), dbView, CACHE_TTL, TimeUnit.DAYS);
+                    }
+                    return null;
+                }
+            });
+            for (Long postId : missingIds) {
+                viewMap.put(postId, dbViews.getOrDefault(postId, 0L));
+            }
+        }
+        return viewMap;
     }
 }
