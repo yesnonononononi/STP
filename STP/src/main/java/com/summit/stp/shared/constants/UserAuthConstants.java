@@ -1,4 +1,4 @@
-package com.summit.stp.shared.constant;
+package com.summit.stp.shared.constants;
 
 public class UserAuthConstants {
     public static final int MIN_PASSWORD_LENGTH = 6;

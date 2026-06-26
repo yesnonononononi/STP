@@ -1,7 +1,7 @@
 <template>
-    <div class="relative z-12 w-full min-h-screen py-10 bg-cover bg-center bg-no-repeat"
+    <div class="relative z-12 w-full h-[calc(100vh-64px)] py-4 overflow-hidden box-border bg-cover bg-center bg-no-repeat"
         :class="userInfo?.bgImage ? '' : 'bg-linear-to-tl from-blue-100 via-blue-300 to-blue-200'"
-        :style="userInfo?.bgImage ? `background-image: url('${userInfo.bgImage}');` : ''">
+        :style="userInfo?.bgImage ? `background-image: url('${userInfo.bgImage}');  ` : ''">
 
         <!-- 账号设置和更换背景按钮 -->
         <div class="w-2/3   h-12 m-auto flex text-white font-semibold items-center justify-end gap-4 px-4 select-none"
@@ -32,9 +32,9 @@
                 </el-upload>
             </div>
         </div>
-        <div class="w-2/3 min-h-200  m-auto bg-white/70 ">
+        <div class="w-2/3 h-[calc(100vh-160px)] bg-white/70 rounded-2xl   m-auto  flex flex-col">
             <!-- 个人主页卡片 -->
-            <div class="rounded-2xl shadow-md mt-16 bg-white relative overflow-visible">
+            <div class="rounded-2xl shadow-md   bg-white relative overflow-visible">
                 <div class="top">
                     <!-- 凸出头像组件 -->
                     <div
@@ -97,7 +97,7 @@
                                 : 'bg-linear-to-bl from-blue-400 to-blue-500 text-white hover:shadow-lg'">
                             {{ userInfo?.followed ? '已关注' : '关注' }}
                         </button>
-                        <button
+                        <button @click="handleMessage"
                             class="bg-linear-to-bl rounded-md shadow-md from-blue-100 to-blue-200 w-24 h-10 cursor-pointer hover:scale-[1.05]">私信</button>
                     </div>
                     <div v-else class="flex items-center gap-4 px-4">
@@ -111,7 +111,7 @@
             </div>
 
             <!-- 足迹 组件 -->
-            <div class="h-150 bg-gay-100 rounded-md flex">
+            <div class="flex-1 min-h-0 pb-3 bg-gay-100 rounded-md flex">
                 <div class="left w-[75%] p-2 pb-0 h-full ">
                     <div
                         class=" w-full h-[10%]  rounded-md bg-white p-3  flex gap-18 text-xl text-gray-500 font-semibold select-none">
@@ -128,7 +128,7 @@
                             :class="curTab === PostStatus.COLLECTED ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-200 to-blue-300' : ''"
                             @click="curTab = PostStatus.COLLECTED">收藏</span>
                     </div>
-                    <div class="w-full mt-2 h-[90%]">
+                    <div class="w-full mt-2 h-[90%] rounded-xl">
                         <UserProfileTabPublish ref="publishTabRef" :status="curTab" :creator-id="uid" :self="isme"
                             @delete="handleDelete" />
                     </div>
@@ -250,7 +250,14 @@
             </div>
         </div>
     </div>
-
+    <!-- 页面中心私信输入弹窗 -->
+    <Teleport to="body">
+        <div v-if="showMessageInput && userInfo"
+            class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-xs">
+            <PrivateMessageInput :user="messageTargetUser" :visible="showMessageInput" v-model="messageContent"
+                @close="showMessageInput = false" @success="handleMessageSuccess" />
+        </div>
+    </Teleport>
 </template>
 
 <script lang="ts" setup>
@@ -258,7 +265,7 @@ import { ref, onMounted, watch, computed } from 'vue';
 import { useUserInfoStore } from '@/stores/userInfo';
 import router from '@/router';
 import { useRoute } from 'vue-router';
-import { UserAPI, type UserProfileData, type UserProfileUpdateForm } from '@/services/user';
+import { UserAPI, type UserProfileData, type UserProfileUpdateForm, type UserSimpleData } from '@/services/user';
 import { CommonAPI } from '@/services/common/api';
 import { log } from '@/utils/log';
 import { PostStatus } from '@/services/post';
@@ -266,9 +273,34 @@ import { PostAPI } from '@/services/post/api';
 import { formatNum } from '@/utils/page';
 import UserProfileTabPublish from './user-profile-tab-publish.vue';
 import { Plus } from '@element-plus/icons-vue';
+import PrivateMessageInput from '@/presentation/components/private_message_input.vue';
 const route = useRoute();
 const uid = computed(() => route.params.id as string);
 const userStore = useUserInfoStore();
+
+const showMessageInput = ref(false);
+const messageContent = ref('');
+const messageTargetUser = computed<UserSimpleData>(() => {
+    if (!userInfo.value) {
+        return { id: '', nick: '', avatar: '', memberLevel: '', memberLevelName: '', vipType: '', vipConfigIcon: '', ip: '' };
+    }
+    return {
+        id: String(userInfo.value.id),
+        nick: userInfo.value.nick,
+        avatar: userInfo.value.avatar,
+        memberLevel: userInfo.value.memberLevel,
+        memberLevelName: '',
+        vipType: userInfo.value.vipType,
+        vipConfigIcon: userInfo.value.vipConfigIcon,
+        ip: userInfo.value.ip,
+        introduction: userInfo.value.introduction || '',
+        fans: userInfo.value.fans || 0,
+        liked: userInfo.value.liked || 0,
+        topic: userInfo.value.topic || 0,
+        gender: userInfo.value.gender !== undefined ? String(userInfo.value.gender) : undefined,
+        followed: userInfo.value.followed
+    };
+});
 const currentUser = computed(() => userStore.user);
 const bgImage = ref<File | null>(null);
 const isme = computed(() => uid.value === currentUser?.value?.id.toString());
@@ -535,6 +567,14 @@ async function handleFollow() {
         console.error('关注/取消关注异常:', e);
         log.error(e.message || "操作失败");
     }
+}
+
+function handleMessage() {
+    showMessageInput.value = true;
+}
+
+function handleMessageSuccess() {
+    router.push({ name: 'message' });
 }
 </script>
 

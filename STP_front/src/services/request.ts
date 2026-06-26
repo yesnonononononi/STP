@@ -45,7 +45,7 @@ request.interceptors.response.use(
         return handleTokenRefresh(config)
       }
 
-      log.error(res.errMsg || 'Unknown Error')
+      log.error(res.errMsg || '服务繁忙')
       return Promise.reject(new Error(res.errMsg || 'Error'))
     }
     // 统一返回 response.data，使用户调用 API 时直接获取 Result 对象

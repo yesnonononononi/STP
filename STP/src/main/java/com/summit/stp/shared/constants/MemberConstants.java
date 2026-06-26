@@ -1,4 +1,4 @@
-package com.summit.stp.shared.constant;
+package com.summit.stp.shared.constants;
 
 /**
  * 会员相关常量定义
@@ -12,7 +12,7 @@ public class MemberConstants {
     /**
      * 缺失类型关联时的缺省会员类型名称
      */
-    public static final String FALLBACK_VIP_TYPE = "STP会员";
+    public static final String FALLBACK_VIP_TYPE = "会员";
 
     private MemberConstants() {
     }

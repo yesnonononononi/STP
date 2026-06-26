@@ -82,7 +82,10 @@ export function usePost() {
       form.value.isTop = postData.isTop !== undefined ? postData.isTop : 0
       form.value.visibleScope = postData.visibleScope !== undefined ? postData.visibleScope : 1
 
-      userPostContent.value = postData.content || ''
+      // 提取并剥离 content 中的标签 a，保持文本输入框展示纯文本
+      let cleanContent = postData.content || ''
+      cleanContent = cleanContent.replace(/<a[^>]*>#(.*?)#<\/a>/g, '').trim()
+      userPostContent.value = cleanContent
 
       // 转换并回显媒体文件列表
       if (
@@ -492,7 +495,14 @@ export function usePost() {
    * @returns 校验结果是否通过
    */
   const beforeCreateCheck = () => {
-    form.value.content = userPostContent.value
+    let finalContent = userPostContent.value || ''
+    if (selectedTags.value.length > 0) {
+      const tagsHtml = selectedTags.value
+        .map((t) => `<a href="">#${t.tagName}#</a>`)
+        .join(' ')
+      finalContent = finalContent.trim() + '\n' + tagsHtml
+    }
+    form.value.content = finalContent
     if (!form.value) {
       log.error('未输入任何内容')
       return false

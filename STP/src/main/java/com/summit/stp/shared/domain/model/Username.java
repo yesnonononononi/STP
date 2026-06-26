@@ -1,6 +1,6 @@
 package com.summit.stp.shared.domain.model;
 
-import com.summit.stp.shared.constant.UserAuthConstants;
+import com.summit.stp.shared.constants.UserAuthConstants;
 import com.summit.stp.shared.exception.ParameterException;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

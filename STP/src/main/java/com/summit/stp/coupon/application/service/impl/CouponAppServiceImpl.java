@@ -23,6 +23,7 @@ import com.summit.stp.shared.ThreadContext.UserHolder;
 import com.summit.stp.shared.constants.RedisConstants;
 import com.summit.stp.shared.exception.BusinessException;
 import com.summit.stp.shared.exception.ParameterException;
+import com.summit.stp.shared.exception.UnPermissionException;
 import com.summit.stp.shared.util.DistributedLockUtil;
 import io.netty.util.internal.StringUtil;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.naming.NoPermissionException;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -429,6 +431,7 @@ public class CouponAppServiceImpl implements CouponAppService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveActivity(CouponActivityDTO dto) {
+        if(UserHolder.getUser().getAdmin() == 0)throw new UnPermissionException("无权限操作");
         Long couponId = dto.getCouponId();
         long snowflakeNextId = IdUtil.getSnowflakeNextId();
         CouponActivity activity = CouponActivity.builder()

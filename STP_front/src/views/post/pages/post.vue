@@ -2,7 +2,7 @@
     <div class="w-screen relative min-h-screen bg-linear-to-bl from-blue-200 via-blue-100 to-blue-300 ">
         <div class="tab sticky top-px left-0 right-0 h-12 bg-white   shadow-md flex items-center p-1 ">
             <span class="m-2 flex items-center gap-4 cursor-pointer " @click="router.push('/')">
-                <img class="w-12 h-12" src="/logo.png" alt="">
+                <img class="size-8" src="/logo.png" alt="">
                 <span
                     class="bg-clip-text text-2xl font-semibold text-transparent bg-linear-to-r from-blue-200 via-blue-100 to-blue-300">STP</span>
             </span>
@@ -13,7 +13,7 @@
         </div>
         <div class="body w-full   md:w-1/2 m-auto bg-white  rounded-md shadow-md mt-2 md:h-auto flex flex-col  ">
             <input v-model="form.title"
-                class="text-gray-400 flex-1 max-h-10 border-b w-full p-6 border-gray-300 font-semibold text-md md:text-2xl outline-none"
+                class=" flex-1 max-h-10 border-b w-full p-6 border-gray-300 font-semibold text-md md:text-2xl outline-none"
                 maxlength="50" placeholder="好的标题会获得更多曝光欧~" />
             <div class="set-content flex-1   p-4 pb-1 flex flex-col gap-2  mt-2">
                 <div class="relative w-full">
@@ -39,7 +39,8 @@
 
                 <div class="file flex gap-2 ">
                     <el-upload class="w-auto" action="#" list-type="picture-card" :limit="10" :auto-upload="false"
-                        :file-list="fileList" :on-change="handleChange" :on-remove="handleRemove">
+                        :file-list="fileList" :on-change="handleChange" :on-remove="handleRemove"
+                        accept=".png,.jpg,.mp4,.jpeg">
                         <el-icon>
                             <Plus />
                         </el-icon>
@@ -98,7 +99,14 @@
                         </span>
                     </div>
                     <div class="flex items-center pr-2">
-                        <svg t="1781687995848" class="icon cursor-pointer w-6 h-6 text-gray-500 hover:text-blue-500 transition-colors" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5646" width="200" height="200" @click="showSettingsModal = true"><path d="M439.264 208a16 16 0 0 0-16 16v67.968a239.744 239.744 0 0 0-46.496 26.896l-58.912-34a16 16 0 0 0-21.856 5.856l-80 138.56a16 16 0 0 0 5.856 21.856l58.896 34a242.624 242.624 0 0 0 0 53.728l-58.88 34a16 16 0 0 0-6.72 20.176l0.848 1.68 80 138.56a16 16 0 0 0 21.856 5.856l58.912-34a239.744 239.744 0 0 0 46.496 26.88V800a16 16 0 0 0 16 16h160a16 16 0 0 0 16-16v-67.968a239.744 239.744 0 0 0 46.512-26.896l58.912 34a16 16 0 0 0 21.856-5.856l80-138.56a16 16 0 0 0-4.288-20.832l-1.568-1.024-58.896-34a242.624 242.624 0 0 0 0-53.728l58.88-34a16 16 0 0 0 6.72-20.176l-0.848-1.68-80-138.56a16 16 0 0 0-21.856-5.856l-58.912 34a239.744 239.744 0 0 0-46.496-26.88V224a16 16 0 0 0-16-16h-160z m32 48h96v67.376l28.8 12.576c13.152 5.76 25.632 12.976 37.184 21.52l25.28 18.688 58.448-33.728 48 83.136-58.368 33.68 3.472 31.2a194.624 194.624 0 0 1 0 43.104l-3.472 31.2 58.368 33.68-48 83.136-58.432-33.728-25.296 18.688c-11.552 8.544-24.032 15.76-37.184 21.52l-28.8 12.576V768h-96v-67.376l-28.784-12.576c-13.152-5.76-25.632-12.976-37.184-21.52l-25.28-18.688-58.448 33.728-48-83.136 58.368-33.68-3.472-31.2a194.624 194.624 0 0 1 0-43.104l3.472-31.2-58.368-33.68 48-83.136 58.432 33.728 25.296-18.688a191.744 191.744 0 0 1 37.184-21.52l28.8-12.576V256z m47.28 144a112 112 0 1 0 0 224 112 112 0 0 0 0-224z m0 48a64 64 0 1 1 0 128 64 64 0 0 1 0-128z" fill="#5A626A" p-id="5647"></path></svg>
+                        <svg t="1781687995848"
+                            class="icon cursor-pointer w-6 h-6 text-gray-500 hover:text-blue-500 transition-colors"
+                            viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5646"
+                            width="200" height="200" @click="showSettingsModal = true">
+                            <path
+                                d="M439.264 208a16 16 0 0 0-16 16v67.968a239.744 239.744 0 0 0-46.496 26.896l-58.912-34a16 16 0 0 0-21.856 5.856l-80 138.56a16 16 0 0 0 5.856 21.856l58.896 34a242.624 242.624 0 0 0 0 53.728l-58.88 34a16 16 0 0 0-6.72 20.176l0.848 1.68 80 138.56a16 16 0 0 0 21.856 5.856l58.912-34a239.744 239.744 0 0 0 46.496 26.88V800a16 16 0 0 0 16 16h160a16 16 0 0 0 16-16v-67.968a239.744 239.744 0 0 0 46.512-26.896l58.912 34a16 16 0 0 0 21.856-5.856l80-138.56a16 16 0 0 0-4.288-20.832l-1.568-1.024-58.896-34a242.624 242.624 0 0 0 0-53.728l58.88-34a16 16 0 0 0 6.72-20.176l-0.848-1.68-80-138.56a16 16 0 0 0-21.856-5.856l-58.912 34a239.744 239.744 0 0 0-46.496-26.88V224a16 16 0 0 0-16-16h-160z m32 48h96v67.376l28.8 12.576c13.152 5.76 25.632 12.976 37.184 21.52l25.28 18.688 58.448-33.728 48 83.136-58.368 33.68 3.472 31.2a194.624 194.624 0 0 1 0 43.104l-3.472 31.2 58.368 33.68-48 83.136-58.432-33.728-25.296 18.688c-11.552 8.544-24.032 15.76-37.184 21.52l-28.8 12.576V768h-96v-67.376l-28.784-12.576c-13.152-5.76-25.632-12.976-37.184-21.52l-25.28-18.688-58.448 33.728-48-83.136 58.368-33.68-3.472-31.2a194.624 194.624 0 0 1 0-43.104l3.472-31.2-58.368-33.68 48-83.136 58.432 33.728 25.296-18.688a191.744 191.744 0 0 1 37.184-21.52l28.8-12.576V256z m47.28 144a112 112 0 1 0 0 224 112 112 0 0 0 0-224z m0 48a64 64 0 1 1 0 128 64 64 0 0 1 0-128z"
+                                fill="#5A626A" p-id="5647"></path>
+                        </svg>
                     </div>
                 </div>
             </div>
@@ -106,12 +114,8 @@
                 <span @click="submit(1)"
                     class="w-16 h-8 rounded-xl  bg-linear-to-r hover:scale-[1.05] cursor-pointer shadow-md from-blue-100 via-blue-200 to-blue-300 flex items-center justify-center">发布</span>
             </div>
-            <PostVisibilitySettings
-                :visible="showSettingsModal"
-                :post="postFormVO"
-                @close="showSettingsModal = false"
-                @update-scope="form.visibleScope = $event"
-            />
+            <PostVisibilitySettings :visible="showSettingsModal" :post="postFormVO" @close="showSettingsModal = false"
+                @update-scope="form.visibleScope = $event" />
         </div>
 
         <!-- 媒体预览弹窗 -->

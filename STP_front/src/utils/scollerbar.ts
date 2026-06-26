@@ -59,3 +59,33 @@ function executor(this: any, container: HTMLElement | Window, operation: () => v
     operation.call(this)
   }
 }
+
+//滚动条快触顶后触发
+export function scrollerFromTop(
+  this: any,
+  operation: () => void,
+  container: HTMLElement | Window | null = window,
+) {
+  const target = container || window
+  const throttledExecutor = throttle(() => {
+    executorTop(target, operation)
+  }, 200)
+
+  target.addEventListener('scroll', throttledExecutor)
+  return () => {
+    target.removeEventListener('scroll', throttledExecutor)
+  }
+}
+
+function executorTop(this: any, container: HTMLElement | Window, operation: () => void) {
+  //滚动条距离顶部的高度
+  const curHeightFromTop = container instanceof Window ? container.scrollY : container.scrollTop
+  //视口高度
+  const viewHeight = container instanceof Window ? window.innerHeight : container.clientHeight
+
+  // 滚动条距离顶部的高度小于视口高度的 20% 时触发
+  if (curHeightFromTop < viewHeight * 0.2) {
+    operation.call(this)
+  }
+}
+

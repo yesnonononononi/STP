@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
 @layer components {
+
   /* 毛玻璃效果基础类 */
   .glass {
     @apply bg-white/30 backdrop-blur-md border border-white/20 shadow-lg;
@@ -10,4 +11,13 @@
   .glass-light {
     @apply bg-white/10 backdrop-blur-sm border border-white/10;
   }
+}
+
+/* 全局富文本中渲染的表情 img 限制大小 */
+img[src*="/emoji/"] {
+  width: 24px !important;
+  height: 24px !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  margin: 0 2px !important;
 }

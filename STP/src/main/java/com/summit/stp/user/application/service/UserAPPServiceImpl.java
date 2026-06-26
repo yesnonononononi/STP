@@ -4,7 +4,7 @@ import com.summit.stp.member.domain.model.MemberLevelConfig;
 import com.summit.stp.member.domain.model.UserMember;
 import com.summit.stp.member.domain.repository.UserMemberRepository;
 import com.summit.stp.shared.ThreadContext.UserHolder;
-import com.summit.stp.shared.constant.MemberConstants;
+import com.summit.stp.shared.constants.MemberConstants;
 import com.summit.stp.shared.domain.model.Password;
 import com.summit.stp.shared.domain.model.PhoneNumber;
 import com.summit.stp.shared.domain.service.CaptchaService;
@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor

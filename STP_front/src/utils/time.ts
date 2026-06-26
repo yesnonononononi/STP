@@ -1,84 +1,79 @@
+import dayjs from 'dayjs'
+
 export class TimeUtils {
   /**
-   * 统一解析 Date 对象的辅助方法，处理不同格式和浏览器兼容性（特别是 Safari）
+   * 安全的 dayjs 转换辅助方法
+   */
+  private static safeDayjs(time: any): dayjs.Dayjs {
+    if (!time) return dayjs()
+    if (typeof time === 'string' && /^\d+$/.test(time)) {
+      return dayjs(Number(time))
+    }
+    return dayjs(time)
+  }
+
+  /**
+   * 获取当前时间戳的字符串形式
+   */
+  static now(): string {
+    return String(Date.now())
+  }
+
+  /**
+   * 统一解析时间的辅助方法，返回 Date 对象
    */
   public static parseDate(time: any): Date | null {
     if (!time) return null
-    if (time instanceof Date) return time
-
-    const str = String(time).trim()
-    if (!str || str === 'null' || str === 'undefined') return null
-
-    // 1. 如果是纯数字字符串（或数字），视为时间戳
-    if (/^\d+$/.test(str)) {
-      let num = parseInt(str, 10)
-      // 如果是 10 位时间戳（秒），转换为 13 位时间戳（毫秒）
-      if (str.length === 10) {
-        num *= 1000
-      }
-      return new Date(num)
-    }
-
-    // 2. 如果是标准日期时间字符串
-    // 针对 Safari 浏览器兼容性：Safari 无法解析带有中划线和空格的格式（如 "2026-05-26 18:15:11"）
-    // 如果字符串中不包含时区标志（Z 或 + 或 -开头的时区偏移值），将其替换为斜杠以作为本地时间解析
-    let formattedStr = str
-    if (!str.includes('Z') && !str.includes('+') && !/-\d{2}:\d{2}$/.test(str)) {
-      // 替换 T 为空格，替换 - 为 /
-      formattedStr = str.replace(/T/g, ' ').replace(/-/g, '/')
-      // 去除毫秒部分 (如 .000)
-      formattedStr = formattedStr.split('.')[0] || ''
-    } else {
-      if (!str.includes('T')) {
-        formattedStr = str.replace(/-/g, '/')
-      }
-    }
-
-    const parsedDate = new Date(formattedStr)
-    if (isNaN(parsedDate.getTime())) {
-      return new Date(str) // 降级直接解析原字符串
-    }
-    return parsedDate
+    const d = TimeUtils.safeDayjs(time)
+    return d.isValid() ? d.toDate() : null
   }
 
   /**
    * 计算目标时间到现在的时间差（秒）
-   * @param endTime 目标时间
-   * @returns 时间差
    */
-  static calculateTimeByNow(endTime: string | number | Date | undefined | null): number {
-    const date = this.parseDate(endTime)
-    if (!date || isNaN(date.getTime())) return 0
-    return Math.floor((date.getTime() - Date.now()) / 1000)
+  static calculateTimeByNow(
+    endTime: string | number | Date | undefined | null,
+    startTime?: number | string,
+  ): number {
+    if (!endTime) return 0
+    const end = TimeUtils.safeDayjs(endTime)
+    const start = startTime ? TimeUtils.safeDayjs(startTime) : dayjs()
+    if (!end.isValid() || !start.isValid()) return 0
+    return Math.floor(end.diff(start, 'second'))
   }
 
   /**
-   * 格式化时间戳/时间字符串为可读日期 "YYYY-MM-DD HH:mm:ss"
+   * 格式化时间并进行美化：
+   * - 今天：HH:mm
+   * - 昨天：昨天 HH:mm
+   * - 本周内（排除今天 and 昨天）：星期几 HH:mm
+   * - 其他：YYYY-MM-DD HH:mm:ss
    */
   static timestampToDate(timestamp: string | number | Date | undefined | null): string {
-    const date = this.parseDate(timestamp)
-    if (!date || isNaN(date.getTime())) {
-      return '未知'
+    if (!timestamp) return '未知'
+    const target = TimeUtils.safeDayjs(timestamp)
+    if (!target.isValid()) return '未知'
+
+    const now = dayjs()
+    const today = now.startOf('day')
+    const yesterday = today.subtract(1, 'day')
+
+    // 本周一 00:00:00
+    const dayOfWeek = now.day()
+    const distanceToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+    const thisWeekStart = today.subtract(distanceToMonday, 'day')
+
+    if (target.isSame(now, 'day')) {
+      return target.format('HH:mm')
+    } else if (target.isSame(yesterday, 'day')) {
+      return `昨天 ${target.format('HH:mm')}`
+    } else if (target.isAfter(thisWeekStart) || target.isSame(thisWeekStart, 'day')) {
+      const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+      const weekDayStr = weekDays[target.day()]
+      return `${weekDayStr} ${target.format('HH:mm')}`
+    } else {
+      return target.format('YYYY-MM-DD HH:mm:ss')
     }
-
-    //当前时间
-    const now = new Date()
-    const curDate = now.getDate()
-
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-
-    const hours = String(date.getHours()).padStart(2, '0')
-    const minutes = String(date.getMinutes()).padStart(2, '0')
-    const seconds = String(date.getSeconds()).padStart(2, '0')
-    const recent =
-      date.getDate() === curDate &&
-      date.getFullYear() === now.getFullYear() &&
-      date.getMonth() === now.getMonth()
-    if (recent) {
-      return `${hours}:${minutes}`
-    }
-    return `${year}-${month}-${day} ${hours}:${minutes}`
   }
 }
+

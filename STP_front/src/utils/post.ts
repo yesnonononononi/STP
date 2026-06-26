@@ -12,3 +12,25 @@ export function parseMediaUrls(mediaUrls: string | null | undefined): string[] {
     .map((url) => url.trim())
     .filter((url) => url.length > 0)
 }
+
+/**
+ * 组装帖子的 tag 标签，将其转化为淡蓝色且可点击的 HTML 超链接格式，并拼接在内容末尾
+ * @param content 原始的帖子正文内容
+ * @param tags 标签数组，例如 [{ tagName: '开心' }]
+ */
+export function parseTag(content: string, tags?: any[]): string {
+  if (!content) content = ''
+  if (!tags || tags.length === 0) {
+    return content
+  }
+  const tagHtmlList = tags.map(tag => {
+    const tagName = tag.tagName || tag.name || ''
+    if (!tagName) return ''
+    return `<a href="#" onclick="event.preventDefault();" style="color: #60a5fa; cursor: pointer; text-decoration: none; margin-right: 8px;">#${tagName}</a>`
+  }).filter(Boolean)
+
+  if (tagHtmlList.length === 0) {
+    return content
+  }
+  return `${content} ${tagHtmlList.join('')}`
+}

@@ -41,20 +41,12 @@
         'leading-relaxed',
         'whitespace-pre-wrap',
         'break-all'
-      ]">
-        {{ post.content }}
+      ]" v-html="parseEmoji(parseTag(post.content || '', post.tags))">
       </p>
       <div v-if="shouldShowExpand(post.content || '')" class="mt-0.5">
         <span @click="toggleExpand"
           class="text-blue-400 hover:text-blue-500 text-xs font-semibold cursor-pointer select-none">
           {{ isExpanded ? '收起' : '展开' }}
-        </span>
-      </div>
-
-      <!-- 标签展示 -->
-      <div v-if="post.tags && post.tags.length > 0" class="tags flex items-center gap-2 flex-wrap">
-        <span v-for="tag in post.tags" :key="tag.sort" class="text-blue-400 text-xs">
-          #{{ tag.tagName }}
         </span>
       </div>
 
@@ -194,6 +186,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Star, ChatDotRound, Share, Picture } from '@element-plus/icons-vue'
+import { parseEmoji } from '@/utils/emoji'
 import PostVisibilitySettings from '@/views/post/components/PostVisibilitySettings.vue'
 
 const showSettingsModal = ref(false)
@@ -227,7 +220,7 @@ const handleShare = async () => {
 import { PostAPI, PostStatus, PostType, type PostVO } from '@/services/post'
 import { TimeUtils } from '@/utils/time'
 import { formatNum } from '@/utils/page'
-import { parseMediaUrls } from '@/utils/post'
+import { parseMediaUrls, parseTag } from '@/utils/post'
 import UserHoverCard from '@/presentation/components/UserHoverCard.vue'
 import router from '@/router'
 

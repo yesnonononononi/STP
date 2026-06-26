@@ -1,5 +1,5 @@
 <template>
-  <div class="relative inline-flex items-center group select-none">
+  <div class="relative inline-flex items-center group z-100 select-none">
     <!-- 触发器插槽 -->
     <div class="inline-flex items-center cursor-pointer">
       <slot></slot>
@@ -11,22 +11,15 @@
       :class="[
         positionClasses[placement],
         width
-      ]"
-    >
-      <div
-        class="px-3 py-2 text-xs rounded-lg shadow-xl backdrop-blur-md border relative"
-        :class="themeClasses[theme]"
-      >
+      ]">
+      <div class="px-3 py-2 text-xs rounded-lg shadow-xl backdrop-blur-md border relative" :class="themeClasses[theme]">
         <slot name="content">{{ content }}</slot>
-        
+
         <!-- 指示箭头 -->
-        <div
-          class="absolute w-2 h-2 rotate-45 border"
-          :class="[
-            arrowClasses[placement],
-            arrowThemeClasses[theme]
-          ]"
-        ></div>
+        <div class="absolute w-2 h-2 rotate-45 border" :class="[
+          arrowClasses[placement],
+          arrowThemeClasses[theme]
+        ]"></div>
       </div>
     </div>
   </div>

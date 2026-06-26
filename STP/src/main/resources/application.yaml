@@ -106,3 +106,10 @@ payment:
 encrypt:
   rsa:
     private:
+ws:
+  session:
+    pingInterval: 10000
+    pingTimeout: 10000
+    hostname: localhost
+    port: 3000
+    ttl: 24

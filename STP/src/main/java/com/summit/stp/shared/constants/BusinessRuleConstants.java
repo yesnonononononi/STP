@@ -41,6 +41,10 @@ public final class BusinessRuleConstants {
          */
         public static final int MAX_IMAGE_NUM = 6;
     }
+    public static final class Message{
+
+        public static final int MAX_CONTENT_LENGTH = 1000;
+    }
 
     public static final class Comment {
         /**

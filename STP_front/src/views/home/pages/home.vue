@@ -7,17 +7,14 @@
       <member :visible="toMember" @close="toMember = false" />
     </div>
     <div class="tab bg-white shadow-md sticky top-0 z-13">
-      <div class="w-full max-w-[1400px] px-2 md:px-4 h-16 m-auto flex items-center justify-between gap-2 md:gap-8">
+      <div class="w-full max-w-350 px-2 md:px-4 h-16 m-auto flex items-center justify-between gap-2 md:gap-8">
         <span class="flex flex-row items-center w-auto gap-2 md:gap-4 shrink-0">
           <div class="flex items-center gap-1.5 md:gap-2">
-            <img src="/logo.png" class="w-8 h-8 md:w-12 md:h-12" alt="logo" />
-            <span
-              class="bg-clip-text text-transparent bg-linear-to-r from-blue-300 via-blue-200 to-blue-300 font-semibold text-lg md:text-2xl hidden sm:inline">STP</span>
+            <img src="/logo.png" class="size-4 md:size-6" alt="logo" />
+            <span class="  text-lg md:text-2xl hidden sm:inline">STP</span>
           </div>
           <span @click="toggleTab('home')" class="cursor-pointer hover:text-blue-200 text-xs md:text-base shrink-0"
             :class="curTab === 'home' ? 'text-blue-300 font-semibold' : ''">首页</span>
-          <span @click="toggleTab('coupon')" class="cursor-pointer hover:text-blue-200 text-xs md:text-base shrink-0"
-            :class="curTab === 'coupon' ? 'text-blue-300 font-semibold' : ''">福利</span>
         </span>
         <div class="hidden lg:block flex-3 search p-2 w-96 shrink">
           <el-input placeholder="请输入内容" class="w-96">
@@ -36,15 +33,15 @@
             :src="userProfile?.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
             alt="Avatar" referrerpolicy="no-referrer" />
           <div
-            class="scale-y-0 h-96 origin-top absolute w-96 top-14 bg-white opacity-0 rounded-md shadow-md group-hover:opacity-100 hover:opacity-100 pointer-events-none group-hover:scale-y-100 group-hover:pointer-events-auto hover:h-96 hover:pointer-events-auto hover:scale-y-100 transition-all duration-300 z-10">
+            class="scale-y-0 h-96 origin-top absolute w-84 top-14 bg-white opacity-0 rounded-md shadow-md group-hover:opacity-100 hover:opacity-100 pointer-events-none group-hover:scale-y-100 group-hover:pointer-events-auto hover:h-96 hover:pointer-events-auto hover:scale-y-100 transition-all duration-300 z-10">
             <div class="w-full h-full flex flex-col">
               <div class="introduce flex-2 flex items-center p-2">
-                <div class="introduce-avatar w-12 h-12">
-                  <img class="w-12 h-12 object-cover rounded-full bg-gray-300"
+                <div class="introduce-avatar flex items-center justify-center w-1/4 ">
+                  <img class="size-12 object-cover rounded-full bg-gray-300"
                     :src="userProfile?.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
                     alt="Avatar" referrerpolicy="no-referrer" />
                 </div>
-                <div class="introduce-info flex flex-col w-full p-2 m-2">
+                <div class="introduce-info flex flex-col w-3/4 p-2 m-2">
                   <div class="nick flex items-center gap-2">
                     <span class="font-semibold  text-gray-800">{{ userProfile?.nick || '未登录' }}</span>
 
@@ -119,8 +116,8 @@
               src="https://static.nowcoder.com/fe/file/oss/1675240070182OPBSB.png" alt="" />
             <span class="hidden sm:inline text-[10px] md:text-xs">会员</span>
           </div>
-          <div class="flex flex-col  items-center justify-center hover:text-blue-400 cursor-pointer shrink-0">
-            <svg focusable="false" viewBox="0 0 80 80" fill="currentColor" class="w-5 h-5 md:w-6 md:h-6"
+          <div class="flex flex-col  items-center justify-center hover:text-blue-400 cursor-pointer shrink-0 ">
+            <svg focusable="false" viewBox="0 0 80 80" fill="currentColor" class="w-5 h-5 md:w-6 md:h-6 "
               aria-hidden="true" data-v-79ba69ea="">
               <g fill="none" fill-rule="evenodd" stroke="currentColor">
                 <rect width="67.2" height="55.2" x="6.4" y="12.4" stroke-width="4.8" rx="12"></rect>
@@ -128,7 +125,7 @@
                   d="m10 18 25.2696 18.531c2.8157 2.0649 6.6453 2.065 9.4611.0006L70.0067 18h0"></path>
               </g>
             </svg>
-            <span class="hidden sm:inline text-[10px] md:text-xs">消息</span>
+            <span class="hidden sm:inline text-[10px] md:text-xs" @click="router.push({ name: 'message' })">消息</span>
           </div>
           <div class="flex flex-col items-center justify-center hover:text-blue-400 cursor-pointer shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -141,14 +138,14 @@
             <span class="hidden sm:inline text-[10px] md:text-xs">设置</span>
           </div>
           <div
-            class="hover:text-white cursor-pointer rounded-lg px-2 md:px-3 py-1 text-xs md:text-sm bg-linear-to-r from-blue-200 via-blue-100 to-blue-300 shrink-0"
+            class="hover:animate-pulse cursor-pointer rounded-lg px-2 md:px-3 py-1 text-xs md:text-sm bg-linear-to-r from-blue-200 via-blue-300 to-blue-300 shrink-0"
             @click="newPageWithId(undefined, 'post')">
             发布
           </div>
         </div>
       </div>
     </div>
-    <div class="w-full min-h-screen">
+    <div class="w-full flex-1 flex flex-col min-h-0">
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
           <component :is="Component" />

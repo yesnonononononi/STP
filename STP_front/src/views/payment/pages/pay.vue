@@ -102,7 +102,7 @@
                     </div>
                 </div>
                 <div class="flex justify-between items-center ">
-                    <span>优惠券共减</span>
+                    <span>共减</span>
                     <span class="text-red-500 font-semibold">- ¥{{ discount }}</span>
                 </div>
             </div>

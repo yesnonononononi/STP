@@ -39,11 +39,16 @@ export async function loadEmojiCache() {
  */
 export function parseEmoji(content: string): string {
   if (!content) return ''
-  return content.replace(/\[([^\]]+)\]/g, (match) => {
-    // 这里的 match 包含中括号，例如 "[可达鸭]"
-    const emojiHtml = emojiMap.value[match]
+  return content.replace(/\[([^\]]+)\]/g, (match, name) => {
+    // 检查 emojiMap 中是否有 "[可达鸭]" 或者是 "可达鸭"
+    const emojiHtml = emojiMap.value[match] || emojiMap.value[name]
     if (emojiHtml) {
-      return emojiHtml
+      // 如果已是完整的 img 标签，直接返回
+      if (emojiHtml.startsWith('<img')) {
+        return emojiHtml
+      }
+      // 如果仅是 URL 路径，则自动包装为符合样式标准的 img 标签
+      return `<img src="${emojiHtml}" class="emoji" alt="${name}" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle;" />`
     }
     return match
   })

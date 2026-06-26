@@ -14,7 +14,7 @@
             <div class="h-14 w-full bg-linear-to-br from-blue-400 via-blue-200 to-blue-300"></div>
             <div class="flex w-full">
               <div class="-translate-y-1/3 w-20 h-16 p-2">
-                <img class="w-18 m-auto h-18 rounded-full bg-gray-200" :src="displayUser?.avatar" alt="" />
+                <img class="size-16 m-auto  rounded-full bg-gray-200" :src="displayUser?.avatar" alt="" />
               </div>
               <div class="flex-2 detail text-stone-600">
                 <div class="grid grid-cols-3 gap-4">
@@ -74,6 +74,14 @@
     </div>
   </div>
 
+  <!-- 页面中心私信输入弹窗 -->
+  <Teleport to="body">
+    <div v-if="showMessageInput && displayUser"
+      class="fixed inset-0 z-1000 flex items-center justify-center bg-black/40 backdrop-blur-xs">
+      <PrivateMessageInput :user="messageTargetUser" :visible="showMessageInput" v-model="messageContent"
+        @close="showMessageInput = false" @success="handleMessageSuccess" />
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -84,6 +92,7 @@ import { UserAPI } from '@/services/user';
 import { useUserInfoStore } from '@/stores/userInfo';
 import { log } from '@/utils/log';
 import { ref, computed } from 'vue';
+import PrivateMessageInput from './private_message_input.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -158,7 +167,37 @@ async function handleFollow() {
   }
 }
 
+const showMessageInput = ref(false);
+const messageContent = ref('');
+
+const messageTargetUser = computed<UserSimpleData>(() => {
+  const u = displayUser.value;
+  if (!u) {
+    return { id: '', nick: '', avatar: '', memberLevel: '', memberLevelName: '', vipType: '', vipConfigIcon: '', ip: '' };
+  }
+  return {
+    id: String(u.id || ''),
+    nick: u.nick || '',
+    avatar: u.avatar || '',
+    memberLevel: u.memberLevel || '',
+    memberLevelName: u.memberLevelName || '',
+    vipType: u.vipType || '',
+    vipConfigIcon: u.vipConfigIcon || '',
+    ip: u.ip || '',
+    introduction: u.introduction || '',
+    fans: u.fans || 0,
+    liked: u.liked || 0,
+    topic: u.topic || 0,
+    gender: u.gender !== undefined ? String(u.gender) : undefined,
+    followed: u.followed
+  };
+});
+
 function handleMessage() {
-  log.info("私信功能开发中...");
+  showMessageInput.value = true;
+}
+
+function handleMessageSuccess() {
+  router.push({ name: 'message' });
 }
 </script>

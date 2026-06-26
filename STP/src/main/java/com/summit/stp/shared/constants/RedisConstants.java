@@ -5,16 +5,23 @@ import org.jspecify.annotations.NonNull;
 import java.time.Duration;
 
 public interface RedisConstants {
+    interface WS {
+        String PREFIX = "ws:";
+        String ONLINE_KEY = PREFIX + "online:";
+        String CONNECTION_KEY = PREFIX + "connection:";
+        String TOKEN_KEY = PREFIX+"token:";
+    }
 
-    interface  Coupon{
+    interface Coupon {
         String PREFIX = "coupon:";
         String USE_LOCK = PREFIX + "use:lock:";
-        String REFUND_LOCK = PREFIX+"fund:lock:";
+        String REFUND_LOCK = PREFIX + "fund:lock:";
         String ACTIVITY = PREFIX + "activity:";
-        String STOCK =ACTIVITY+"stock:";
-        String USER_LIMITED_HASH = ACTIVITY+"user:limited:";
+        String STOCK = ACTIVITY + "stock:";
+        String USER_LIMITED_HASH = ACTIVITY + "user:limited:";
         String SCHEDULED_REFRESH_COUPON_STOCK = PREFIX + "scheduler";
     }
+
     /**
      * 用户认证相关缓存键
      */
@@ -69,7 +76,7 @@ public interface RedisConstants {
         String CHANGED_LOCK = LIKE_COLLECT_CHANGED_LOCK;
     }
 
-    interface Comment{
+    interface Comment {
         String PREFIX = "comment:";
         String LIKE = PREFIX + "like:";
         String REPLY = PREFIX + "reply:";
@@ -82,10 +89,10 @@ public interface RedisConstants {
         String REPLY_CHANGED_RUN_PREFIX = PREFIX + "changed:reply:backup:";
         String REPLY_CHANGED_LOCK = PREFIX + "changed:reply:lock";
         @NonNull Long EXPIRE_TIME = 7L;
-        String HOT_SCORE_LOCK = PREFIX+"hot_score_lock";
+        String HOT_SCORE_LOCK = PREFIX + "hot_score_lock";
     }
 
-    interface Rank{
+    interface Rank {
         String PREFIX = "rank:";
         String LOCK = PREFIX + "lock:";
         String POST_HOT_ZSET = PREFIX + "post_hot:zset";

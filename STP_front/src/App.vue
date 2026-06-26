@@ -2,16 +2,18 @@
 import { onMounted, watch } from 'vue';
 import { loadEmojiCache } from '@/utils/emoji';
 import { useAuthStore } from '@/views/auth/store';
-
+import { start } from './services/ws/im/init';
 const authStore = useAuthStore();
 
 onMounted(() => {
   loadEmojiCache();
+  start();   //ws
 });
 
 watch(() => authStore.token, (token) => {
   if (token) {
     loadEmojiCache();
+    start();
   }
 });
 </script>

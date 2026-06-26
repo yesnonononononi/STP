@@ -33,9 +33,7 @@
             <div class="content px-4   w-full">
                 <div class="title font-semibold">{{ postInfo?.title }}</div>
                 <div class="content flex flex-col gap-2">
-                    <div class="text flex flex-wrap whitespace-pre-wrap break-all">
-                        {{ postInfo?.content }}
-                    </div>
+                    <div class="text flex flex-wrap whitespace-pre-wrap break-all" v-html="parseEmoji(parseTag(postInfo?.content || '', postInfo?.tags))"></div>
                     <div v-if="postInfo.type === PostType.IMAGE" class="img flex flex-wrap gap-2 w-full">
                         <div v-for="item in postInfo.mediaUrls" :key="item.id">
                             <el-image class="w-45 h-45 object-contain" :src="item.imageUrl" alt="" />
@@ -48,7 +46,6 @@
                             :src="postInfo.extraMediaUrl || ''" controls></audio>
                     </div>
                 </div>
-                <div class="tag"></div>
             </div>
             <div class="items flex items-center justify-between p-2 w-full pr-4">
                 <div class="item flex items-center gap-8 ">
@@ -215,6 +212,8 @@
 </template>
 <script setup lang="ts">
 import { PostAPI, PostType, type PostVO } from '@/services/post';
+import { parseEmoji } from '@/utils/emoji';
+import { parseTag } from '@/utils/post';
 import { useUserInfoStore } from '@/stores/userInfo';
 import { Motion } from 'motion-v';
 import { formatNum } from '@/utils/page';

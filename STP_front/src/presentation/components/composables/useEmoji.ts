@@ -80,9 +80,13 @@ export function useEmoji(model: Ref<string>, textareaRef?: Ref<any>) {
     const textarea = textareaRef?.value?.$el?.querySelector(
       'textarea',
     ) as HTMLTextAreaElement | null
-    const text = emoji.name
+    
+    const text = emoji.name.startsWith('[') && emoji.name.endsWith(']')
+      ? emoji.name
+      : `[${emoji.name}]`
+
     if (!textarea) {
-      model.value += text
+      model.value = (model.value || '') + text
       return
     }
     const startPos = textarea.selectionStart

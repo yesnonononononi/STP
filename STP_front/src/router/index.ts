@@ -13,7 +13,7 @@ const post = () => import('@/views/post/pages/post.vue')
 const postInfo = () => import('@/views/post/pages/postInfo.vue')
 const pay = () => import('@/views/payment/pages/pay.vue')
 const rank_board = () => import('@/views/rank_board/pages/rank_layout.vue')
-
+const message = () => import('@/views/message/pages/message.vue')
 const coupon = () => import('@/views/coupon/pages/coupon.vue')
 const routes: RouteRecordRaw[] = [
   {
@@ -53,6 +53,14 @@ const routes: RouteRecordRaw[] = [
         path: 'userProfile/:id',
         component: userProfile,
         name: 'userProfile',
+      },
+      {
+        path: '/message',
+        component: message,
+        name: 'message',
+        meta: {
+          title: '消息',
+        },
       },
       {
         path: '/coupon',

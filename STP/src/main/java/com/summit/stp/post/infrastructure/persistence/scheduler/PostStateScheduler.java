@@ -56,7 +56,7 @@ public class PostStateScheduler {
 
     @Scheduled(cron = "0 * * * * ?")
     public void updatePostState() {
-        log.info("【定时帖子状态同步】开始执行");
+        log.info("【定时帖子状态同步】");
         distributedLockUtil.executeWithLock(RedisConstants.Post.LIKE_COLLECT_CHANGED_LOCK, this::conduct);
     }
 
