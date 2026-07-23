@@ -74,8 +74,8 @@ export interface PostPO {
  * 帖子关联的图片视图对象
  */
 export interface PostImageVO {
-  id?: string | number
-  postId: string | number
+  id?: string
+  postId: string
   imageUrl: string
   width?: number | null
   height?: number | null
@@ -89,8 +89,8 @@ export interface PostImageVO {
  * 帖子展示视图对象 (与后端VO对应)
  */
 export interface PostVO {
-  id?: string | number
-  creatorId: string | number
+  id: string
+  creatorId: string
   title: string
   type: PostType
   content?: string
@@ -156,7 +156,7 @@ export interface CreateTagRequest {
  * 更新标签请求参数
  */
 export interface UpdateTagRequest {
-  id: number
+  id: string
   tagName?: string
   sort?: number
   status?: number
@@ -184,7 +184,7 @@ export interface ImageInfo {
 export interface CreatePostRequest {
   title: string
   type: PostType
-  tagIds?: number[]
+  tagIds?: string[]
   content?: string
   mediaUrls?: ImageInfo[]
   status: PostStatus
@@ -200,7 +200,7 @@ export interface UpdatePostRequest {
   title?: string
   type?: PostType
   content?: string
-  tagIds?: number[]
+  tagIds?: string[]
   mediaUrls?: ImageInfo[]
   status?: PostStatus
   isTop?: number
@@ -208,7 +208,7 @@ export interface UpdatePostRequest {
 }
 
 export interface TopicTag {
-  id: number
+  id: string | number
   keyword: string
   extra: number
 }

@@ -20,14 +20,16 @@
                 @click="curTab = item.id" v-for="(item, index) in tabList" :key="index"
                 :class="curTab === item.id ? 'text-blue-500' : 'text-gray-400 '">
                 <div v-html="item.icon" class="size-4"></div>
-                <span class="text-md shrink-0">{{
-                    item.name
-                    }}</span>
+                <div class="text-md shrink-0 relative">
+                    <span>{{ item.name }}</span>
+                    <div v-if="item.unReadCount > 0"
+                        class="absolute -right-0.5 -top-0.5 rounded-full size-2 bg-red-600"></div>
+                </div>
             </div>
 
         </div>
         <div class="body w-5/6 bg-linear-to-br from-blue-200 to-blue-100/50 rounded-xl h-full">
-            <SysMessage v-if="curTab == tabList[0]?.id"></SysMessage>
+            <SysMessage v-if="curTab == tabList[0]?.id" v-model="noticeList" :loading="sysLoading"></SysMessage>
             <Private_message v-else-if="curTab === tabList[1]?.id" v-model="sessionList"></Private_message>
         </div>
     </div>
@@ -35,33 +37,74 @@
 <script setup lang="ts">
 import Tooltip from '@/presentation/components/Tooltip.vue';
 import SysMessage from './sysMessage.vue';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import Private_message from './private_message.vue';
-import { MessageAPI, SessionAPI, type SessionVO } from '@/services/message/message.ts';
+import { MessageAPI, SessionAPI, type SessionVO, type sysNotice } from '@/services/message/message.ts';
 import { useUserInfoStore } from '@/stores/userInfo.ts';
-const tabList = [
+const tabList = reactive([
     {
         id: 1,
         name: '系统通知',
-        icon: '<svg t="1782115068360" class="icon size-4" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5763">   <path d="M861.575529 783.058824a30.117647 30.117647 0 0 1-30.117647-30.117648V378.096941C831.457882 202.541176 689.152 60.235294 513.626353 60.235294 338.070588 60.235294 195.764706 202.541176 195.764706 378.096941V752.941176a30.117647 30.117647 0 0 1-30.117647 30.117648H105.411765v60.235294h813.17647v-60.235294h-57.012706zM918.588235 722.823529a60.235294 60.235294 0 0 1 60.235294 60.235295v60.235294a60.235294 60.235294 0 0 1-60.235294 60.235294H105.411765a60.235294 60.235294 0 0 1-60.235294-60.235294v-60.235294a60.235294 60.235294 0 0 1 60.235294-60.235295h30.117647V378.096941C135.529412 169.261176 304.790588 0 513.626353 0c208.805647 0 378.066824 169.261176 378.066823 378.096941V722.823529H918.588235z m-481.882353 210.82353h180.705883a90.352941 90.352941 0 0 1-180.705883 0z" fill="#7F7F7F" p-id="5764"></path></svg>'
+        icon: '<svg t="1782115068360" class="icon size-4" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5763">   <path d="M861.575529 783.058824a30.117647 30.117647 0 0 1-30.117647-30.117648V378.096941C831.457882 202.541176 689.152 60.235294 513.626353 60.235294 338.070588 60.235294 195.764706 202.541176 195.764706 378.096941V752.941176a30.117647 30.117647 0 0 1-30.117647 30.117648H105.411765v60.235294h813.17647v-60.235294h-57.012706zM918.588235 722.823529a60.235294 60.235294 0 0 1 60.235294 60.235295v60.235294a60.235294 60.235294 0 0 1-60.235294 60.235294H105.411765a60.235294 60.235294 0 0 1-60.235294-60.235294v-60.235294a60.235294 60.235294 0 0 1 60.235294-60.235295h30.117647V378.096941C135.529412 169.261176 304.790588 0 513.626353 0c208.805647 0 378.066824 169.261176 378.066823 378.096941V722.823529H918.588235z m-481.882353 210.82353h180.705883a90.352941 90.352941 0 0 1-180.705883 0z" fill="#7F7F7F" p-id="5764"></path></svg>',
+        unReadCount: 0
     },
     {
         id: 2,
         name: '私信消息',
-        icon: '<svg t="1782115860701" class="icon size-5" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5012"><path d="M874.666667 277.333333v469.333334H149.333333V277.333333h725.333334m14.72-64H134.613333A49.066667 49.066667 0 0 0 85.333333 262.613333v498.773334A49.066667 49.066667 0 0 0 134.613333 810.666667h754.773334A49.066667 49.066667 0 0 0 938.666667 761.386667V262.613333A49.066667 49.066667 0 0 0 889.386667 213.333333z" fill="#7F7F7F" p-id="5013"></path><path d="M786.986667 400.426667a32 32 0 0 0-42.666667-11.52L512 522.24l-231.253333-133.333333a32 32 0 1 0-32 55.253333l240.213333 138.666667a31.36 31.36 0 0 0 23.04 3.413333 31.36 31.36 0 0 0 23.04-3.413333l240.213333-138.666667a32 32 0 0 0 11.733334-43.733333z" fill="#7F7F7F" p-id="5014"></path></svg>'
+        icon: '<svg t="1782115860701" class="icon size-5" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5012"><path d="M874.666667 277.333333v469.333334H149.333333V277.333333h725.333334m14.72-64H134.613333A49.066667 49.066667 0 0 0 85.333333 262.613333v498.773334A49.066667 49.066667 0 0 0 134.613333 810.666667h754.773334A49.066667 49.066667 0 0 0 938.666667 761.386667V262.613333A49.066667 49.066667 0 0 0 889.386667 213.333333z" fill="#7F7F7F" p-id="5013"></path><path d="M786.986667 400.426667a32 32 0 0 0-42.666667-11.52L512 522.24l-231.253333-133.333333a32 32 0 1 0-32 55.253333l240.213333 138.666667a31.36 31.36 0 0 0 23.04 3.413333 31.36 31.36 0 0 0 23.04-3.413333l240.213333-138.666667a32 32 0 0 0 11.733334-43.733333z" fill="#7F7F7F" p-id="5014"></path></svg>',
+        unReadCount: computed(() => {
+            let count = 0;
+            sessionList.value.forEach(session => {
+                count += session.unreadCount;
+            })
+            return count;
+        })
     }
-]
+]);
+const curTab = ref(tabList[0] && tabList[0].id)
 const me = useUserInfoStore().user;
+const sysLoading = ref(false)
 const sessionList = ref<SessionVO[]>([])
+const noticeList = ref<sysNotice[]>([])
 onMounted(async () => {
+    await loadSysMsgList();
+    await loadSessionList();
+})
+watch(() => curTab.value, async () => {
+    if (curTab.value === tabList[1]?.id) {
+        await loadSessionList()
+    } else if (curTab.value === tabList[0]?.id) {
+        await loadSysMsgList()
+    }
+})
+async function loadSessionList() {
     const sessions = (await SessionAPI.querySessionList()).data || [];
     sessionList.value = sessions;
-})
+    let uc = 0;
+    sessions.forEach(session => {
+        uc += session.unreadCount;
+    })
+    tabList[1]!.unReadCount = uc;
+}
+function read(id: number) {
+    if (tabList[id]) {
+        tabList[id].unReadCount = 0;
+    }
+}
+async function loadSysMsgList() {
+    try {
+        if (sysLoading.value) return;
+        sysLoading.value = true;
+        noticeList.value = (await MessageAPI.querySysMessage()).data;
+    } finally {
+        sysLoading.value = false;
+    }
+}
 async function readAll() {
     await MessageAPI.readAll()
     sessionList.value.forEach(session => {
         session.unreadCount = 0;
     })
 }
-const curTab = ref(tabList[0] && tabList[0].id)
+
 </script>

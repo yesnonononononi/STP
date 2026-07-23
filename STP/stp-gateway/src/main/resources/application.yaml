@@ -1,0 +1,71 @@
+server:
+  port: 9090
+
+spring:
+  main:
+    web-application-type: reactive
+  application:
+    name: stp-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8080
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 1
+
+logging:
+  level:
+    org.springframework.cloud.gateway: TRACE
+    org.springframework.cloud.loadbalancer: DEBUG
+    org.springframework.web.reactive.function.client: TRACE
+    org.springframework.web.server.adapter.HttpWebHandlerAdapter: TRACE
+
+stp:
+  gateway:
+    routes:
+      - id: auth-service
+        uri: lb://stp-auth-service
+        paths:
+          - /user-auth/**
+      - id: user-service
+        uri: lb://stp-user-service
+        paths:
+          - /user/**
+          - /user-follow/**
+          - /member/**
+      - id: toolbox-service
+        uri: lb://stp-toolbox-service
+        paths:
+          - /toolbox/**
+      - id: comment-service
+        uri: lb://stp-comment-service
+        paths:
+          - /post/comment/**
+      - id: post-service
+        uri: lb://stp-post-service
+        paths:
+          - /post/**
+          - /rank/**
+          - /common/**
+      - id: im-service
+        uri: lb://stp-im-service
+        paths:
+          - /message/**
+          - /ws/**
+          - /entertainment/**
+          - /session/**
+      - id: order-service
+        uri: lb://stp-order-service
+        paths:
+          - /order/**
+      - id: payment-service
+        uri: lb://stp-payment-service
+        paths:
+          - /pay/**
+      - id: coupon-service
+        uri: lb://stp-coupon-service
+        paths:
+          - /coupon/**

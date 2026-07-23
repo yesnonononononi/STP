@@ -120,4 +120,12 @@ export class SessionAPI {
   }): Promise<Result<void>> {
     return await request.post('/session/save', form)
   }
+
+  public static async draft(draft: string, sessionId: string) {
+    return await request.post('/session/draft', { draft: draft, sessionId: sessionId })
+  }
+
+  public static async delDraft(sessionId: string) {
+    return await request.post('/session/draft/del', null, { params: { sessionId } })
+  }
 }

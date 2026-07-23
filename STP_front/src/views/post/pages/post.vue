@@ -11,7 +11,7 @@
                 发动态 >
             </span>
         </div>
-        <div class="body w-full   md:w-1/2 m-auto bg-white  rounded-md shadow-md mt-2 md:h-auto flex flex-col  ">
+        <div class="body w-full   md:w-1/2 m-auto bg-white  rounded-md shadow-md mt-2 md:h-auto flex flex-col relative">
             <input v-model="form.title"
                 class=" flex-1 max-h-10 border-b w-full p-6 border-gray-300 font-semibold text-md md:text-2xl outline-none"
                 maxlength="50" placeholder="好的标题会获得更多曝光欧~" />
@@ -39,7 +39,7 @@
 
                 <div class="file flex gap-2 ">
                     <el-upload class="w-auto" action="#" list-type="picture-card" :limit="10" :auto-upload="false"
-                        :file-list="fileList" :on-change="handleChange" :on-remove="handleRemove"
+                        multiple :file-list="fileList" :on-change="handleChange" :on-remove="handleRemove"
                         accept=".png,.jpg,.mp4,.jpeg">
                         <el-icon>
                             <Plus />
@@ -116,6 +116,7 @@
             </div>
             <PostVisibilitySettings :visible="showSettingsModal" :post="postFormVO" @close="showSettingsModal = false"
                 @update-scope="form.visibleScope = $event" />
+            <Loading v-model="submitting" prompt="正在发布..." bg-color="bg-white/70 rounded-md" />
         </div>
 
         <!-- 媒体预览弹窗 -->
@@ -136,6 +137,7 @@ import router from '@/router';
 import { Plus, ZoomIn, Delete } from '@element-plus/icons-vue';
 import TopicTagSelector from '@/presentation/components/TopicTagSelector.vue';
 import PostVisibilitySettings from '@/views/post/components/PostVisibilitySettings.vue';
+import Loading from '@/presentation/components/loading.vue';
 import { usePost } from '../composables/usePost';
 import type { PostVO } from '@/services/post';
 
@@ -163,6 +165,7 @@ const {
     handlePictureCardPreview,
     handleChange,
     handleRemove,
+    submitting,
     submit,
     toggleTag,
     removeTag

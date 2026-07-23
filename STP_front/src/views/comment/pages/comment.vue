@@ -13,13 +13,17 @@
                         <span class="flex bg-blue-200 rounded-xl">
                             <img :src="comment.comment.publisher.vipConfigIcon" alt="" class="w-4 h-4">
                             <span class="text-xs text-stone-600 pr-1">{{ comment.comment.publisher.memberLevelName
-                            }}</span>
+                                }}</span>
                         </span>
                     </div>
-
+                    <div class="text-xs p-0.5 bg-gray-200  rounded-md text-gray-400"
+                        v-if="comment.comment.publisher.followed && comment.comment.publisher.id !== useUserInfoStore().userId">
+                        你的关注
+                    </div>
                     <span v-if="acquireCommentTag()"
-                        class="bg-linear-to-r from-blue-200/70 to-blue-400/70 px-1.5 py-0.5 rounded w-fit text-xs">{{
-                            acquireCommentTag() }}</span>
+                        class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-500/10 text-gray-500 shadow-sm border border-gray-200/30 transition-all duration-300">
+                        {{ acquireCommentTag() }}
+                    </span>
                     <div class="flex items-center gap-1"
                         v-if="comment.comment.parentId && comment.comment.parentId !== comment.comment.rootId">
                         <svg t="1780284657465" class="icon w-4 h-4" viewBox="0 0 1024 1024" version="1.1"
@@ -32,8 +36,9 @@
 
                 </div>
                 <div class="text-xs text-gray-400 flex gap-2">
-                    <span>{{ comment.comment.publisher.ip }}</span>
                     <span>{{ TimeUtils.timestampToDate(comment.comment.createTime) }}</span>
+                    <span>{{ comment.comment.publisher.ip }}</span>
+
                 </div>
             </div>
 
@@ -52,11 +57,11 @@
             <!-- 评论视频展示 -->
             <div v-else-if="checkCommentType(comment.comment, CommentType.VIDEO)"
                 class="comment-video mt-1 max-w-64 relative group cursor-pointer overflow-hidden rounded-lg"
-                @click="openVideoPreview(comment.comment.extra.mediaUrl || '')"
-                @mouseenter="onVideoMouseEnter" @mouseleave="onVideoMouseLeave">
+                @click="openVideoPreview(comment.comment.extra.mediaUrl || '')" @mouseenter="onVideoMouseEnter"
+                @mouseleave="onVideoMouseLeave">
                 <video :src="comment.comment.extra.mediaUrl"
-                    class="w-auto max-w-full max-h-64 object-contain bg-black rounded-lg"
-                    preload="metadata" muted loop controlsList="nodownload" />
+                    class="w-auto max-w-full max-h-64 object-contain bg-black rounded-lg" preload="metadata" muted loop
+                    controlsList="nodownload" />
             </div>
             <!-- 评论音频展示 -->
             <div v-else-if="checkCommentType(comment.comment, CommentType.AUDIO)" class="comment-audio mt-1 max-w-sm">
@@ -111,12 +116,12 @@
 
     <!-- 视频放大预览弹窗 -->
     <Teleport to="body">
-      <div v-if="videoDialogVisible" @click="videoDialogVisible = false"
-        class="w-full flex flex-col justify-center fixed z-50 inset-0 bg-gray-500/50 pointer-events-auto">
-        <div class="w-auto m-auto h-auto">
-          <video :src="previewVideoUrl" controls autoplay class="max-w-full max-h-[55vh] object-contain"></video>
+        <div v-if="videoDialogVisible" @click="videoDialogVisible = false"
+            class="w-full flex flex-col justify-center fixed z-50 inset-0 bg-gray-500/50 pointer-events-auto">
+            <div class="w-auto m-auto h-auto">
+                <video :src="previewVideoUrl" controls autoplay class="max-w-full max-h-[55vh] object-contain"></video>
+            </div>
         </div>
-      </div>
     </Teleport>
 </template>
 
@@ -161,6 +166,8 @@ const acquireCommentTag = () => {
         return '作者回复过'
     }
 }
+
+
 onMounted(() => {
     init(comment.comment);
 })

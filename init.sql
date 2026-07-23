@@ -347,3 +347,39 @@ create table coupon_activity(
     create_time datetime not null default current_timestamp comment '创建时间',
     update_time datetime not null default current_timestamp on update current_timestamp comment '更新时间'
 ) comment = '优惠券投放活动表';
+
+create table user_setting (
+    id bigint primary key comment 'primary key',
+    user_id bigint not null comment '用户ID',
+    show_delPost tinyint not null default 1 comment '是否显示删除的帖子',
+    Customization_recommend tinyint not null default 1 comment '是否开启个性化推荐',
+    create_time datetime not null default current_timestamp comment '创建时间',
+    update_time datetime not null default current_timestamp on update current_timestamp comment '更新时间',
+    unique index `uk_user_id` (`user_id`)
+)comment '用户配置表';
+
+-- 15. 用户签到流水表
+CREATE TABLE IF NOT EXISTS `user_sign_log` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '自增主键',
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `sign_date` date NOT NULL COMMENT '签到日期（格式：2026-07-17）',
+  `sign_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '签到具体时间戳',
+  `sign_source` tinyint(4) DEFAULT '1' COMMENT '签到来源：1-APP 2-H5 3-小程序',
+  `reward_points` int(11) DEFAULT '0' COMMENT '本次签到获得的基础积分',
+  `continuous_days_snapshot` int(11) DEFAULT '0' COMMENT '签到时的连续天数快照（用于历史对账）',
+  `extra` json DEFAULT NULL COMMENT '扩展字段（存放补签卡ID、活动ID等）',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_date` (`user_id`, `sign_date`) COMMENT '唯一索引：确保一天只能签一次，天然防重',
+  KEY `idx_sign_date` (`sign_date`) COMMENT '普通索引：用于运营统计某天有多少人签到'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户签到流水表';
+
+-- 16. 用户签到统计表
+CREATE TABLE IF NOT EXISTS `user_sign_stats` (
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `total_days` int(11) NOT NULL DEFAULT '0' COMMENT '历史累计签到总天数',
+  `current_continuous_days` int(11) NOT NULL DEFAULT '0' COMMENT '当前连续签到天数（截至今天）',
+  `max_continuous_days` int(11) NOT NULL DEFAULT '0' COMMENT '历史最高连续签到天数（勋章用）',
+  `last_sign_date` date DEFAULT NULL COMMENT '最后一次签到日期（用于快速判断昨天是否签到）',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户签到统计表';

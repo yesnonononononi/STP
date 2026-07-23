@@ -1,5 +1,5 @@
 <template>
-    <div v-if="noticeList.length !== 0" class="w-full h-full flex flex-col gap-3 p-2 overflow-y-auto">
+    <div v-if="noticeList && noticeList.length !== 0" class="w-full h-full flex flex-col gap-3 p-2 overflow-y-auto">
         <div class="rounded-xl bg-white shadow-md p-4 flex flex-col gap-2" v-for="notice in noticeList"
             :key="notice.id">
             <span class="text-gray-800 text-sm font-semibold" v-html="notice.content"></span>
@@ -18,22 +18,8 @@
 import { MessageAPI, type sysNotice } from '@/services/message/message';
 import { TimeUtils } from '@/utils/time';
 import { onMounted, ref } from 'vue';
-const loading = ref(false);
-const noticeList = ref<sysNotice[]>([
-
-])
-
-async function loadData() {
-    try {
-        if (loading.value) return;
-        loading.value = true;
-        noticeList.value = (await MessageAPI.querySysMessage()).data;
-    } finally {
-        loading.value = false;
-    }
-}
-
-onMounted(() => {
-    loadData();
-})
+const props = defineProps<{
+    loading: boolean;
+}>();;
+const noticeList = defineModel<sysNotice[]>();
 </script>

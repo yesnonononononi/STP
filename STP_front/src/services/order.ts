@@ -43,12 +43,6 @@ export class OrderAPI {
     })
   }
 
-  /**
-   * 确认并完成订单（接单/完成等）
-   */
-  static async ackOrder(orderId: string | number): Promise<Result<void>> {
-    return await request.post(`/order/ack/${orderId}`)
-  }
 
   /**
    * 手动对账订单并更新/补偿本地权益与状态

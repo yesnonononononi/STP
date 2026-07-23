@@ -1,13 +1,8 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
-const auth = () => import('@/views/auth/pages/auth.vue')
-const login = () => import('@/views/auth/pages/loginPage.vue')
-const register = () => import('@/views/auth/pages/registerPage.vue')
-const forget = () => import('@/views/auth/pages/forgetPage.vue')
 const home = () => import('@/views/home/pages/home.vue')
 const payResult = () => import('@/views/payment/pages/PayResult.vue')
 const userProfile = () => import('@/views/user/pages/user-profile.vue')
-const homeFeed = () => import('@/views/home/pages/home-feed.vue')
 const userSettings = () => import('@/views/user/pages/user-settings.vue')
 const post = () => import('@/views/post/pages/post.vue')
 const postInfo = () => import('@/views/post/pages/postInfo.vue')
@@ -15,6 +10,8 @@ const pay = () => import('@/views/payment/pages/pay.vue')
 const rank_board = () => import('@/views/rank_board/pages/rank_layout.vue')
 const message = () => import('@/views/message/pages/message.vue')
 const coupon = () => import('@/views/coupon/pages/coupon.vue')
+const postFeed = () => import('@/views/home/pages/post-feed.vue')
+const orders = () => import('@/views/payment/pages/MyOrders.vue')
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -32,18 +29,23 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/home',
     component: home,
-    redirect: '/home/homeFeed',
+    redirect: '/home/feed',
     name: 'home',
 
     children: [
+      {
+        path: 'postTagInfo/:tagName',
+        component: () => import('@/views/post/pages/postTagInfo.vue'),
+        name: 'postTagInfo',
+      },
       {
         path: 'userSettings',
         component: userSettings,
         name: 'userSettings',
       },
       {
-        path: 'homeFeed',
-        component: homeFeed,
+        path: 'feed',
+        component: postFeed,
         name: 'homeMain',
         meta: {
           title: '首页',
@@ -67,39 +69,20 @@ const routes: RouteRecordRaw[] = [
         component: coupon,
         name: 'coupon',
       },
+      {
+        path: '/orders',
+        component: orders,
+        name: 'orders',
+        meta: {
+          title: '我的订单',
+        },
+      },
     ],
   },
   {
     path: '/payment',
     name: 'payment',
     component: pay,
-  },
-
-  {
-    path: '/auth',
-    component: auth,
-    name: 'auth',
-    meta: {
-      title: '用户认证',
-    },
-    redirect: '/auth/login',
-    children: [
-      {
-        path: 'login',
-        component: login,
-        name: 'login',
-      },
-      {
-        path: 'register',
-        component: register,
-        name: 'register',
-      },
-      {
-        path: 'forget',
-        component: forget,
-        name: 'forget',
-      },
-    ],
   },
   {
     path: '/payResult',
@@ -117,9 +100,37 @@ const routes: RouteRecordRaw[] = [
   },
 ]
 
+import { useAuthStore } from '@/views/auth/store'
+import { log } from '@/utils/log'
+
 const router = createRouter({
   history: createWebHistory('/'),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      return { top: 0 }
+    }
+  }
+})
+
+router.beforeEach((to, from, next) => {
+  const authPages = ['post', 'message', 'coupon', 'userSettings', 'payment', 'payResult', 'orders']
+  if (authPages.includes(to.name as string)) {
+    const authStore = useAuthStore()
+    if (!authStore.token) {
+      log.warning('请先登录后访问该页面')
+      authStore.showLoginDialog()
+      if (from.name) {
+        next(false)
+      } else {
+        next({ name: 'homeMain' })
+      }
+      return
+    }
+  }
+  next()
 })
 
 export default router

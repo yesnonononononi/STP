@@ -36,17 +36,7 @@
           </div>
           <div class="mid w-full pl-5 flex gap-2">
             <span class="truncate max-w-48 block font-semibold text-black">{{ displayUser?.nick }}</span>
-            <div class="tag flex items-center gap-1" v-if="displayUser?.memberLevelName && displayUser.vipType">
-              <div
-                class="shrink-0 w-auto px-1.5 h-6 rounded-md text-xs bg-linear-to-l from-blue-200 via-blue-100 to-blue-300 flex items-center justify-center gap-1">
-                <img class='w-4 h-4' :src="displayUser?.vipConfigIcon" alt="">
-                <span class="text-xs text-stone-600">{{ displayUser?.memberLevelName }}</span>
-              </div>
-              <span
-                class="bg-linear-to-br shrink-0 from-yellow-300 text-xs via-yellow-100 to-yellow-400 p-1 text-stone-500 flex items-center justify-center h-6 rounded-md">{{
-                  displayUser?.vipType }}
-              </span>
-            </div>
+            <VipTag :user="displayUser" />
           </div>
           <div class="habbit ml-8 w-full h-6">
             <div class="w-auto h-6 text-xs flex items-center gap-3 justify-start">
@@ -90,9 +80,11 @@ import { formatNum } from '@/utils/page';
 import type { UserSimpleData, UserProfileData } from '@/services/user';
 import { UserAPI } from '@/services/user';
 import { useUserInfoStore } from '@/stores/userInfo';
+import { useAuthStore } from '@/views/auth/store';
 import { log } from '@/utils/log';
 import { ref, computed } from 'vue';
 import PrivateMessageInput from './private_message_input.vue';
+import VipTag from './VipTag.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -137,7 +129,8 @@ const displayUser = computed(() => {
 async function handleFollow() {
   if (!me?.id) {
     log.error("请先登录");
-    router.push({ name: 'login' });
+    const authStore = useAuthStore()
+    authStore.showLoginDialog();
     return;
   }
   const userId = displayUser.value.id;
@@ -194,6 +187,12 @@ const messageTargetUser = computed<UserSimpleData>(() => {
 });
 
 function handleMessage() {
+  const authStore = useAuthStore()
+  if (!authStore.token) {
+    log.warning("请先登录后操作");
+    authStore.showLoginDialog();
+    return;
+  }
   showMessageInput.value = true;
 }
 

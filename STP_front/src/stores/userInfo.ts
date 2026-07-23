@@ -8,6 +8,9 @@ export const useUserInfoStore = defineStore(
     // State - 用户基本信息
     const user = ref<UserProfileData | null>(null)
 
+    // State - 用户偏好配置
+    const settings = ref<{ showDelPost: number; customizationRecommend: number } | null>(null)
+
     // State - 加载状态
     const loading = ref(false)
 
@@ -30,9 +33,24 @@ export const useUserInfoStore = defineStore(
       if (!user) return
       setUser(user)
     }
+    // Actions - 加载用户偏好配置
+    const fetchSettings = async () => {
+      try {
+        const res = await UserAPI.getSettings()
+        if (res.code === 1 && res.data) {
+          settings.value = {
+            showDelPost: res.data.showDelPost,
+            customizationRecommend: res.data.customizationRecommend
+          }
+        }
+      } catch (err) {
+        console.error('加载偏好配置失败:', err)
+      }
+    }
     // Actions - 清除用户信息
     const clearUser = () => {
       user.value = null
+      settings.value = null
       error.value = null
     }
 
@@ -70,6 +88,7 @@ export const useUserInfoStore = defineStore(
     return {
       // State
       user,
+      settings,
       loading,
       error,
 
@@ -83,6 +102,7 @@ export const useUserInfoStore = defineStore(
       setUser,
       clearUser,
       flush,
+      fetchSettings,
       setLoading,
       calculateCompleteness,
       setError,

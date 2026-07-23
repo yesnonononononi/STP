@@ -99,8 +99,9 @@ import { messageStatus, messageType, type messageVO } from '@/services/message/m
 import { useUserInfoStore } from '@/stores/userInfo';
 import { TimeUtils } from '@/utils/time';
 import Tooltip from '@/presentation/components/Tooltip.vue';
-import router from '@/router';
 import { ref } from 'vue';
+import router from '@/router';
+import { useAuthStore } from '@/views/auth/store';
 
 const props = defineProps<{
     message: messageVO;
@@ -114,16 +115,18 @@ const emit = defineEmits<{
     (e: 'resend', message: messageVO): void;
 }>();
 const userStore = useUserInfoStore();
+const authStore = useAuthStore();
 
 
 const isSelf = computed(() => {
-    return props.message.user.id === userStore.user!.id.toString()
+    return userStore.user && String(props.message.user.id) === String(userStore.user.id)
 });
 
 
 onMounted(() => {
     if (!userStore.user) {
-        router.push({ name: 'login' });
+        authStore.showLoginDialog();
+        router.push('/');
     }
 })
 </script>

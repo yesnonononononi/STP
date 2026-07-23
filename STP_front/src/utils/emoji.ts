@@ -1,6 +1,5 @@
 import { ref } from 'vue'
 import { EntertainmentAPI } from '@/services/entertainment'
-import { useAuthStore } from '@/views/auth/store'
 
 // 全局表情 HTML 映射缓存：emojiName -> emojiHtmlString (注：emojiName 已包含中括号，如 "[可达鸭]")
 export const emojiMap = ref<Record<string, string>>({})
@@ -10,9 +9,6 @@ let isLoaded = false
  * 异步初始化表情缓存，遍历所有表情包加载表情列表
  */
 export async function loadEmojiCache() {
-  const authStore = useAuthStore()
-  if (!authStore.token) return
-
   if (isLoaded) return
   isLoaded = true
   try {

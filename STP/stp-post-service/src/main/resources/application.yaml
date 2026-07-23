@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: stp-post-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8080
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/stp-project?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true&tinyInt1isBit=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 1
+      timeout: 500ms
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        acknowledge-mode: manual
+        concurrency: 5
+        max-concurrency: 10
+        prefetch: 1
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+          max-interval: 10000
+          multiplier: 2
+
+server:
+  port: 8083
+
+minio:
+  endpoint: http://localhost:9000
+  policy: public
+  access-key: admin
+  secret-key: 12345678
+  default_bucket: stp-summit-files
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/post/**/*.xml, classpath*:mapper/rank_board/**/*.xml
+  type-aliases-package: com.summit.stp.post.infrastructure.persistence.po,com.summit.stp.rank_board.infrastructure.persistence.po
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto

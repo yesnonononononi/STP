@@ -1,6 +1,7 @@
 <template>
     <div class="relative flex flex-col gap-2.5 overflow-y-auto px-3 py-1 grow">
         <div v-for="item in rankList" :key="item.sort" 
+            @click="handleItemClick(item)"
             class="group flex justify-between items-center bg-gray-50/40 hover:bg-linear-to-r hover:from-blue-50/50 hover:to-indigo-50/30 p-2.5 rounded-xl border border-transparent hover:border-blue-100/50 transition-all duration-200 cursor-pointer">
             <div class="flex items-center gap-3 truncate grow">
                 <span class="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-transform duration-200 group-hover:scale-105"
@@ -30,8 +31,17 @@ import Loading from '@/presentation/components/loading.vue';
 import { formatNum } from '@/utils/page';
 import { ref } from 'vue';
 import type { MappedCommonRank } from '@/services/rank/types';
+
 const rankList = defineModel<MappedCommonRank[]>()
 const loading = ref(rankList.value && rankList.value.length === 0)
+
+const emit = defineEmits<{
+    (e: 'clickItem', item: MappedCommonRank): void
+}>()
+
+function handleItemClick(item: MappedCommonRank) {
+    emit('clickItem', item)
+}
 
 function calculateColor(sort: number | string) {
     sort = Number(sort)

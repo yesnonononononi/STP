@@ -19,18 +19,21 @@ export function parseMediaUrls(mediaUrls: string | null | undefined): string[] {
  * @param tags 标签数组，例如 [{ tagName: '开心' }]
  */
 export function parseTag(content: string, tags?: any[]): string {
-  if (!content) content = ''
+  if (!content) return ''
   if (!tags || tags.length === 0) {
     return content
   }
-  const tagHtmlList = tags.map(tag => {
+  let result = content
+  tags.forEach(tag => {
     const tagName = tag.tagName || tag.name || ''
-    if (!tagName) return ''
-    return `<a href="#" onclick="event.preventDefault();" style="color: #60a5fa; cursor: pointer; text-decoration: none; margin-right: 8px;">#${tagName}</a>`
-  }).filter(Boolean)
-
-  if (tagHtmlList.length === 0) {
-    return content
-  }
-  return `${content} ${tagHtmlList.join('')}`
+    if (!tagName) return
+    const escapedTagName = tagName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+    // 优先匹配被双井号包围的格式：#标签名#
+    const regexWithTwoHashes = new RegExp(`#${escapedTagName}#`, 'g')
+    result = result.replace(regexWithTwoHashes, `<a href="#" onclick="event.preventDefault();" style="color: #60a5fa; cursor: pointer; text-decoration: none;">#${tagName}#</a>`)
+    // 兼容匹配单井号格式：#标签名 (后面没有#)
+    const regexWithOneHash = new RegExp(`#${escapedTagName}(?!#)`, 'g')
+    result = result.replace(regexWithOneHash, `<a href="#" onclick="event.preventDefault();" style="color: #60a5fa; cursor: pointer; text-decoration: none;">#${tagName}</a>`)
+  })
+  return result
 }

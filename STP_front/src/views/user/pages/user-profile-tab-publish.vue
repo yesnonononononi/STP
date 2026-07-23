@@ -10,14 +10,16 @@
             </div>
         </Teleport>
         <Loading v-model="loading" />
-        <div v-if="topicList.length > 0"
+        <div v-if="filteredTopicList.length > 0"
             class="w-full h-full flex bg-gray-50 overflow-y-auto flex-col gap-4 p-4 scrollbar-thin">
-            <PostItem v-for="(topic, index) in topicList" :key="index" :post="topic" :self="props.self" :is-card="true"
+            <PostItem v-for="(topic, index) in filteredTopicList" :key="index" :post="topic" :self="props.self" :is-card="true"
+                :hide-top="props.status === PostStatus.COLLECTED"
                 @like="like" @collect="collect" @comment-click="curPost = $event; visible = true;" @top="handleTopClick"
                 @delete="emit('delete', $event)" />
         </div>
 
-        <div v-else class="absolute inset-0 z-10 bg-white flex justify-center items-center">
+        <div v-else-if="filteredTopicList.length == 0 && !loading"
+            class="absolute inset-0 z-10 bg-white flex justify-center items-center">
             <div class="flex flex-col items-center gap-4 ">
                 <span>这里空空如也~~</span>
             </div>
@@ -29,13 +31,14 @@
 
 <script lang="ts" setup>
 import { PostAPI, PostStatus, type PostVO } from '@/services/post';
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { scrollerFromBottom } from '@/utils/scollerbar';
 import { usePostInteractions } from '@/views/post/composables/usePostInteractions';
 import postInfo from '@/views/post/pages/postInfo.vue';
 import PostItem from '@/views/post/pages/postItem.vue';
 import Loading from '@/presentation/components/loading.vue';
+import { useUserInfoStore } from '@/stores/userInfo';
 
 const curPost = ref<PostVO | null>(null);
 const visible = ref(false);
@@ -51,6 +54,13 @@ const emit = defineEmits(['delete']);
 const loading = ref(false)
 const hasMore = ref(true)
 const topicList = ref<PostVO[]>([])
+const userStore = useUserInfoStore()
+const filteredTopicList = computed(() => {
+    if (userStore.settings?.showDelPost === 0) {
+        return topicList.value.filter(topic => Number(topic.status) !== PostStatus.DELETED)
+    }
+    return topicList.value
+})
 
 const {
     like,
@@ -162,7 +172,8 @@ async function loadMyList(s: number) {
 }
 
 defineExpose({
-    loadData: load
+    loadData: load,
+    topicList
 })
 
 const refresh = async () => {

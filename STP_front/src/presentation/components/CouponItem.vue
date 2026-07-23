@@ -59,9 +59,9 @@
 
         <!-- 2. 秒杀倒计时模式 -->
         <template v-else-if="props.item.type === 2">
-          <button v-if="countdownSeconds > 0" disabled
+          <button v-if="state.countdownSeconds > 0" disabled
             class="rounded-full w-full py-1 text-center bg-gray-200 text-gray-500 border border-gray-300 text-xs font-semibold select-none cursor-not-allowed">
-            {{ countdownText }}
+            {{ state.countdownText }}
           </button>
           <button v-else @click="$emit('receive', item.id)"
             class="rounded-full w-full py-1 text-center text-white hover:shadow-[0px_2px_6px_rgba(239,68,68,0.5)] transition-all duration-200 cursor-pointer text-xs font-medium"
@@ -73,7 +73,7 @@
 
         <!-- 3. 我的已持有模式 -->
         <template v-if="props.me">
-          <button v-if="isExpired || props.item.status === CouponStatus.EXPIRED" disabled
+          <button v-if="state.isExpired || props.item.status === CouponStatus.EXPIRED" disabled
             class="rounded-full w-full py-1 text-center bg-gray-200 text-gray-400 border border-gray-300 text-xs font-medium cursor-not-allowed select-none">
             已过期
           </button>
@@ -89,9 +89,9 @@
 
         <!-- 下拉详情触发箭头 -->
         <span class="cursor-pointer text-gray-400 hover:text-gray-600 transition-colors duration-200"
-          @click="showMore = !showMore">
+          @click="state.showMore = !state.showMore">
           <svg t="1781791086826" class="icon size-5 transition-transform duration-300"
-            :class="showMore ? 'rotate-180' : ''" viewBox="0 0 1024 1024" version="1.1"
+            :class="state.showMore ? 'rotate-180' : ''" viewBox="0 0 1024 1024" version="1.1"
             xmlns="http://www.w3.org/2000/svg">
             <path d="M185.884 327.55 146.3 367.133 512.021 732.779 877.7 367.133 838.117 327.55 511.997 653.676Z">
             </path>
@@ -120,7 +120,7 @@
 
     <!-- 详情展开容器（不占空间） -->
     <div class="grid transition-[grid-template-rows] duration-300 ease-in-out w-full border-t border-gray-50/50"
-      :class="showMore ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'">
+      :class="state.showMore ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'">
       <div class="overflow-hidden">
         <div class="flex flex-col text-xs text-gray-500 gap-1.5 w-full p-3 bg-gray-50/70">
           <div class="flex gap-2 items-center justify-start">
@@ -148,13 +148,31 @@
 <script setup lang="ts">
 import Tooltip from '@/presentation/components/Tooltip.vue';
 import { TimeUtils } from '@/utils/time';
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted, reactive } from 'vue';
 import { CouponStatus } from '@/services/coupon/type';
 import type { CouponActivityVO, CouponVO } from '@/services/coupon/coupon';
+const state = reactive({
+  isExpired: computed(() => {
+    return props.item.status === CouponStatus.EXPIRED;
+  }),
+  isUsed: computed(() => {
+    return props.item.status === CouponStatus.USED;
+  }),
+  isAvaliable: computed(() => {
+    return props.item.status === CouponStatus.UNUSED;
+  }),
+  relatedOrderId: computed(() => {
+    return props.item.relatedOrderId;
+  }),
+  showMore: ref(false),
+  countdownSeconds: ref(0),
+  countdownText: ref('00:00'),
 
+});
 interface Props {
   item: any;
-  me: boolean
+  me: boolean;
+  relatedOrderId?: string
 }
 
 const props = defineProps<Props>();
@@ -163,13 +181,14 @@ defineEmits<{
   (e: 'use', item: any): void;
 }>();
 
-const showMore = ref(false);
-const countdownSeconds = ref(0);
-const countdownText = ref('00:00');
+
 let timer: ReturnType<typeof setInterval> | null = null;
 
 // 格式化有效期文本
 const validityText = computed(() => {
+  if (state.isUsed) {
+    return state.relatedOrderId ? `订单ID: ${state.relatedOrderId}` : '已使用';
+  }
   const item = props.item;
   if (props.me) {
     return item.endTime ? `${TimeUtils.timestampToDate(item.endTime)} 后过期` : '';
@@ -184,13 +203,6 @@ const validityText = computed(() => {
   return '';
 });
 
-// 判断优惠券是否已过期
-const isExpired = computed(() => {
-  if (!props.item.endTime) return false;
-  const endDate = TimeUtils.parseDate(props.item.endTime);
-  if (!endDate) return false;
-  return endDate.getTime() < Date.now();
-});
 
 // 计算倒数格式
 function formatCountdown(seconds: number): string {
@@ -210,10 +222,10 @@ function formatCountdown(seconds: number): string {
 function updateCountdown() {
   if (props.item.type !== 2) return;
   const diff = TimeUtils.calculateTimeByNow(props.item.activityStartTime);
-  countdownSeconds.value = Math.max(0, diff);
-  countdownText.value = formatCountdown(countdownSeconds.value);
-  console.log(countdownText.value);
-  if (countdownSeconds.value <= 0 && timer) {
+  state.countdownSeconds = Math.max(0, diff);
+  state.countdownText = formatCountdown(state.countdownSeconds);
+
+  if (state.countdownSeconds <= 0 && timer) {
     clearInterval(timer);
     timer = null;
   }
@@ -222,7 +234,7 @@ function updateCountdown() {
 onMounted(() => {
   if (props.item.type === 2) {
     updateCountdown();
-    if (countdownSeconds.value > 0) {
+    if (state.countdownSeconds > 0) {
       timer = setInterval(updateCountdown, 1000);
     }
   }

@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue';
+import { onMounted, onUnmounted, watch } from 'vue';
 import { loadEmojiCache } from '@/utils/emoji';
 import { useAuthStore } from '@/views/auth/store';
-import { start } from './services/ws/im/init';
+import { start, removeIMListener } from './services/ws/im/init';
 const authStore = useAuthStore();
 
 onMounted(() => {
   loadEmojiCache();
   start();   //ws
 });
+onUnmounted(() => {
+  removeIMListener();
+})
+
 
 watch(() => authStore.token, (token) => {
   if (token) {

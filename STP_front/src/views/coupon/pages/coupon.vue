@@ -29,7 +29,7 @@
 
             <!-- 列表内容展示区 -->
             <div class="foot relative flex-1 overflow-y-auto bg-gray-50 p-2">
-                <MyCouponTab v-if="curTab?.id === tabList[1]?.id" ref="myCouponTabRef" :my-coupons="myCouponList"
+                <MyCouponTab v-if="curTab?.id === tabList[1]?.id" ref="myCouponTabRef" :loading="loading"
                     @use="handleUse" />
                 <div v-if="curTab?.id === tabList[0]?.id" class="relative w-full  z-10  ">
                     <div class="w-1/2 m-auto flex items-center justify-center gap-6 sticky top-0 z-10">
@@ -43,7 +43,7 @@
                     <CouponItem v-for="activity in activitiesList" :key="activity.id" :item="activity" :me="false"
                         @receive="handleReceive" />
                 </div>
-                <div v-if="curTab?.id === tabList[0]?.id && activitiesList.length == 0"
+                <div v-if="curTab?.id === tabList[0]?.id && activitiesList.length == 0 && !loading"
                     class="absolute inset-0 flex items-center justify-center text-gray-400 text-lg ">
                     暂无符合筛选条件的优惠券
                 </div>
@@ -67,7 +67,9 @@ const MyCouponTab = defineAsyncComponent(() => import('../components/MyCouponTab
 const loading = ref(false);
 const tabList = [
     { name: '优惠券', id: 1 },
-    { name: '我的优惠券', id: 3 }
+    {
+        name: '我的优惠券', id: 3,
+    }
 ];
 const couponTabList = [
     {
@@ -86,16 +88,11 @@ const couponTabList = [
 const curTab = ref(tabList[0]);
 const curCouponTab = ref(couponTabList[0]);
 const activitiesList = ref<(CouponActivityVO & { isSeckill?: boolean })[]>([]);
-const myCouponList = ref<CouponVO[]>([]);
 const myCouponTabRef = ref<any>(null);
 
 // 监听主 Tab 变动
 watch(curTab, (newTab) => {
-    if (newTab && newTab.id === 3) {
-        loadMyCouponData();
-    } else {
-        loadCouponData(curCouponTab.value?.id || 1);
-    }
+    loadCouponData(curCouponTab.value?.id || 1);
 });
 watch(curCouponTab, (newTab) => {
     loadCouponData(curCouponTab.value?.id || 1)
@@ -110,15 +107,7 @@ async function loadCouponData(scopeType?: number) {
     }
 }
 
-async function loadMyCouponData() {
-    try {
-        if (loading.value) return;
-        loading.value = true;
-        myCouponList.value = (await CouponAPI.getAvailableCoupons()).data;
-    } finally {
-        loading.value = false;
-    }
-}
+
 
 async function handleReceive(activityId: string | number) {
     await CouponAPI.receiveCoupon(activityId);

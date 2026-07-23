@@ -24,10 +24,16 @@
                             <span class="shrink-0 text-gray-400 text-[11px] ml-2">{{
                                 TimeUtils.timestampToDate(session.lastTime) }}</span>
                         </div>
-                        <div class="w-full truncate flex items-center gap-2 text-gray-500 text-xs">
+                        <div class="w-full truncate flex items-center gap-2 text-gray-500 text-sm">
                             <span class="truncate flex-1 flex items-center">
-                                <span v-if="session.unreadCount">{{ `[${session.unreadCount}条]` }}</span>
-                                <span v-html="session.lastMessageContent"></span>
+                                <span v-if="session.draft && session.draft.length > 0" class="text-blue-400">{{
+                                    `[草稿]${session.draft}`
+                                }}</span>
+                                <div v-else-if="session.lastMessageContent" class="truncate">
+                                    <span v-if="session.unreadCount">{{ `[${session.unreadCount}条]` }}</span>
+                                    <span v-html="session.lastMessageContent"></span>
+                                </div>
+
                             </span>
                         </div>
                     </div>
@@ -154,7 +160,7 @@ import Tooltip from '@/presentation/components/Tooltip.vue';
 import UserMsgItem from '@/presentation/components/userMsgItem.vue';
 import { type messageVO, MessageAPI, type SendMessageDto, messageType, SessionAPI, type SessionVO, messageStatus } from '@/services/message/message';
 import { TimeUtils } from '@/utils/time';
-import { ref, reactive, onMounted, nextTick, onUnmounted, watch } from 'vue';
+import { ref, reactive, onMounted, nextTick, onUnmounted, watch, computed } from 'vue';
 import { scrollerFromTop } from '@/utils/scollerbar';
 import { CommonAPI } from '@/services/common/api';
 import { useUserInfoStore } from '@/stores/userInfo';
@@ -164,6 +170,8 @@ import { formatMessage } from '@/utils/messageFormat';
 import { WsEventName } from '@/services/ws/config/config';
 import { XssUtils } from '@/utils/xss';
 import { parseEmoji } from '@/utils/emoji';
+import { de } from 'element-plus/es/locale/index.mjs';
+import { IM, removeIMListener } from '@/services/ws/im/init';
 
 const imageInput = ref<any[]>([]);
 const me = useUserInfoStore().user;
@@ -184,6 +192,8 @@ const sendForm = reactive<SendMessageDto>({
     sendTime: '',
 })
 const sessionList = defineModel<SessionVO[]>();
+
+
 function updateSessionAndTop(targetId: string, content: string, time: string, isSelfSend = false) {
     if (!sessionList.value) return;
     const session = sessionList.value.find((s: SessionVO) => String(s.targetId) === String(targetId));
@@ -434,19 +444,37 @@ async function loadHistoryMessage(friendId: string): Promise<string | null> {
     }
 }
 
-watch(() => curSession.value, async () => {
+async function draft(oldSession: SessionVO) {
+    if (((sendForm.content.length > 0 && (oldSession.draft || oldSession.draft.length == 0)) || (sendForm.content.length == 0 && oldSession.draft && oldSession.draft.length > 0)) && sessionId.value && oldSession.draft != sendForm.content) {
+        XssUtils.filter(sendForm.content);
+        SessionAPI.draft(sendForm.content, sessionId.value);
+        if (oldSession) oldSession.draft = sendForm.content;
+        sendForm.content = '';
+    }
+}
+const unReadCount = computed(() => {
+    let count = 0;
+    if (!sessionList.value) return;
+    sessionList.value.forEach(seesion => { count += seesion.unreadCount })
+    return count;
+})
+
+watch(() => curSession.value, async (newVal, oldVal) => {
     hasMore.value = true;
     msgList.value = []
+    if (oldVal) await draft(oldVal);
     if (curSession.value) {
         sessionId.value = curSession.value.id || '';
         await loadHistoryMessage(curSession.value.targetId);
-        console.log('sessionId:', sessionId.value)
         if (sessionId.value) {
             await MessageAPI.read(sessionId.value);
             curSession.value.unreadCount = 0;
         }
+        sendForm.content = curSession.value.draft || '';
         scrollToBottom();
+        return;
     }
+    console.log("当前会话为空");
 })
 const handleImMessage = (e: Event) => {
     const customEvent = e as CustomEvent;
@@ -529,17 +557,22 @@ const initScrollListener = () => {
 };
 
 onMounted(async () => {
-    window.addEventListener('im-message', handleImMessage);
-    if (sessionList.value) curSession.value = sessionList.value[0] || null;
+    removeIMListener();
+    window.addEventListener(IM, handleImMessage);
+    if (sessionList.value) {
+        curSession.value = sessionList.value[0] || null;
+    }
+
     nextTick(() => {
         initScrollListener();
     });
 });
 onUnmounted(() => {
-    window.removeEventListener('im-message', handleImMessage);
+    window.removeEventListener(IM, handleImMessage);
     if (unbindScroll) {
         unbindScroll();
     }
+    if (curSession.value) draft(curSession.value);
     hasMore.value = true;
     msgList.value = []
 })
