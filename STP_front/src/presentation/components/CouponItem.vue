@@ -1,29 +1,37 @@
 <template>
-  <div class="relative flex flex-col items-center bg-white shadow-md rounded-lg  w-full border border-gray-100/50">
-    <div class="flex items-center justify-between w-full p-2 gap-2">
+  <div class="relative flex flex-col items-center bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] rounded-xl w-full border border-gray-100/60 overflow-hidden hover:shadow-[0_6px_24px_rgba(0,0,0,0.06)] transition-all duration-200">
+    <!-- 优惠券打孔半圆凹槽与垂直虚线分栏 -->
+    <div class="absolute -top-2 left-[106px] -translate-x-1/2 w-4 h-4 bg-gray-50 border border-gray-100 rounded-full z-10"></div>
+    <div class="absolute -bottom-2 left-[106px] -translate-x-1/2 w-4 h-4 bg-gray-50 border border-gray-100 rounded-full z-10"></div>
+    <div class="absolute top-3 bottom-3 left-[106px] border-r border-dashed border-gray-200/80 z-5"></div>
+
+    <div class="flex items-center justify-between w-full p-2.5 gap-2 relative z-1">
       <div class="flex items-center gap-4 flex-1 min-w-0">
         <!-- 优惠金额/折扣展示 -->
-        <div class="flex flex-col items-center justify-center shrink-0 w-24 border-r border-gray-100 pr-2">
-          <span class="text-red-500 font-semibold flex items-baseline gap-0.5">
+        <div class="flex flex-col items-center justify-center shrink-0 w-24 pr-4 py-1.5 bg-gradient-to-r from-red-50/20 via-transparent to-transparent rounded-l-lg">
+          <span class="text-red-500 font-bold flex items-baseline gap-0.5 drop-shadow-2xs">
             <template v-if="item.amount">
               <span class="text-sm">¥</span>
-              <span class="text-3xl font-bold">{{ item.amount }}</span>
+              <span class="text-3xl font-black tracking-tight">{{ item.amount }}</span>
             </template>
             <template v-else-if="item.discount">
-              <span class="text-2xl font-bold">{{ Number(item.discount) * 10 }}</span>
-              <span class="text-xs">折</span>
+              <span class="text-2xl font-black tracking-tight">{{ Number(item.discount) * 10 }}</span>
+              <span class="text-xs font-bold">折</span>
             </template>
             <template v-else>
               <span class="text-xl font-bold">免费</span>
             </template>
           </span>
-          <span class="text-xs text-red-400 mt-1">
+          <span class="text-[10px] text-red-400 mt-1 font-medium bg-red-50/40 px-1 py-0.2 rounded border border-red-100/10">
             {{ item.scopeType === 1 || item.scopeType === 0 ? '无门槛' : '限制使用' }}
           </span>
         </div>
 
         <!-- 优惠券名称及有效期 -->
-        <div class="flex flex-col gap-1.5 justify-start flex-1 min-w-0">
+        <div class="flex flex-col gap-1 justify-start flex-1 min-w-0">
+          <span v-if="!props.me && item.name" class="text-[10px] text-blue-600 font-bold tracking-wide bg-blue-50/70 border border-blue-100/40 px-1.5 py-0.5 rounded w-max truncate max-w-full mb-1">
+            {{ item.name }}
+          </span>
           <div class="text-sm font-semibold text-gray-800 flex gap-1.5 items-center">
             <span class="truncate">{{ item.couponName || item.name }}</span>
 

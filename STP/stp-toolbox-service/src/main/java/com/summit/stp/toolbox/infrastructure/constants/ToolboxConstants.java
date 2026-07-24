@@ -11,5 +11,6 @@ public interface ToolboxConstants {
         String SIGN_INFO = USER + "sign_info:";
         String TOTAL_DAYS = "totalDays";
         String CONSECUTIVE_DAYS = "consecutiveDays";
+        String LAST_SIGN_DATE = "lastSignDate";
     }
 }

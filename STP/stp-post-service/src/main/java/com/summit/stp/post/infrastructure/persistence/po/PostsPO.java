@@ -2,6 +2,8 @@ package com.summit.stp.post.infrastructure.persistence.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -15,9 +17,11 @@ import java.sql.Timestamp;
 @Builder
 @ApiModel(value = "PostsPO", description = "帖子数据持久化实体")
 public class PostsPO {
-    @TableId(type = IdType.INPUT)
+    @TableId(type = IdType.AUTO)
     @ApiModelProperty(value = "帖子ID")
     private Long id;
+    @TableField(fill = FieldFill.INSERT)
+    private Long publicId;
 
     @ApiModelProperty(value = "发布者用户ID")
     private long creatorId;

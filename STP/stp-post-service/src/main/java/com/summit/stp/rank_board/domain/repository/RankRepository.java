@@ -13,8 +13,8 @@ public interface RankRepository {
      * @return 排行榜
      */
     List<RankBoard> queryCreatorRank(Integer size, LocalDate dateBack);
-    List<RankBoard> queryPostRank(Integer size);
-    List<RankBoard> queryTopicRank(Integer size);
+    List<RankBoard> queryPostRank(Integer size, LocalDate dateBack);
+    List<RankBoard> queryTopicRank(Integer size, LocalDate dateBack);
     
     void insertCreatorRank(List<RankBoard> rankBoardList);
     void insertPostRank(List<RankBoard> rankBoardList);

@@ -104,9 +104,12 @@ public class CouponCacheProviderImpl implements CouponCacheProvider {
 
     @Override
     public void cacheUserLimit(Long userId, Long couponId, Long duration){
-        String key = CouponConstants.Cache.USER_LIMITED_HASH + couponId;
-        if(stringRedisTemplate.hasKey(key))return;
-        stringRedisTemplate.opsForHash().putAndExpire(key, Map.of(userId.toString(), "0"), RedisHashCommands.HashFieldSetOption.UPSERT, Expiration.from(Duration.of(duration, ChronoUnit.MILLIS)));
+        String key = CouponConstants.Cache.USER_LIMITED_HASH + userId;
+        Boolean hasField = stringRedisTemplate.opsForHash().hasKey(key, couponId.toString());
+        if (hasField != null && hasField) {
+            return;
+        }
+        stringRedisTemplate.opsForHash().putAndExpire(key, Map.of(couponId.toString(), "0"), RedisHashCommands.HashFieldSetOption.UPSERT, Expiration.from(Duration.of(duration, ChronoUnit.MILLIS)));
     }
 
 

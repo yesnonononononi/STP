@@ -29,7 +29,11 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations.TypedTuple;
+import java.sql.Timestamp;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -40,6 +44,7 @@ public class RankServiceImpl implements RankService {
     private final PostRepository postRepository;
     private final TagRepository tagRepository;
     private final RankCacheProvider rankCacheProvider;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public Result<List<PostRankVO>> queryHotRankList(Integer size, Integer status) {
@@ -51,7 +56,8 @@ public class RankServiceImpl implements RankService {
         Map<Long, Double> scoresMap;
         if (postIds.isEmpty()) {
             // 2. 缓存未命中，从数据库 post_rank 表读取快照，并预热数据到 Redis
-            List<RankBoard> dbRanks = repository.queryPostRank(size);
+            LocalDate currentMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            List<RankBoard> dbRanks = repository.queryPostRank(size, currentMonday);
             if (dbRanks.isEmpty()) {
                 // 如果快照表也是空的，降级实时回源计算并预热
                 List<Post> dbPosts = fallbackAndGetHotPosts(size);
@@ -64,7 +70,8 @@ public class RankServiceImpl implements RankService {
                 orderedPostIds = dbRanks.stream().map(RankBoard::getEntityId).toList();
                 scoresMap = dbRanks.stream().collect(Collectors.toMap(
                     RankBoard::getEntityId,
-                    RankBoard::getScore
+                    RankBoard::getScore,
+                    (v1, v2) -> v1
                 ));
                 prewarmPostCache(dbRanks);
             }
@@ -94,7 +101,8 @@ public class RankServiceImpl implements RankService {
         List<Long> orderedTagIds;
         if (tagIds.isEmpty()) {
             // 2. 缓存未命中，从数据库 topic_rank 表读取快照，并预热数据到 Redis
-            List<RankBoard> dbRanks = repository.queryTopicRank(size);
+            LocalDate currentMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            List<RankBoard> dbRanks = repository.queryTopicRank(size, currentMonday);
             if (dbRanks.isEmpty()) {
                 // 如果快照表也是空的，降级实时回源计算并预热
                 tags = fallbackAndGetHotTopics(size);
@@ -116,12 +124,64 @@ public class RankServiceImpl implements RankService {
 
     @Override
     public Result<List<CreatorRankVO>> queryCreatorRankList(Integer size, Integer status) {
-        size = size > PostConstants.Business.CREATOR_MAX_DISPLAY_SIZE ? PostConstants.Business.CREATOR_MAX_DISPLAY_SIZE : size;
-        List<RankBoard> resDb = repository.queryCreatorRank(size, LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
+        int limitSize = size > PostConstants.Business.CREATOR_MAX_DISPLAY_SIZE ? PostConstants.Business.CREATOR_MAX_DISPLAY_SIZE : size;
+        String zsetKey = PostConstants.Cache.getCreatorWeeklyKey(LocalDate.now());
+        Set<TypedTuple<Object>> typedTuples = redisTemplate.opsForZSet().reverseRangeWithScores(zsetKey, 0, limitSize - 1);
+        
+        if (typedTuples == null || typedTuples.isEmpty()) {
+            return Result.success(fallbackQueryDb(limitSize));
+        }
+
+        List<Long> creatorIds = new ArrayList<>();
+        List<Double> scores = new ArrayList<>();
+        for (TypedTuple<Object> tuple : typedTuples) {
+            if (tuple.getValue() != null) {
+                creatorIds.add(((Number) tuple.getValue()).longValue());
+                scores.add(tuple.getScore() != null ? tuple.getScore() : 0.0);
+            }
+        }
+        
+        if (creatorIds.isEmpty()) {
+            return Result.success(fallbackQueryDb(limitSize));
+        }
+        
+        Map<Long, UserSimpleVO> uMap = userFeignClient.findSimpleUserByIds(creatorIds).getData();
+        List<CreatorRankVO> resultList = new ArrayList<>();
+        Timestamp weekStart = Timestamp.valueOf(LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).atStartOfDay());
+        
+        int rank = 1;
+        for (int i = 0; i < creatorIds.size(); i++) {
+            Long creatorId = creatorIds.get(i);
+            Double score = scores.get(i);
+            UserSimpleVO uvo = uMap != null ? uMap.get(creatorId) : null;
+            RankBoard rb = RankBoard.builder()
+                    .entityId(creatorId)
+                    .name("创作者周榜")
+                    .score(score)
+                    .rank(rank++)
+                    .weekStartDate(weekStart)
+                    .type(BoardType.CREATOR.getType())
+                    .build();
+            resultList.add(toCreatorVO(rb, uvo));
+        }
+        return Result.success(resultList);
+    }
+
+    /**
+     * 创作者榜单查询的数据库降级兜底方法
+     */
+    private List<CreatorRankVO> fallbackQueryDb(Integer size) {
+        LocalDate currentMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        List<RankBoard> resDb = repository.queryCreatorRank(size, currentMonday);
         List<Long> list = resDb.stream().map(RankBoard::getEntityId).toList();
+        if (list.isEmpty()) {
+            return List.of();
+        }
         Map<Long, UserSimpleVO> uMap = userFeignClient.findSimpleUserByIds(list).getData();
-        List<CreatorRankVO> res = resDb.stream().distinct().map(rb -> this.toCreatorVO(rb, uMap.get(rb.getEntityId()))).toList();
-        return Result.success(res);
+        return resDb.stream()
+                .distinct()
+                .map(rb -> this.toCreatorVO(rb, uMap != null ? uMap.get(rb.getEntityId()) : null))
+                .toList();
     }
 
     private void prewarmPostCache(List<RankBoard> ranks) {

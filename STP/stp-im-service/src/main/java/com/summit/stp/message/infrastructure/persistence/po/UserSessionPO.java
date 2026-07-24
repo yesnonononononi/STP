@@ -2,6 +2,8 @@ package com.summit.stp.message.infrastructure.persistence.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
@@ -16,6 +18,8 @@ public class UserSessionPO {
     @ApiModelProperty(notes = "自增主键")
     @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField(fill = FieldFill.INSERT)
+    private Long publicId;
     @ApiModelProperty(notes = "当前用户id")
     private Long userId;
     @ApiModelProperty(notes = "当前会话对象id")

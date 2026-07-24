@@ -7,6 +7,7 @@ import com.summit.stp.toolbox.infrastructure.persistence.po.UserSignStatsPO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Repository
@@ -32,12 +33,14 @@ public class UserSignStatsRepositoryImpl implements UserSignStatsRepository {
     }
 
 
-    public UserSignStats initSignStat(Long userId, int totalDays, int currentContinuousDays, int maxContinuousDays) {
+    @Override
+    public UserSignStats initSignStat(Long userId, int totalDays, int currentContinuousDays, int maxContinuousDays, LocalDate lastSignDate) {
         UserSignStats entity = UserSignStats.builder()
                 .userId(userId)
                 .totalDays(totalDays)
                 .currentContinuousDays(currentContinuousDays)
                 .maxContinuousDays(maxContinuousDays)
+                .lastSignDate(lastSignDate)
                 .updateTime(LocalDateTime.now())
                 .build();
         save(entity);

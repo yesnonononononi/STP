@@ -35,6 +35,10 @@ public interface PostConstants {
         Integer CREATOR_MAX_DISPLAY_SIZE = 20;
         double MAX_IMAGE_SIZE_MB = 10.0;
         double MAX_VIDEO_SIZE_MB = 50.0;
+        
+        double CREATOR_SCORE_POST = 10.0;
+        double CREATOR_SCORE_LIKE = 2.0;
+        double CREATOR_SCORE_FAN = 5.0;
     }
 
     interface Cache {
@@ -60,5 +64,13 @@ public interface PostConstants {
         String POST_HOT_ZSET = QUERY_HOT;
         String TOPIC_USE_ZSET = RANK_PREFIX + "topic_use:zset";
         String RANK_CREATOR_KEY =RANK_PREFIX+"hot:";
+        String RANK_CREATOR_WEEKLY_PREFIX = RANK_PREFIX + "creator:weekly:";
+
+        static String getCreatorWeeklyKey(java.time.LocalDate date) {
+            java.time.temporal.WeekFields weekFields = java.time.temporal.WeekFields.of(java.util.Locale.getDefault());
+            int year = date.get(weekFields.weekBasedYear());
+            int week = date.get(weekFields.weekOfWeekBasedYear());
+            return RANK_CREATOR_WEEKLY_PREFIX + year + "-" + String.format("%02d", week);
+        }
     }
 }

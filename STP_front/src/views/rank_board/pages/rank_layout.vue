@@ -24,9 +24,62 @@
                     </span>
                 </div>
                 <div class="flex-1 w-full overflow-hidden  flex flex-col mt-2 ">
-                    <Loading v-model="loading" :bg-color="'bg-white'" />
-                    <Common_rank v-model="(rankList as MappedCommonRank[])" v-if="curTab !== '创作者周榜'" @click-item="handleRankItemClick" />
-                    <Creator_rank v-else v-model="(rankList as MappedCreatorRank[])" />
+                    <!-- 骨架屏加载状态 -->
+                    <template v-if="loading">
+                        <!-- 创作者周榜骨架屏 -->
+                        <div v-if="curTab === '创作者周榜'" class="flex flex-col gap-3 w-full animate-pulse px-3 overflow-y-auto grow">
+                            <div class="flex items-end justify-center gap-4 mt-10 mb-6 h-36 px-4 shrink-0">
+                                <div class="flex-1 h-28 bg-gray-100 border border-gray-200/50 rounded-xl"></div>
+                                <div class="flex-1 h-32 bg-gray-100 border-2 border-gray-200/50 rounded-2xl"></div>
+                                <div class="flex-1 h-24 bg-gray-100 border border-gray-200/50 rounded-xl"></div>
+                            </div>
+                            <div class="flex flex-col gap-2.5 px-1 grow">
+                                <div v-for="i in 5" :key="i" class="flex justify-between items-center p-2.5 bg-gray-50/50 rounded-xl border border-transparent">
+                                    <div class="flex items-center gap-3 w-2/3">
+                                        <div class="w-6 h-6 rounded-full bg-gray-200/80"></div>
+                                        <div class="w-10 h-10 rounded-full bg-gray-200/80"></div>
+                                        <div class="flex-1 flex flex-col gap-1.5">
+                                            <div class="h-3.5 bg-gray-200/80 rounded w-1/2"></div>
+                                            <div class="h-2.5 bg-gray-200/80 rounded w-1/3"></div>
+                                        </div>
+                                    </div>
+                                    <div class="w-12 h-5 bg-gray-200/80 rounded-full"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 普通榜单骨架屏 -->
+                        <div v-else class="flex flex-col gap-2.5 w-full animate-pulse px-3 overflow-y-auto grow">
+                            <div v-for="i in 8" :key="i" class="flex justify-between items-center p-2.5 bg-gray-50/50 rounded-xl">
+                                <div class="flex items-center gap-3 w-2/3">
+                                    <div class="w-6 h-6 rounded-full bg-gray-200/80"></div>
+                                    <div class="h-4 bg-gray-200/80 rounded w-2/3"></div>
+                                </div>
+                                <div class="w-12 h-5 bg-gray-200/80 rounded-full"></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- 空数据无榜单展示 -->
+                    <template v-else-if="!loading && rankList.length === 0">
+                        <div class="flex flex-col items-center justify-center py-16 px-4 text-center grow animate-fade-in">
+                            <div class="relative w-36 h-36 mb-4 flex items-center justify-center">
+                                <div class="absolute inset-0 bg-gradient-to-tr from-blue-100/30 to-indigo-100/30 rounded-full filter blur-xl animate-pulse"></div>
+                                <svg class="w-20 h-20 text-gray-300/85 drop-shadow-xs" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M19 11H5C3.89543 11 3 11.8954 3 13V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V13C21 11.8954 20.1046 11 19 11Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+                                    <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                    <path d="M12 15V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                            <h3 class="text-sm font-semibold text-gray-600 mb-1.5">榜单正在孕育中</h3>
+                            <p class="text-xs text-gray-400 max-w-xs leading-relaxed">当前暂无排行数据，互动起来，助你喜爱的作者冲上榜单吧！</p>
+                        </div>
+                    </template>
+
+                    <!-- 真实数据渲染 -->
+                    <template v-else>
+                        <Common_rank v-model="(rankList as MappedCommonRank[])" v-if="curTab !== '创作者周榜'" @click-item="handleRankItemClick" />
+                        <Creator_rank v-else v-model="(rankList as MappedCreatorRank[])" />
+                    </template>
                 </div>
             </div>
         </div>
@@ -34,7 +87,6 @@
 </template>
 
 <script lang="ts" setup>
-import Loading from '@/presentation/components/loading.vue';
 import { onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Common_rank from './common_rank.vue';
@@ -92,3 +144,19 @@ function handleRankItemClick(item: MappedCommonRank) {
 }
 
 </script>
+
+<style scoped>
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.animate-fade-in {
+    animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+</style>

@@ -35,11 +35,15 @@ public interface MqConstants {
         String EXCHANGE = "post.topic.exchange";
         String QUEUE = "post.tag.queue";
         String ROUTING_KEY = "post.publish";
+
+        String QUEUE_INTERACTION = "post.interaction.queue";
+        String ROUTING_KEY_INTERACTION = "post.interaction";
     }
 
     interface Rank {
         String QUEUE_POST_PUBLISH = "rank.queue.post.publish";
-
+        String QUEUE_CREATOR_LIKED = "rank.queue.creator.liked";
+        String QUEUE_CREATOR_FANS = "rank.queue.creator.fans";
     }
 
     interface Comment {

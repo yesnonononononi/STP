@@ -322,7 +322,7 @@ public class PostAppServiceImpl implements PostAppService {
                     ? postCacheProvider.like(postId, userId) 
                     : postCacheProvider.collect(postId, userId);
             if (isOnce) {
-                applicationEventPublisher.publishEvent(PostInteractionEvent.builder()
+                postMessageSender.sendPostInteraction(PostInteractionEvent.builder()
                         .postId(postId)
                         .userId(userId)
                         .interactionType(type.name())
@@ -384,7 +384,7 @@ public class PostAppServiceImpl implements PostAppService {
             } else {
                 postCollectRepository.save(PostCollectPO.builder().id(id).postId(postId).userId(userId).build());
             }
-            applicationEventPublisher.publishEvent(PostInteractionEvent.builder()
+            postMessageSender.sendPostInteraction(PostInteractionEvent.builder()
                     .postId(postId)
                     .userId(userId)
                     .interactionType(type.name())

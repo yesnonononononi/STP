@@ -3,7 +3,7 @@
 -- ARGV[1] : 个人领取上限 (limitCount)
 -- ARGV[2] : 活动id (activityId)
 -- ARGV[3] : 优惠券id (couponId)
-if (redis.call("HEXISTS", KEYS[1], ARGV[3]) == 0) then
+if (redis.call("HEXISTS", KEYS[1], ARGV[2]) == 0) then
     return -3
 end
 local stock = redis.call('hget', KEYS[1], ARGV[2]);

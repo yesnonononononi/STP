@@ -4,9 +4,9 @@ import cn.hutool.core.util.IdUtil;
 import com.rabbitmq.client.Channel;
 import com.summit.stp.shared.domain.event.CommentNotificationMessage;
 import com.summit.stp.shared.application.vo.CommentSimpleVO;
-import com.summit.stp.message.domain.model.SystemMessage;
-import com.summit.stp.message.domain.model.SystemMessageType;
-import com.summit.stp.message.domain.repository.SystemMessageRepository;
+import com.summit.stp.message.domain.model.InteractionMessage;
+import com.summit.stp.message.domain.model.InteractionMessageType;
+import com.summit.stp.message.domain.repository.InteractionMessageRepository;
 import com.summit.stp.message.infrastructure.constants.ImConstants;
 import com.summit.stp.shared.constants.MqConstants;
 import com.summit.stp.shared.service.TextSafe.TextSafeServiceProvider;
@@ -37,7 +37,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class CommentNotificationListener {
 
-    private final SystemMessageRepository systemMessageRepository;
+    private final InteractionMessageRepository interactionMessageRepository;
     private final CommentFeignClient commentFeignClient;
     private final UserFeignClient userFeignClient;
     private final TextSafeServiceProvider textSafeServiceProvider;
@@ -76,7 +76,7 @@ public class CommentNotificationListener {
     }
 
     /**
-     * 场景一：通知被回复评论发布者
+     * 场景一：通知被回复评论发布者 (回复消息)
      */
     private Long notifyParentCommentPublisher(CommentNotificationMessage msg, NotificationContext context) {
         if (msg.getParentId() == null) {
@@ -95,27 +95,42 @@ public class CommentNotificationListener {
             return notifyParentUserId;
         }
 
-        String parentContent = parentComment.getContent() != null ? parentComment.getContent() : "";
-        String shortParentContent = parentContent.length() > 15 ? parentContent.substring(0, 15) + "..." : parentContent;
+        String associateTitle = buildContent(parentComment);
 
-        String actionStr = "回复了你的评论: \"" + shortParentContent + "\" </div><div style=\"display:none;\">";
-        String cardText = "帖子: " + context.getSafePostTitle();
+        InteractionMessage interactMsg = InteractionMessage.builder()
+                .publicId(IdUtil.getSnowflakeNextId())
+                .senderId(currentUserId)
+                .senderAvatar(context.getAvatar())
+                .senderName(context.getSafeNickname())
+                .receiverId(notifyParentUserId)
+                .messageType(InteractionMessageType.REPLY.getCode())
+                .content(msg.getCommentContent())
+                .associateContent(msg.getCommentId()) // 关联新增的评论，以便查询时丰富帖子和父评论上下文
+                .postId(msg.getPostId())
+                .associateTitle(associateTitle)
+                .isDel(0)
+                .build();
 
-        String htmlContent = String.format(
-                ImConstants.Business.TEMPLATE_HTML_MSG,
-                context.getAvatar(),
-                context.getSafeNickname(),
-                actionStr,
-                context.getTimeStr(),
-                cardText
-        );
-
-        saveSystemMessage(currentUserId, notifyParentUserId, htmlContent);
+        interactionMessageRepository.save(interactMsg);
         return notifyParentUserId;
     }
 
+    private static String buildContent(CommentSimpleVO parentComment) {
+        String associateTitle = parentComment.getContent();
+        if (parentComment.getType() != null) {
+            if (parentComment.getType() == 2) {
+                associateTitle = "[图片] " + (associateTitle != null ? associateTitle : "");
+            } else if (parentComment.getType() == 3) {
+                associateTitle = "[视频] " + (associateTitle != null ? associateTitle : "");
+            } else if (parentComment.getType() == 4) {
+                associateTitle = "[音频] " + (associateTitle != null ? associateTitle : "");
+            }
+        }
+        return associateTitle;
+    }
+
     /**
-     * 场景二：通知帖子发布者
+     * 场景二：通知帖子发布者 (普通评论消息)
      */
     private void notifyPostCreator(CommentNotificationMessage msg, NotificationContext context, Long notifyParentUserId) {
         Long postCreatorId = msg.getPostCreatorId();
@@ -125,27 +140,21 @@ public class CommentNotificationListener {
             return;
         }
 
-        String commentContent = msg.getCommentContent() != null ? msg.getCommentContent() : "";
-        String shortCommentContent = commentContent.length() > 15 ? commentContent.substring(0, 15) + "..." : commentContent;
-        String safeCommentContent = textSafeServiceProvider.xssFilter(shortCommentContent);
+        InteractionMessage interactMsg = InteractionMessage.builder()
+                .publicId(IdUtil.getSnowflakeNextId())
+                .senderId(currentUserId)
+                .senderAvatar(context.getAvatar())
+                .senderName(context.getSafeNickname())
+                .receiverId(postCreatorId)
+                .messageType(InteractionMessageType.COMMENT.getCode())
+                .content(msg.getCommentContent())
+                .associateContent(msg.getCommentId())
+                .postId(msg.getPostId())
+                .associateTitle(msg.getPostTitle())
+                .isDel(0)
+                .build();
 
-        String actionStr;
-        if (msg.getParentId() != null) {
-            actionStr = "回复了你帖子下的评论: \"" + safeCommentContent + "\" </div><div style=\"display:none;\">";
-        } else {
-            actionStr = "评论了你的帖子: \"" + safeCommentContent + "\" </div><div style=\"display:none;\">";
-        }
-
-        String htmlContent = String.format(
-                ImConstants.Business.TEMPLATE_HTML_MSG,
-                context.getAvatar(),
-                context.getSafeNickname(),
-                actionStr,
-                context.getTimeStr(),
-                context.getSafePostTitle()
-        );
-
-        saveSystemMessage(currentUserId, postCreatorId, htmlContent);
+        interactionMessageRepository.save(interactMsg);
     }
 
     /**
@@ -173,24 +182,6 @@ public class CommentNotificationListener {
                 .build();
     }
 
-    /**
-     * 持久化通知消息
-     */
-    private void saveSystemMessage(Long fromUserId, Long associateUserId, String content) {
-        SystemMessage sysMsg = SystemMessage.builder()
-                .id(IdUtil.getSnowflakeNextId())
-                .fromUserId(fromUserId)
-                .content(content)
-                .status(1)
-                .associateUser(associateUserId)
-                .type(SystemMessageType.PERSONAL.getCode())
-                .publicTime(Instant.now())
-                .createTime(Instant.now())
-                .updateTime(Instant.now())
-                .build();
-
-        systemMessageRepository.save(sysMsg);
-    }
 
     @Data
     @Builder

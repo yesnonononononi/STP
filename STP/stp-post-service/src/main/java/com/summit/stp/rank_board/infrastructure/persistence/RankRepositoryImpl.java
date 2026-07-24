@@ -38,9 +38,9 @@ public class RankRepositoryImpl implements RankRepository {
     }
 
     @Override
-    public List<RankBoard> queryPostRank(Integer size) {
+    public List<RankBoard> queryPostRank(Integer size, LocalDate dateBack) {
         LambdaQueryWrapper<PostRankPO> queryWrapper = new LambdaQueryWrapper<PostRankPO>()
-                .orderByDesc(PostRankPO::getPeriodDate)
+                .eq(PostRankPO::getPeriodDate, dateBack)
                 .orderByAsc(PostRankPO::getRank)
                 .last("LIMIT " + size);
         return postRankMapper.selectList(queryWrapper).stream()
@@ -49,9 +49,9 @@ public class RankRepositoryImpl implements RankRepository {
     }
 
     @Override
-    public List<RankBoard> queryTopicRank(Integer size) {
+    public List<RankBoard> queryTopicRank(Integer size, LocalDate dateBack) {
         LambdaQueryWrapper<TopicRankPO> queryWrapper = new LambdaQueryWrapper<TopicRankPO>()
-                .orderByDesc(TopicRankPO::getPeriodDate)
+                .eq(TopicRankPO::getPeriodDate, dateBack)
                 .orderByAsc(TopicRankPO::getRank)
                 .last("LIMIT " + size);
         return topicRankMapper.selectList(queryWrapper).stream()

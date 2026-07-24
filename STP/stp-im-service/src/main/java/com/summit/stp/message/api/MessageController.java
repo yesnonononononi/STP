@@ -8,6 +8,8 @@ import com.summit.stp.message.application.service.MessageSender;
 import com.summit.stp.message.application.vo.MessageListVO;
 import com.summit.stp.shared.application.vo.MessageVO;
 import com.summit.stp.shared.application.vo.SysMessageVO;
+import com.summit.stp.message.application.service.InteractionMessageService;
+import com.summit.stp.message.application.vo.InteractionMessageVO;
 import com.summit.stp.message.domain.model.EventName;
 import com.summit.stp.shared.result.Result;
 import com.summit.stp.shared.annotation.Login;
@@ -27,7 +29,22 @@ public class MessageController {
 
     private final MessageAppService messageAppService;
     private final MessageSender messageSender;
+    private final InteractionMessageService interactionMessageService;
 
+    @GetMapping("/interaction/list")
+    @Operation(summary = "获取互动消息列表")
+    public Result<List<InteractionMessageVO>> interactionList(
+            @RequestParam(required = false) Long lastPublicId,
+            @RequestParam(defaultValue = "10") Integer limit) {
+        return Result.success(interactionMessageService.getInteractionList(lastPublicId, limit));
+    }
+
+    @DeleteMapping("/interaction/delete/{publicId}")
+    @Operation(summary = "删除单个互动消息")
+    public Result<Void> deleteInteraction(@PathVariable Long publicId) {
+        interactionMessageService.deleteInteractionMessage(publicId);
+        return Result.success();
+    }
 
     @GetMapping("/sys/list")
     @Operation(summary = "获取系统消息列表")

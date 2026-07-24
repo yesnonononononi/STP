@@ -1,4 +1,4 @@
-package com.summit.stp.rank_board.infrastructure.persistence.po;
+package com.summit.stp.message.infrastructure.persistence.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -9,27 +9,28 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.time.LocalDate;
+import java.time.Instant;
 
 @Data
+@TableName("interaction_message")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("post_rank")
-public class PostRankPO {
+public class InteractionMessagePO {
     @TableId(type = IdType.AUTO)
     private Long id;
     @TableField(fill = FieldFill.INSERT)
     private Long publicId;
+    private Long senderId;
+    private String senderAvatar;
+    private String senderName;
+    private Long receiverId;
+    private Integer messageType;
+    private String content;
+    private Long associateContent;
     private Long postId;
-    private BigDecimal score;
-    @TableField("`rank`")
-    private Integer rank;
-    private LocalDate periodDate;
-    private Timestamp createTime;
-    private Timestamp updateTime;
+    private String associateTitle;
+    private Integer isDel;
+    private Instant createTime;
+    private Instant updateTime;
 }
-

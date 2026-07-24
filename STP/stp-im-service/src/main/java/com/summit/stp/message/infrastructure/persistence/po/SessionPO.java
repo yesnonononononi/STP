@@ -2,6 +2,8 @@ package com.summit.stp.message.infrastructure.persistence.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
@@ -14,8 +16,10 @@ import java.time.Instant;
 @TableName("session")
 public class SessionPO {
     @ApiModelProperty(notes = "会话id")
-    @TableId(type = IdType.INPUT)
+    @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField(fill = FieldFill.INSERT)
+    private Long publicId;
     @ApiModelProperty(notes = "会话类型")
     private Integer type;
     @ApiModelProperty(notes = "最后一条消息id")

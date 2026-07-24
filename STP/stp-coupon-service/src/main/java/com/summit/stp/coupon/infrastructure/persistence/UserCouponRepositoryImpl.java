@@ -44,6 +44,7 @@ public class UserCouponRepositoryImpl implements UserCouponRepository {
         po.setOrderId(userCoupon.getOrderId());
 
         if (po.getId() == null) {
+            po.setId(cn.hutool.core.util.IdUtil.getSnowflakeNextId());
             userCouponMapper.insert(po);
         } else {
             userCouponMapper.updateById(po);
@@ -87,6 +88,15 @@ public class UserCouponRepositoryImpl implements UserCouponRepository {
     @Override
     public Integer countUnUsedByCouponId(Long couponId) {
         return Math.toIntExact(userCouponMapper.selectCount(new LambdaQueryWrapper<UserCouponPO>().eq(UserCouponPO::getCouponId, couponId).eq(UserCouponPO::getStatus, CouponStatus.NOT_USE.getCode())));
+    }
+
+    @Override
+    public Integer countByUserIdAndCouponId(Long userId, Long couponId) {
+        return Math.toIntExact(userCouponMapper.selectCount(
+                new LambdaQueryWrapper<UserCouponPO>()
+                        .eq(UserCouponPO::getUserId, userId)
+                        .eq(UserCouponPO::getCouponId, couponId)
+        ));
     }
 
     /**

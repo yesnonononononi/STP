@@ -5,14 +5,15 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling
 @EnableDiscoveryClient
 @ComponentScan(basePackages = {"com.summit.stp.user", "com.summit.stp.member", "com.summit.stp.relationship", "com.summit.stp.shared"})
 @MapperScan(basePackages = {
     "com.summit.stp.user.infrastructure.persistence.mapper",
     "com.summit.stp.member.infrastructure.persistence.mapper",
-    "com.summit.stp.relationship.infrastructure.persistence.mapper"
 })
 public class StpUserApplication {
     public static void main(String[] args) {

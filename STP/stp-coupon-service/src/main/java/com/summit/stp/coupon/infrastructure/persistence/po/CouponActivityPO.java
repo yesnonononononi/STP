@@ -2,6 +2,8 @@ package com.summit.stp.coupon.infrastructure.persistence.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,8 +18,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @TableName("coupon_activity")
 public class CouponActivityPO {
-    @TableId(type = IdType.INPUT)
+    @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField(fill = FieldFill.INSERT)
+    private Long publicId;
     private Long couponId;
     private String name;
     private Integer stock;

@@ -2,6 +2,8 @@ package com.summit.stp.comment.infrastructure.persistence.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -19,9 +21,11 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @ApiModel(value = "CommentsPO", description = "评论数据持久化实体")
 public class CommentsPO {
-    @TableId(type = IdType.INPUT)
+    @TableId(type = IdType.AUTO)
     @ApiModelProperty("评论ID")
     private Long id;
+    @TableField(fill = FieldFill.INSERT)
+    private Long publicId;
 
     @ApiModelProperty("所属帖子ID")
     private Long postId;

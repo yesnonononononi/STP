@@ -2,6 +2,8 @@ package com.summit.stp.entertainment.infrastructure.persistence.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,6 +18,8 @@ import java.sql.Timestamp;
 public class EmojiPO {
     @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField(fill = FieldFill.INSERT)
+    private Long publicId;
     private Long packageId;
     private String tiny;
     private String name;

@@ -29,8 +29,13 @@ public class UserSignStats {
 
     public void sign(){
         this.totalDays ++;
-        this.currentContinuousDays ++;
-        this.lastSignDate = LocalDate.now();
+        LocalDate today = LocalDate.now();
+        if (lastSignDate != null && lastSignDate.plusDays(1).equals(today)) {
+            this.currentContinuousDays ++;
+        } else {
+            this.currentContinuousDays = 1;
+        }
+        this.lastSignDate = today;
         if(currentContinuousDays > maxContinuousDays){
             this.maxContinuousDays = currentContinuousDays;
         }

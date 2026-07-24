@@ -60,13 +60,23 @@ public class UserSignStatsServiceImpl implements UserSignStatsService {
             List<UserSignLog> log = userSignLogService.getSignLogsByUserId(userId, month);
             UserSignStats signStat = userSignStatsRepository.findByUserId(userId);
             if (signStat == null) {
-                signStat = userSignStatsRepository.initSignStat(userId, 0, 0, 0);
+                signStat = userSignStatsRepository.initSignStat(userId, 0, 0, 0, null);
             }
             totalDays = signStat.getTotalDays();
             dates = mapDate(log, month);
             consecutiveDays = signStat.getCurrentContinuousDays();
             monthCheckedCount = dates.stream().filter(date -> date == 1).toList().size();
             todayChecked = LocalDate.now().equals(signStat.getLastSignDate());
+            if (!todayChecked) {
+                boolean yesterdayChecked = false;
+                LocalDate lastSignDate = signStat.getLastSignDate();
+                if (lastSignDate != null && lastSignDate.plusDays(1).equals(LocalDate.now())) {
+                    yesterdayChecked = true;
+                }
+                if (!yesterdayChecked) {
+                    consecutiveDays = 0;
+                }
+            }
             return SignInInfoVO.builder()
                     .checkedDays(totalDays)
                     .consecutiveDays(consecutiveDays)
@@ -85,7 +95,7 @@ public class UserSignStatsServiceImpl implements UserSignStatsService {
             UserSignStats signStats = userSignStatsRepository.findByUserId(userId);
             checkDuplicateSignIn(signStats);
             if (signStats == null) {
-                signStats = userSignStatsRepository.initSignStat(userId, 1, 1, 1);
+                signStats = userSignStatsRepository.initSignStat(userId, 1, 1, 1, LocalDate.now());
                 userSignLogService.createSignLog(UserSignLog.builder().signDate(LocalDate.now()).signSource(1).userId(userId).build());
             }else {
                 signStats.sign();

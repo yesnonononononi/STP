@@ -18,4 +18,5 @@ public class CommentSimpleVO {
     private Long parentId;
     private Long publisherId;
     private String content;
+    private Integer type;
 }

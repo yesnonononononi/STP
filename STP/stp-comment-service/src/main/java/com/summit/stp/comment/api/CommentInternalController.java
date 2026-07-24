@@ -37,6 +37,7 @@ public class CommentInternalController {
                 .parentId(comment.getParentId())
                 .publisherId(comment.getPublisherId())
                 .content(comment.getContent())
+                .type(comment.getType() != null ? comment.getType().getCode() : null)
                 .build());
     }
 }

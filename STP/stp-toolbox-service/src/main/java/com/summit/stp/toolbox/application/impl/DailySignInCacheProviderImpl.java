@@ -39,14 +39,42 @@ public class DailySignInCacheProviderImpl implements DailySignInCacheProvider {
     @Override
     public SignInInfoVO getSignInfo(Long userId, List<Integer> dates) {
         LocalDate now = LocalDate.now();
-        int[] extraDayInfo = getExtraDayInfo(userId);
+        Map entries = redisTemplate.opsForHash().entries(ToolboxConstants.Cache.SIGN_INFO + userId);
+        Integer consecutiveDays;
+        Integer totalDays;
+        String lastSignDateStr;
 
-        Integer consecutiveDays = extraDayInfo[0];
-        Integer totalDays = extraDayInfo[1];
+        if (entries.size() < 3) {
+            UserSignStats userSignStats = userSignStatsRepositoryImpl.findByUserId(userId);
+            if (userSignStats == null) {
+                userSignStats = userSignStatsRepositoryImpl.initSignStat(userId, 0, 0, 0, null);
+            }
+            totalDays = userSignStats.getTotalDays();
+            consecutiveDays = userSignStats.getCurrentContinuousDays();
+            lastSignDateStr = userSignStats.getLastSignDate() != null ? userSignStats.getLastSignDate().toString() : "";
+            resetHash(totalDays, consecutiveDays, userSignStats.getLastSignDate(), userId);
+        } else {
+            consecutiveDays = (Integer) entries.get(ToolboxConstants.Cache.CONSECUTIVE_DAYS);
+            totalDays = (Integer) entries.get(ToolboxConstants.Cache.TOTAL_DAYS);
+            lastSignDateStr = (String) entries.get(ToolboxConstants.Cache.LAST_SIGN_DATE);
+        }
 
         String currentMonthKey = buildKey(now.getYear(), now.getMonthValue(), userId);
         Boolean bit = redisTemplate.opsForValue().getBit(currentMonthKey, now.getDayOfMonth() - 1);
         boolean todayChecked = bit != null && bit;
+
+        if (!todayChecked) {
+            boolean yesterdayChecked = false;
+            if (lastSignDateStr != null && !lastSignDateStr.isEmpty()) {
+                LocalDate lastSignDate = LocalDate.parse(lastSignDateStr);
+                if (lastSignDate.plusDays(1).equals(now)) {
+                    yesterdayChecked = true;
+                }
+            }
+            if (!yesterdayChecked) {
+                consecutiveDays = 0;
+            }
+        }
 
         Integer monthCheckedCount = dates.stream().filter(i -> i == 1).toList().size();
 
@@ -62,19 +90,17 @@ public class DailySignInCacheProviderImpl implements DailySignInCacheProvider {
     @Override
     @SuppressWarnings("unchecked")
     public void doSignIn(Long userId, UserSignStats userSignStats) {
-
         LocalDate now = LocalDate.now();
-        List<Object> list = redisTemplate.executePipelined(new SessionCallback<>() {
+        String key = buildKey(now.getYear(), now.getMonthValue(), userId);
+        redisTemplate.executePipelined(new SessionCallback<>() {
             @Override
             public Object execute(@NonNull RedisOperations operations) throws DataAccessException {
-                String key = buildKey(now.getYear(), now.getMonthValue(), userId);
                 operations.opsForValue().setBit(key, now.getDayOfMonth() - 1, true);
-                operations.opsForValue().getBit(key, now.getDayOfMonth() - 2);
                 operations.expire(key, ToolboxConstants.Business.TTL, TimeUnit.DAYS);
                 return null;
             }
         });
-        cacheHash(userId, list.get(1).toString().equals("true"), userSignStats);
+        cacheHash(userId, userSignStats);
     }
 
 
@@ -121,51 +147,19 @@ public class DailySignInCacheProviderImpl implements DailySignInCacheProvider {
     }
 
     @SuppressWarnings("unchecked")
-    private int[] getExtraDayInfo(Long userId) {
-        Integer totalDays, consecutiveDays;
-        Map entries = redisTemplate.opsForHash().entries(ToolboxConstants.Cache.SIGN_INFO + userId);
-        if (entries.size() != 2) {
-            UserSignStats userSignStats = userSignStatsRepositoryImpl.findByUserId(userId);
-            if(userSignStats == null){
-                userSignStats = userSignStatsRepositoryImpl.initSignStat(userId, 0, 0, 0);
-            }
-            totalDays = userSignStats.getTotalDays();
-            consecutiveDays = userSignStats.getCurrentContinuousDays();
-            resetHash(totalDays,consecutiveDays, userId);
-        } else {
-            consecutiveDays = (Integer) entries.get(ToolboxConstants.Cache.CONSECUTIVE_DAYS);
-            totalDays = (Integer) entries.get(ToolboxConstants.Cache.TOTAL_DAYS);
-        }
-        return new int[]{consecutiveDays, totalDays};
-    }
-
-    /**
-     * 缓存重建 + 签到自增
-     */
-    @SuppressWarnings("unchecked")
-    private void cacheHash(Long userId, boolean isContinue, UserSignStats userSignStats) {
+    private void cacheHash(Long userId, UserSignStats userSignStats) {
         String key = ToolboxConstants.Cache.SIGN_INFO + userId;
-        HashOperations hashOperations = redisTemplate.opsForHash();
-        if (hashOperations.hasKey(key, ToolboxConstants.Cache.CONSECUTIVE_DAYS) && hashOperations.hasKey(key, ToolboxConstants.Cache.TOTAL_DAYS)) {
-            redisTemplate.executePipelined(new SessionCallback<>() {
-                @Override
-                public Object execute(@NonNull RedisOperations operations) throws DataAccessException {
-                    HashOperations hashOperations = operations.opsForHash();
-                    if (isContinue) {
-                        hashOperations.increment(key, ToolboxConstants.Cache.CONSECUTIVE_DAYS, 1);
+        Integer totalDays = userSignStats.getTotalDays();
+        Integer currentContinuousDays = userSignStats.getCurrentContinuousDays();
+        String lastSignDateStr = userSignStats.getLastSignDate() != null ? userSignStats.getLastSignDate().toString() : "";
 
-                    } else {
-                        hashOperations.put(key, ToolboxConstants.Cache.CONSECUTIVE_DAYS, 1);
-                    }
-                    hashOperations.increment(key, ToolboxConstants.Cache.TOTAL_DAYS, 1);
-                    return null;
-                }
-            });
-        } else {
-            Integer totalDays = userSignStats.getTotalDays();
-            Integer currentContinuousDays = userSignStats.getCurrentContinuousDays();
-            resetHash(++totalDays, ++currentContinuousDays, userId);
-        }
+        Map<String, Object> map = Map.of(
+                ToolboxConstants.Cache.TOTAL_DAYS, totalDays,
+                ToolboxConstants.Cache.CONSECUTIVE_DAYS, currentContinuousDays,
+                ToolboxConstants.Cache.LAST_SIGN_DATE, lastSignDateStr
+        );
+        redisTemplate.opsForHash().putAll(key, map);
+        redisTemplate.expire(key, ToolboxConstants.Business.TTL, TimeUnit.DAYS);
     }
 
     @SuppressWarnings("unchecked")
@@ -187,10 +181,14 @@ public class DailySignInCacheProviderImpl implements DailySignInCacheProvider {
     }
 
     @SuppressWarnings("unchecked")
-    private void resetHash(Integer totalDays, Integer currentContinuousDays, Long userId) {
-        Map<String, Integer> map = Map.of(ToolboxConstants.Cache.TOTAL_DAYS, totalDays, ToolboxConstants.Cache.CONSECUTIVE_DAYS, currentContinuousDays);
+    private void resetHash(Integer totalDays, Integer currentContinuousDays, LocalDate lastSignDate, Long userId) {
+        String lastSignDateStr = lastSignDate != null ? lastSignDate.toString() : "";
+        Map<String, Object> map = Map.of(
+                ToolboxConstants.Cache.TOTAL_DAYS, totalDays,
+                ToolboxConstants.Cache.CONSECUTIVE_DAYS, currentContinuousDays,
+                ToolboxConstants.Cache.LAST_SIGN_DATE, lastSignDateStr
+        );
         redisTemplate.opsForHash().putAndExpire(ToolboxConstants.Cache.SIGN_INFO + userId, map, RedisHashCommands.HashFieldSetOption.ifNoneExist(), Expiration.from(Duration.of(ToolboxConstants.Business.TTL, ChronoUnit.DAYS)));
-
     }
 
 }

@@ -1,7 +1,6 @@
 import type { Result } from '@/types/result'
 import request from '../request'
 import type { UserProfileData, UserSimpleData } from '../user'
-import { WsEventName } from '../ws/config/config'
 
 export interface messageVO {
   id: string
@@ -88,6 +87,30 @@ export class MessageAPI {
   public static async read(sessionId: string) {
     return await request.get(`/message/read/${sessionId}`)
   }
+
+  public static async loadInteractionMessages(
+    lastUuid: string | null,
+    limit: number,
+  ): Promise<Result<InteractionMessageVO[]>> {
+    return await request.get(`/message/interaction/list`, { params: { lastUuid, limit } })
+  }
+
+  public static async deleteInteractionMessage(uuid: string): Promise<Result<void>> {
+    return await request.delete(`/message/interaction/delete/${uuid}`)
+  }
+}
+
+export interface InteractionMessageVO {
+  uuid: string
+  senderId: string
+  senderAvatar: string
+  senderName: string
+  receiverId: string
+  messageType: number
+  content: string
+  associateContent: string
+  createTime: string
+  associateContentTitle: string
 }
 
 export interface SessionVO {

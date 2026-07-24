@@ -293,7 +293,18 @@ public class CouponAppServiceImpl implements CouponAppService {
 
                     Coupon template = couponRepository.findCouponById(activity.getCouponId());
 
-                    Integer count = userCouponRepository.countUnUsedByCouponId(activity.getCouponId());
+                    Long currentUserId = null;
+                    try {
+                        if (UserHolder.getUser() != null) {
+                            currentUserId = UserHolder.getUser().getId();
+                        }
+                    } catch (Exception e) {
+                        // 忽略未登录
+                    }
+                    Integer count = 0;
+                    if (currentUserId != null) {
+                        count = userCouponRepository.countByUserIdAndCouponId(currentUserId, activity.getCouponId());
+                    }
 
                     if(template ==null)throw new NoSuchCouponException("未找到优惠券信息");
 

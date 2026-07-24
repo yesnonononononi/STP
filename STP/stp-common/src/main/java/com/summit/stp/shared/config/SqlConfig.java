@@ -1,9 +1,12 @@
 package com.summit.stp.shared.config;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.config.GlobalConfig;
+import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionTemplate;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,7 +26,7 @@ public class SqlConfig {
     private String mapperLocations;
 
     @Bean
-    public SqlSessionFactory sqlSessionFactory(DataSource dataSource) throws Exception {
+    public SqlSessionFactory sqlSessionFactory(DataSource dataSource, ObjectProvider<MetaObjectHandler> metaObjectHandlerProvider) throws Exception {
         MybatisSqlSessionFactoryBean factoryBean = new MybatisSqlSessionFactoryBean();
         factoryBean.setDataSource(dataSource);
 
@@ -31,6 +34,11 @@ public class SqlConfig {
         MybatisConfiguration configuration = new MybatisConfiguration();
         configuration.setMapUnderscoreToCamelCase(true);
         factoryBean.setConfiguration(configuration);
+
+        // 配置全局属性以使 MetaObjectHandler 生效
+        GlobalConfig globalConfig = new GlobalConfig();
+        metaObjectHandlerProvider.ifAvailable(globalConfig::setMetaObjectHandler);
+        factoryBean.setGlobalConfig(globalConfig);
 
         // 从配置读取 mapper-locations，支持逗号分隔的多路径扫描
         List<Resource> resourceList = new ArrayList<>();

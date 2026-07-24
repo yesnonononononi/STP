@@ -8,6 +8,8 @@ import com.summit.stp.post.domain.repository.PostRepository;
 import com.summit.stp.post.domain.repository.PostTagRelRepository;
 import com.summit.stp.rank_board.application.service.RankCacheProvider;
 import com.summit.stp.shared.constants.MqConstants;
+import com.summit.stp.rank_board.application.service.CreatorRankBufferManager;
+import com.summit.stp.post.infrastructure.constants.PostConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
@@ -27,6 +29,7 @@ public class RankPostPublishListener {
     private final PostRepository postRepository;
     private final PostTagRelRepository postTagRelRepository;
     private final RankCacheProvider rankCacheProvider;
+    private final CreatorRankBufferManager creatorRankBufferManager;
 
     @RabbitListener(bindings = @QueueBinding(
             value = @Queue(name = MqConstants.Rank.QUEUE_POST_PUBLISH, durable = "true"),
@@ -46,6 +49,11 @@ public class RankPostPublishListener {
                 double score = post.calculateHotScore();
                 rankCacheProvider.cachePostScore(postId, score);
                 log.info("【排行榜实时更新】已初始化帖子热度, postId={}, score={}", postId, score);
+                
+                if (post.getCreatorId() != null) {
+                    creatorRankBufferManager.incrementScore(post.getCreatorId(), PostConstants.Business.CREATOR_SCORE_POST);
+                    log.info("【排行榜实时更新】已自增作者发帖积分, userId={}", post.getCreatorId());
+                }
             }
             
             // 2. 将标签的使用次数增加 1

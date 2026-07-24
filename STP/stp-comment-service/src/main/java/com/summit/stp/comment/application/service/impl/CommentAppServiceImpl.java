@@ -104,11 +104,22 @@ public class CommentAppServiceImpl extends AbstractCommentAppService {
 
         UserSimpleVO publisherVO = userFeignClient.findSimpleUserById(user.getId()).getData();
         try {
+            String displayContent = comment.getContent();
+            if (comment.getType() != null) {
+                if (comment.getType() == CommentType.IMAGE) {
+                    displayContent = "[图片] " + (displayContent != null ? displayContent : "");
+                } else if (comment.getType() == CommentType.VIDEO) {
+                    displayContent = "[视频] " + (displayContent != null ? displayContent : "");
+                } else if (comment.getType() == CommentType.AUDIO) {
+                    displayContent = "[音频] " + (displayContent != null ? displayContent : "");
+                }
+            }
+
             CommentNotificationMessage msg = CommentNotificationMessage.builder()
                     .commentId(comment.getId())
                     .postId(post.getId())
                     .parentId(comment.getParentId())
-                    .commentContent(comment.getContent())
+                    .commentContent(displayContent)
                     .triggerUserId(user.getId())
                     .postTitle(post.getTitle())
                     .postCreatorId(post.getCreatorId())

@@ -2,6 +2,8 @@ package com.summit.stp.comment.infrastructure.persistence.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -18,6 +20,8 @@ public class CommentImagePO {
     @TableId(type = IdType.AUTO)
     @ApiModelProperty(value = "自增主键")
     private Long id;
+    @TableField(fill = FieldFill.INSERT)
+    private Long publicId;
 
     private String name;
 
