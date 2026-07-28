@@ -155,6 +155,18 @@
                     </div>
                     <span class=" text-gray-400">开启个性化推荐,会推荐你感兴趣的内容</span>
                 </div>
+                <div class="w-full m-4">
+                    <div class="flex items-center justify-between p-2">
+                        <span class="">不显示已删除的帖子</span>
+                        <div class="w-12 h-6 rounded-xl bg-linear-to-r  from-blue-200 via-blue-100 cursor-pointer to-blue-300 mr-2 flex items-center"
+                            @click="hideDeletedPosts = !hideDeletedPosts">
+                            <div class="w-6 h-6 rounded-full  transition-all duration-300 "
+                                :class="hideDeletedPosts ? 'translate-x-6 bg-blue-400' : 'translate-x-0 bg-blue-300'">
+                            </div>
+                        </div>
+                    </div>
+                    <span class=" text-gray-400">不再在主页显示已经删除的帖子</span>
+                </div>
             </div>
         </div>
     </div>
@@ -162,13 +174,50 @@
 
 <script lang="ts" setup>
 import { useUserInfoStore } from '@/stores/userInfo';
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { UserAPI } from '@/services/user';
 import { log } from '@/utils/log';
 
 const userStore = useUserInfoStore();
 const user = computed(() => userStore.user);
 const canRecommend = ref(true)
+const hideDeletedPosts = ref(false)
+const initializing = ref(true)
+
+// 加载初始隐私偏好
+onMounted(async () => {
+    try {
+        await userStore.fetchSettings();
+        if (userStore.settings) {
+            canRecommend.value = userStore.settings.customizationRecommend === 1;
+            hideDeletedPosts.value = userStore.settings.showDelPost === 0;
+        }
+    } catch (error: any) {
+        console.error('加载隐私设置失败:', error);
+    } finally {
+        initializing.value = false;
+    }
+});
+
+// 监听状态变动自动同步至后端
+watch([canRecommend, hideDeletedPosts], async ([newRecommend, newHideDeleted]) => {
+    if (initializing.value) return;
+    try {
+        const res = await UserAPI.updateSettings({
+            customizationRecommend: newRecommend ? 1 : 0,
+            showDelPost: newHideDeleted ? 0 : 1
+        });
+        if (res.code === 1) {
+            // 同步本地 Pinia 状态
+            userStore.settings = {
+                customizationRecommend: newRecommend ? 1 : 0,
+                showDelPost: newHideDeleted ? 0 : 1
+            };
+        }
+    } catch (error: any) {
+        log.error(error.message || '隐私设置更新失败');
+    }
+});
 
 // 登录手机绑定表单
 const phoneForm = reactive({

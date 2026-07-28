@@ -1,29 +1,37 @@
 <template>
-  <div class="relative flex flex-col items-center bg-white shadow-md rounded-lg  w-full border border-gray-100/50">
-    <div class="flex items-center justify-between w-full p-2 gap-2">
+  <div class="relative flex flex-col items-center bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] rounded-xl w-full border border-gray-100/60 overflow-hidden hover:shadow-[0_6px_24px_rgba(0,0,0,0.06)] transition-all duration-200">
+    <!-- 优惠券打孔半圆凹槽与垂直虚线分栏 -->
+    <div class="absolute -top-2 left-[106px] -translate-x-1/2 w-4 h-4 bg-gray-50 border border-gray-100 rounded-full z-10"></div>
+    <div class="absolute -bottom-2 left-[106px] -translate-x-1/2 w-4 h-4 bg-gray-50 border border-gray-100 rounded-full z-10"></div>
+    <div class="absolute top-3 bottom-3 left-[106px] border-r border-dashed border-gray-200/80 z-5"></div>
+
+    <div class="flex items-center justify-between w-full p-2.5 gap-2 relative z-1">
       <div class="flex items-center gap-4 flex-1 min-w-0">
         <!-- 优惠金额/折扣展示 -->
-        <div class="flex flex-col items-center justify-center shrink-0 w-24 border-r border-gray-100 pr-2">
-          <span class="text-red-500 font-semibold flex items-baseline gap-0.5">
+        <div class="flex flex-col items-center justify-center shrink-0 w-24 pr-4 py-1.5 bg-gradient-to-r from-red-50/20 via-transparent to-transparent rounded-l-lg">
+          <span class="text-red-500 font-bold flex items-baseline gap-0.5 drop-shadow-2xs">
             <template v-if="item.amount">
               <span class="text-sm">¥</span>
-              <span class="text-3xl font-bold">{{ item.amount }}</span>
+              <span class="text-3xl font-black tracking-tight">{{ item.amount }}</span>
             </template>
             <template v-else-if="item.discount">
-              <span class="text-2xl font-bold">{{ Number(item.discount) * 10 }}</span>
-              <span class="text-xs">折</span>
+              <span class="text-2xl font-black tracking-tight">{{ Number(item.discount) * 10 }}</span>
+              <span class="text-xs font-bold">折</span>
             </template>
             <template v-else>
               <span class="text-xl font-bold">免费</span>
             </template>
           </span>
-          <span class="text-xs text-red-400 mt-1">
+          <span class="text-[10px] text-red-400 mt-1 font-medium bg-red-50/40 px-1 py-0.2 rounded border border-red-100/10">
             {{ item.scopeType === 1 || item.scopeType === 0 ? '无门槛' : '限制使用' }}
           </span>
         </div>
 
         <!-- 优惠券名称及有效期 -->
-        <div class="flex flex-col gap-1.5 justify-start flex-1 min-w-0">
+        <div class="flex flex-col gap-1 justify-start flex-1 min-w-0">
+          <span v-if="!props.me && item.name" class="text-[10px] text-blue-600 font-bold tracking-wide bg-blue-50/70 border border-blue-100/40 px-1.5 py-0.5 rounded w-max truncate max-w-full mb-1">
+            {{ item.name }}
+          </span>
           <div class="text-sm font-semibold text-gray-800 flex gap-1.5 items-center">
             <span class="truncate">{{ item.couponName || item.name }}</span>
 
@@ -59,9 +67,9 @@
 
         <!-- 2. 秒杀倒计时模式 -->
         <template v-else-if="props.item.type === 2">
-          <button v-if="countdownSeconds > 0" disabled
+          <button v-if="state.countdownSeconds > 0" disabled
             class="rounded-full w-full py-1 text-center bg-gray-200 text-gray-500 border border-gray-300 text-xs font-semibold select-none cursor-not-allowed">
-            {{ countdownText }}
+            {{ state.countdownText }}
           </button>
           <button v-else @click="$emit('receive', item.id)"
             class="rounded-full w-full py-1 text-center text-white hover:shadow-[0px_2px_6px_rgba(239,68,68,0.5)] transition-all duration-200 cursor-pointer text-xs font-medium"
@@ -73,7 +81,7 @@
 
         <!-- 3. 我的已持有模式 -->
         <template v-if="props.me">
-          <button v-if="isExpired || props.item.status === CouponStatus.EXPIRED" disabled
+          <button v-if="state.isExpired || props.item.status === CouponStatus.EXPIRED" disabled
             class="rounded-full w-full py-1 text-center bg-gray-200 text-gray-400 border border-gray-300 text-xs font-medium cursor-not-allowed select-none">
             已过期
           </button>
@@ -89,9 +97,9 @@
 
         <!-- 下拉详情触发箭头 -->
         <span class="cursor-pointer text-gray-400 hover:text-gray-600 transition-colors duration-200"
-          @click="showMore = !showMore">
+          @click="state.showMore = !state.showMore">
           <svg t="1781791086826" class="icon size-5 transition-transform duration-300"
-            :class="showMore ? 'rotate-180' : ''" viewBox="0 0 1024 1024" version="1.1"
+            :class="state.showMore ? 'rotate-180' : ''" viewBox="0 0 1024 1024" version="1.1"
             xmlns="http://www.w3.org/2000/svg">
             <path d="M185.884 327.55 146.3 367.133 512.021 732.779 877.7 367.133 838.117 327.55 511.997 653.676Z">
             </path>
@@ -120,7 +128,7 @@
 
     <!-- 详情展开容器（不占空间） -->
     <div class="grid transition-[grid-template-rows] duration-300 ease-in-out w-full border-t border-gray-50/50"
-      :class="showMore ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'">
+      :class="state.showMore ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'">
       <div class="overflow-hidden">
         <div class="flex flex-col text-xs text-gray-500 gap-1.5 w-full p-3 bg-gray-50/70">
           <div class="flex gap-2 items-center justify-start">
@@ -148,13 +156,31 @@
 <script setup lang="ts">
 import Tooltip from '@/presentation/components/Tooltip.vue';
 import { TimeUtils } from '@/utils/time';
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted, reactive } from 'vue';
 import { CouponStatus } from '@/services/coupon/type';
 import type { CouponActivityVO, CouponVO } from '@/services/coupon/coupon';
+const state = reactive({
+  isExpired: computed(() => {
+    return props.item.status === CouponStatus.EXPIRED;
+  }),
+  isUsed: computed(() => {
+    return props.item.status === CouponStatus.USED;
+  }),
+  isAvaliable: computed(() => {
+    return props.item.status === CouponStatus.UNUSED;
+  }),
+  relatedOrderId: computed(() => {
+    return props.item.relatedOrderId;
+  }),
+  showMore: ref(false),
+  countdownSeconds: ref(0),
+  countdownText: ref('00:00'),
 
+});
 interface Props {
   item: any;
-  me: boolean
+  me: boolean;
+  relatedOrderId?: string
 }
 
 const props = defineProps<Props>();
@@ -163,13 +189,14 @@ defineEmits<{
   (e: 'use', item: any): void;
 }>();
 
-const showMore = ref(false);
-const countdownSeconds = ref(0);
-const countdownText = ref('00:00');
+
 let timer: ReturnType<typeof setInterval> | null = null;
 
 // 格式化有效期文本
 const validityText = computed(() => {
+  if (state.isUsed) {
+    return state.relatedOrderId ? `订单ID: ${state.relatedOrderId}` : '已使用';
+  }
   const item = props.item;
   if (props.me) {
     return item.endTime ? `${TimeUtils.timestampToDate(item.endTime)} 后过期` : '';
@@ -184,13 +211,6 @@ const validityText = computed(() => {
   return '';
 });
 
-// 判断优惠券是否已过期
-const isExpired = computed(() => {
-  if (!props.item.endTime) return false;
-  const endDate = TimeUtils.parseDate(props.item.endTime);
-  if (!endDate) return false;
-  return endDate.getTime() < Date.now();
-});
 
 // 计算倒数格式
 function formatCountdown(seconds: number): string {
@@ -210,10 +230,10 @@ function formatCountdown(seconds: number): string {
 function updateCountdown() {
   if (props.item.type !== 2) return;
   const diff = TimeUtils.calculateTimeByNow(props.item.activityStartTime);
-  countdownSeconds.value = Math.max(0, diff);
-  countdownText.value = formatCountdown(countdownSeconds.value);
-  console.log(countdownText.value);
-  if (countdownSeconds.value <= 0 && timer) {
+  state.countdownSeconds = Math.max(0, diff);
+  state.countdownText = formatCountdown(state.countdownSeconds);
+
+  if (state.countdownSeconds <= 0 && timer) {
     clearInterval(timer);
     timer = null;
   }
@@ -222,7 +242,7 @@ function updateCountdown() {
 onMounted(() => {
   if (props.item.type === 2) {
     updateCountdown();
-    if (countdownSeconds.value > 0) {
+    if (state.countdownSeconds > 0) {
       timer = setInterval(updateCountdown, 1000);
     }
   }

@@ -1,0 +1,35 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: stp-auth-service
+  config:
+    import:
+      - optional:nacos:jdbc.yaml
+      - optional:nacos:redis.yaml
+      - optional:nacos:queue.yaml
+      - optional:nacos:minio.yaml
+  cloud:
+    nacos:
+      config:
+        username: nacos
+        password: nacos
+        refresh-enabled: true
+        file-extension: yaml
+
+
+mybatis-plus:
+  mapper-locations: ${stp.jdbc.mapper-locations}
+  type-aliases-package: ${stp.jdbc.type-aliases-package}
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+stp:
+  jdbc:
+    mapper-locations: classpath*:mapper/userAuth/**/*.xml
+    type-aliases-package: com.summit.stp.userAuth.infrastructure.persistence.po

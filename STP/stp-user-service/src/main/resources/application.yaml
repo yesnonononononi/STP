@@ -1,0 +1,37 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: stp-user-service
+  config:
+    import:
+      - optional:nacos:jdbc.yaml
+      - optional:nacos:redis.yaml
+      - optional:nacos:queue.yaml
+      - optional:nacos:minio.yaml
+  cloud:
+    nacos:
+      config:
+        import-check:
+          enabled: false
+        refresh-enabled: true
+        shared-dataids: minio.yaml,jdbc.yaml,redis.yaml,queue.yaml
+        file-extension: yaml
+        username: nacos
+        password: nacos
+
+mybatis-plus:
+  mapper-locations: ${stp.jdbc.mapper-locations}
+  type-aliases-package: ${stp.jdbc.type-aliases-package}
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+stp:
+  jdbc:
+    mapper-locations: classpath*:mapper/user/**/*.xml,classpath*:mapper/member/**/*.xml,classpath*:mapper/relationship/**/*.xml
+    type-aliases-package: com.summit.stp.user.infrastructure.persistence.po,com.summit.stp.member.infrastructure.persistence.po

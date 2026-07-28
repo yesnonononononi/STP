@@ -1,7 +1,6 @@
 import type { Result } from '@/types/result'
 import request from '../request'
 import type { UserProfileData, UserSimpleData } from '../user'
-import { WsEventName } from '../ws/config/config'
 
 export interface messageVO {
   id: string
@@ -88,6 +87,32 @@ export class MessageAPI {
   public static async read(sessionId: string) {
     return await request.get(`/message/read/${sessionId}`)
   }
+
+  public static async loadInteractionMessages(
+    lastUuid: string | null,
+    limit: number,
+  ): Promise<Result<InteractionMessageVO[]>> {
+    return await request.get(`/message/interaction/list`, { params: { lastUuid, limit } })
+  }
+
+  public static async deleteInteractionMessage(uuid: string): Promise<Result<void>> {
+    return await request.delete(`/message/interaction/delete/${uuid}`)
+  }
+}
+
+export interface InteractionMessageVO {
+  publicId: string
+  senderId: string
+  senderAvatar: string
+  senderName: string
+  receiverId: string
+  messageType: number
+  content: string
+  associateContent: string
+  createTime: string
+  associateContentTitle: string
+  postId: string
+  isLike?: boolean
 }
 
 export interface SessionVO {
@@ -119,5 +144,13 @@ export class SessionAPI {
     targetAvatar: string
   }): Promise<Result<void>> {
     return await request.post('/session/save', form)
+  }
+
+  public static async draft(draft: string, sessionId: string) {
+    return await request.post('/session/draft', { draft: draft, sessionId: sessionId })
+  }
+
+  public static async delDraft(sessionId: string) {
+    return await request.post('/session/draft/del', null, { params: { sessionId } })
   }
 }

@@ -6,6 +6,8 @@ import { PostType } from '@/services/post'
 import { XssUtils } from '@/utils/xss'
 import { CommonAPI } from '@/services/common/api'
 import { log } from '@/utils/log'
+import { useAuthStore } from '@/views/auth/store'
+import router from '@/router'
 
 export enum CommentType {
   IMAGE = 1,
@@ -45,12 +47,24 @@ export function useComment(postIdRef: Ref<string | number | undefined>) {
   })
 
   async function like(comment: CommentVO) {
+    const authStore = useAuthStore()
+    if (!authStore.token) {
+      log.warning('请先登录后操作')
+      authStore.showLoginDialog()
+      return
+    }
     const isOk = (await CommentAPI.like(comment.id)).data
     comment.item.likeCount = (Number(comment.item.likeCount) || 0) + (isOk ? 1 : -1)
     comment.item.isLike = isOk.valueOf()
   }
 
   async function top(comment: CommentVO) {
+    const authStore = useAuthStore()
+    if (!authStore.token) {
+      log.warning('请先登录后操作')
+      authStore.showLoginDialog()
+      return
+    }
     const postId = postIdRef.value
     if (!postId) return
     if (comment.rootId || comment.parentId) {
@@ -145,7 +159,6 @@ export function useComment(postIdRef: Ref<string | number | undefined>) {
     if (!rootId) return
     const parentId = comment.id
     const postId = comment.postId || 0
-    CommentAPI.reply(rootId.toString())
     CommentAPI.post({
       postId: postId.toString(),
       rootId: rootId.toString(),
@@ -300,6 +313,12 @@ export function useComment(postIdRef: Ref<string | number | undefined>) {
     rootId?: number | string,
     files?: any[],
   ) {
+    const authStore = useAuthStore()
+    if (!authStore.token) {
+      log.warning('请先登录后操作')
+      authStore.showLoginDialog()
+      return
+    }
     if ((!replyInput.value && files?.length == 0) || !postIdRef.value) return
     if (e && typeof e === 'object') {
       if (e.shiftKey) return

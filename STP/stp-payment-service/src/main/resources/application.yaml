@@ -1,0 +1,43 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: stp-payment-service
+  config:
+    import:
+      - optional:nacos:jdbc.yaml
+      - optional:nacos:redis.yaml
+      - optional:nacos:queue.yaml
+      - optional:nacos:minio.yaml
+  cloud:
+    nacos:
+      config:
+        shared-dataids: minio.yaml,jdbc.yaml,redis.yaml,queue.yaml
+        import-check:
+          enabled: false
+        username: nacos
+        password: nacos
+        refresh-enabled: true
+        file-extension: yaml
+
+
+stp:
+  jdbc:
+    mapper-locations: classpath*:mapper/payment/**/*.xml
+    type-aliases-package: com.summit.stp.payment.infrastructure.persistence.po
+
+payment:
+  pid: 297
+  to: https://pay.aikelaikaifa.com/api/pay/submit
+  notify_url: https://113241dc.r11.cpolar.top/pay/check
+  return_url: http://localhost:5173/payResult
+  signType:
+    RSA:
+      privateKey: MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDmhhXF3i+BaclGfz1bfvpw/ItlOcnqm/O2RwNu+NYWOyWLtfEyh6Pi44GBT/ENDUG0MOPtTPCINAXk+h3WAO26+/eyTWWOymK++3NCp971XVEPMJx1jZ0ShgSttYKKWoZ8AT1i0Wo4gnKgMCXv1WTFWnN9g89zGhQ7ctV3KbQbn1zZLfiqX6i1J0iRoAUXINVxh1Bc+yjHK3Grriz3mTVqY7tCUD7a4z/5W5OMMlDqYeoD4PatMLtJg7MZ3u4v+Qhm/W117RKyC1EUe76lauptNLhOfe7hlX3lJXahk7C3QGfL+c8UcPdeoiax6vOyc8pAaIt/fI0YsO+r5ZcDAAzzAgMBAAECggEBAMqmw0tACMkewydrQfhGR0m+aZiiVcQeNwBdq0IKFMJUWqxYVOJT5ZnW4IlaSpFrvv/2HtkE00sZWLkzu7je9h5z1Qt1CLufZXF5QZkuVE2lLFZLKLAavyOCl2hR8aFI9YLb4CgX6uYknzn9Ocx97umjm3WSw3LvUSv1xnzMN54zLdIJb41GL5dCsTIJ6HQHk7gtaNWgXNqsaf0Mcrcs0/1gb6N6bygW0ObLC/Oy90gXGD7FQzvRrQ9d+9R/JI8jxyTpaetgR0KG5LfKhDCNjVG2+Xd8it3tjiD2EbWzquCK2zRrYuDLbf2s9840mFDe5tx9SyAtVNq3Ot62J0ynO2ECgYEA/60JRZDvUXOsvRqGbSYZlas5uTEZc/p9xm4Hiqwyjau+7dW1SDRLo6p19DfSXmM1DkfSaQyC1lmMlvWu8zrlLODcGbs5ZeG9IXkhccOg5joM2DxmN9eMN4kjBr5EK1FfMoBrKoolhZhbMAF493nTOyYuCwTqYgSp3oFq0P0ptqMCgYEA5tDjI3G2odrPzJAW5OgZ71YJ+YALRJ/rHUQwkX25mambSxyfgHmf7cIaMH5Wyh5+taDUYlW4BFkNbtKh8yvRu8AR94LUQqtslj9PbECb3zBwhA7rg7ciEIZayZfYknBD5ezXtZkIQGzZQwW41Wa2rfyxOTQyujpaFxSWLj15xXECgYAKxnYfkm4jlqZvCdEkhHiLkD3Mij8yXhoy5Kw4se0nf1d6mokbU+jkKujxs/CPvcqcoXZCqx5QflGogw4ufgrui0N7aiKPIqZf5MT+EGqViVjFPDZqoBDuvj7Vp+sjkDhc3oCluFDAgp1FNqqsc1vtoDxMhpaCLwQhtn6T9Ddv1QKBgQCOk+wrAdxCAOspvrwVrHYQzMIemATd4DcY/f1Oci5LCGUAMe8pKngrIyKQYAp2kf3Nbkqjb7XbIbNViNE3aBMHei7fCLbbdA8AhJ0oDoT6im6GdLzwwRhOwt+j9aN3WdfnWLUq3Rwmx9YxO4CgefFQam6DGoZXWSI7baETcTAeUQKBgQDpGf7hIfuH1J8mHBvLjPansr+AzraMKaruDQT9uyMWOVajm0kWoEaXHCo/jZwf6QoCkSGDXVcIJ1qybsEKpdKqA/PtjGUTfiynciPYEEsVk/ePuwlLC3CNvQyATZ4gSDcCE5dOUlyRnhC7OscVSMlUDrMZZ8jWQstZBx1UP9AZUg==
+    current: RSA
+  platform:
+    publicKey: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAx1yUROAk05fYIe0uGrxqAacvz8g/EiV9UCr9hH/pmLTv8h5R1aHP0eW1reoHYyG1CohH3ufmZA+/0TRzGonaqunw7vBEsGI/glHfvj0eM1khnQJkcbb1K69ortptQ3NvGAmLS25Uf7t6qIQj/qUvfYbo+X2GeEzQdAo2Ju2qwfPKXlGWqI0XqRxzgDzangxHKj837M/3CRGoL4t6+p7LOT7VYPaixHy+GIpD/jIFxdiRQA3ybjm+d+JbpnWbl8mjpu7oZ4BX3dWVvMztwlL+TgbaBYAi+S/wiBy2N/d+e9H91RI0iWsG0PUVp95tBUtHn+sV/sDEehNhXHZI5lnUbQIDAQAB
+  pay:
+    success:
+      symbol: TRADE_SUCCESS

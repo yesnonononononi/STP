@@ -3,13 +3,16 @@
         <div>
             <span class="text-xl font-bold">留下你的评论</span>
         </div>
-        <div class="flex items-center my-2 gap-3 overflow-x-auto">
+        <div class="flex items-center my-2 gap-3 overflow-x-auto" @click="handleInputClick">
             <span class="text-gray-600">快捷表情</span>
-            <span class="cursor-pointer hover:bg-gray-300" v-html="emoji.url" @click="insertEmoji(emoji)"
+            <span class="cursor-pointer hover:bg-gray-300" v-html="emoji.url" @click="isLoggedIn && insertEmoji(emoji)"
                 v-for="(emoji, index) in emojiList.slice(0, Math.min(emojiList.length, 10))" :key="index">
             </span>
         </div>
-        <el-input ref="inputRef" type="textarea" :rows="3" v-model="model" placeholder="恶语结恶缘,善语暖人心"
+        <el-input ref="inputRef" type="textarea" :rows="3" v-model="model" 
+            :placeholder="isLoggedIn ? '恶语结恶缘,善语暖人心' : '请先登录以发表评论...'"
+            :readonly="!isLoggedIn"
+            @click="handleInputClick"
             @keydown.enter="handleKeyDown" resize="none" />
         <div class="image-upload min-h-20 w-full mb-2" v-if="fileList.length != 0">
             <el-upload v-model:file-list="fileList" list-type="picture-card" :limit="6" :auto-upload="false"
@@ -20,9 +23,9 @@
             </el-upload>
         </div>
         <div class="flex items-center justify-between p-4 relative">
-            <div class="flex items-center gap-8 ">
+            <div class="flex items-center gap-8 " @click="handleInputClick">
                 <el-upload class="flex items-center justify-center cursor-pointer" v-model:file-list="fileList"
-                    :auto-upload="false" :show-file-list="false" accept="image/*,video/*,audio/*">
+                    :disabled="!isLoggedIn" :auto-upload="false" :show-file-list="false" accept="image/*,video/*,audio/*">
                     <template #trigger>
                         <div
                             class="flex items-center justify-center gap-2 cursor-pointer text-gray-600 rounded-md hover:text-blue-300">
@@ -40,22 +43,25 @@
                     </template>
                 </el-upload>
 
-                <emoji v-model="model" :place-holder="'表情'" :textarea-ref="inputRef" />
+                <emoji v-model="model" :place-holder="'表情'" :textarea-ref="inputRef" :disabled="!isLoggedIn" />
             </div>
             <span
                 class="w-16 text-center bg-linear-to-r from-blue-200 via-blue-300 to-blue-400 rounded-lg p-1 select-none"
-                :class="isSubmitting ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:scale-105'"
-                @click="!isSubmitting && publish($event)">{{ isSubmitting ? '发表中' : '发表' }}</span>
+                :class="(isSubmitting || !isLoggedIn) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:scale-105'"
+                @click="handlePublishClick">{{ isSubmitting ? '发表中' : '发表' }}</span>
         </div>
     </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useEmoji } from './composables/useEmoji';
 import { useInputText } from './composables/useInputText';
 import Emoji from './emoji.vue';
 import { Plus } from '@element-plus/icons-vue';
+import { useAuthStore } from '@/views/auth/store';
+import { log } from '@/utils/log';
+import router from '@/router';
 
 const model = defineModel<string>({ required: true })
 const fileList = ref<any[]>([])
@@ -80,6 +86,25 @@ const {
         isSubmitting.value = false;
     }
 });
+
+const authStore = useAuthStore();
+const isLoggedIn = computed(() => !!authStore.token);
+
+function handleInputClick() {
+    if (!isLoggedIn.value) {
+        log.warning('请先登录后发表评论');
+        authStore.showLoginDialog();
+    }
+}
+
+function handlePublishClick(e: any) {
+    if (!isLoggedIn.value) {
+        log.warning('请先登录后发表评论');
+        authStore.showLoginDialog();
+        return;
+    }
+    publish(e);
+}
 
 function publish(e: any) {
     basePublish(e);

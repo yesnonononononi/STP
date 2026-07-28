@@ -2,5 +2,17 @@
 <project version="4">
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/STP/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/STP/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/STP/stp-auth-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/STP/stp-comment-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/STP/stp-common/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/STP/stp-coupon-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/STP/stp-gateway/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/STP/stp-im-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/STP/stp-order-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/STP/stp-payment-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/STP/stp-post-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/STP/stp-toolbox-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/STP/stp-user-service/src/main/java" charset="UTF-8" />
   </component>
 </project>

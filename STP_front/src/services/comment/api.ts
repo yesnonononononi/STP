@@ -64,15 +64,6 @@ export class CommentAPI {
     return await request.get(`/post/comment/like/${id}`)
   }
 
-  /**
-   * 回复评论（缓存预热）
-   * @param id 评论ID
-   * @returns 操作结果
-   */
-  static async reply(id: string): Promise<Result<void>> {
-    return await request.get(`/post/comment/reply/${id}`)
-  }
-
   static async top(commentId: string, postId: string): Promise<Result<void>> {
     return await request.get(`/post/comment/top/${postId}`, { params: { commentId } })
   }

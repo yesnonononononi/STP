@@ -21,6 +21,7 @@ import { getCursorXY } from '../utils/cursor'
  * 页面生命周期挂载、空白点击防丢拦截与草稿自动保存等完整发帖业务流。
  */
 export function usePost() {
+  const submitting = ref(false)
   /** 当前用户正在录入的话题临时搜索关键字 */
   const userAddTagContent = ref('')
   const route = useRoute()
@@ -136,6 +137,26 @@ export function usePost() {
       }
     }
     loadTags()
+    const queryTag = route.query.tag as string
+    if (queryTag) {
+      try {
+        const res = await TagAPI.getSearchSuggest(queryTag, 1)
+        const suggest = res.data?.suggestList?.[0]
+        if (suggest && suggest.keyword === queryTag) {
+          selectedTags.value.push({
+            id: suggest.id,
+            tagName: suggest.keyword
+          } as any)
+        } else {
+          selectedTags.value.push({
+            id: Date.now(),
+            tagName: queryTag
+          } as any)
+        }
+      } catch (err) {
+        console.error('Failed to pre-fill tag from query:', err)
+      }
+    }
   })
 
   /** 文本域对应 DOM 节点引用 */
@@ -389,15 +410,17 @@ export function usePost() {
    * @param status 帖子发布状态 (默认 NORMAL-发布，DRAFT-草稿)
    */
   async function submit(status: PostStatus = PostStatus.NORMAL) {
+    if (submitting.value) return
     if (!beforeCreateCheck()) return
+    submitting.value = true
     form.value!.status = status
     form.value.tagIds = selectedTags.value
-      .map((t) => t.id)
-      .filter((id) => id !== undefined) as number[]
-    let res
-    if (fileList.value.length > 0) {
-      uploadError.value = ''
-      try {
+      .map((t) => String(t.id))
+      .filter((id) => id !== undefined)
+    
+    try {
+      if (fileList.value.length > 0) {
+        uploadError.value = ''
         const uploadPromises = fileList.value.map(async (file) => {
           if (file.url && !file.url.startsWith('blob:')) {
             return {
@@ -412,6 +435,7 @@ export function usePost() {
             dims = await getImageDimensions(file.raw)
           }
 
+          let res
           //如果是视频且大小大于5mb
           if (file.raw.type.startsWith('video/') && file.size > 5 * 1024 * 1024) {
             res = await CommonAPI.uploadLargeFile(file.raw, 'post-media')
@@ -431,24 +455,25 @@ export function usePost() {
 
         const imageInfos = await Promise.all(uploadPromises)
         form.value.mediaUrls = imageInfos
-      } catch (err: any) {
-        log.error('文件上传失败')
-        console.error(err)
-        return // 拦截发帖
+      } else {
+        form.value.type = PostType.TEXT
+        form.value.mediaUrls = []
       }
-    } else {
-      form.value.type = PostType.TEXT
-      form.value.mediaUrls = []
-    }
 
-    return PostAPI.create(form.value!).then(() => {
+      await PostAPI.create(form.value!)
       if (status === PostStatus.NORMAL) {
+        log.success('发布成功')
         isSubmitSuccess.value = true
         router.push('/')
       } else {
         log.success('已自动保存至草稿')
       }
-    })
+    } catch (err: any) {
+      log.error(err.message || '发布失败')
+      console.error(err)
+    } finally {
+      submitting.value = false
+    }
   }
 
   /**
@@ -508,9 +533,6 @@ export function usePost() {
       return false
     } else if (!form.value.title) {
       log.error('请输入标题')
-      return false
-    } else if (!form.value.content) {
-      log.error('请输入内容')
       return false
     }
 
@@ -624,6 +646,7 @@ export function usePost() {
     handlePictureCardPreview,
     handleChange,
     handleRemove,
+    submitting,
     submit,
     toggleTag,
     removeTag,

@@ -1,5 +1,6 @@
 import type { Result } from '@/types/result'
 import request from '@/services/request'
+import type { CouponStatus } from './type'
 
 export interface CouponVO {
   id: string
@@ -35,8 +36,12 @@ export class CouponAPI {
   /**
    * 分页获取当前用户的优惠券历史
    */
-  static getCouponHistory(page: number, pageSize: number): Promise<Result<any>> {
-    return request.get('/coupon/history', { params: { page, pageSize } })
+  static getCouponHistory(
+    page: number,
+    pageSize: number,
+    status: CouponStatus | null,
+  ): Promise<Result<any>> {
+    return request.get('/coupon/history', { params: { page, pageSize, status } })
   }
 
   /**

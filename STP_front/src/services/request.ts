@@ -12,6 +12,17 @@ const request = axios.create({
 let isRefreshing = false
 let requestsQueue: any[] = []
 
+// 处理未授权（401）逻辑：执行刷新 Token 或防死循环直接跳转登录
+const handleUnauthorized = async (config: InternalAxiosRequestConfig, error?: any) => {
+  const authStore = useAuthStore()
+  if (config.url && config.url.includes('/refresh-token')) {
+    authStore.clearAuth()
+    authStore.showLoginDialog()
+    return Promise.reject(error || new Error('登录已过期'))
+  }
+  return handleTokenRefresh(config)
+}
+
 // Request interceptor
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -35,36 +46,20 @@ request.interceptors.response.use(
     // Backend: 1 success, 0 error
     if (res.code !== 1) {
       if (res.code === 401) {
-        // 防止刷新 Token 接口本身失败进入无限死循环
-        if (config.url && config.url.includes('/refresh-token')) {
-          const authStore = useAuthStore()
-          authStore.clearAuth()
-          window.location.href = '/auth/login'
-          return Promise.reject(new Error('登录已过期'))
-        }
-        return handleTokenRefresh(config)
+        return handleUnauthorized(config)
       }
-
       log.error(res.errMsg || '服务繁忙')
       return Promise.reject(new Error(res.errMsg || 'Error'))
     }
+
     // 统一返回 response.data，使用户调用 API 时直接获取 Result 对象
     return response.data as any
   },
   async (error) => {
     const { response, config } = error
 
-    // 防止刷新 Token 接口本身失败进入无限死循环
-    if (config && config.url && config.url.includes('/refresh-token')) {
-      const authStore = useAuthStore()
-      authStore.clearAuth()
-      window.location.href = '/auth/login'
-      return Promise.reject(error)
-    }
-
-    // 如果 HTTP 状态码是 401，也尝试刷新
-    if (response && response.status === 401) {
-      return handleTokenRefresh(config)
+    if (response && response.status === 401 && config) {
+      return handleUnauthorized(config, error)
     }
 
     return Promise.reject(error)
@@ -77,7 +72,7 @@ async function handleTokenRefresh(config: InternalAxiosRequestConfig) {
   // 如果根本没有 refreshToken，直接判定过期并跳转，避免发送无意义的刷新请求
   if (!authStore.refreshToken) {
     authStore.clearAuth()
-    window.location.href = '/auth/login'
+    authStore.showLoginDialog()
     return Promise.reject(new Error('未登录或登录状态已失效'))
   }
 
@@ -113,8 +108,7 @@ async function handleTokenRefresh(config: InternalAxiosRequestConfig) {
       requestsQueue.forEach((cb) => cb('', err))
       requestsQueue = []
 
-      // 改为 History 模式跳转
-      window.location.href = '/auth/login'
+      authStore.showLoginDialog()
       return Promise.reject(err)
     } finally {
       isRefreshing = false

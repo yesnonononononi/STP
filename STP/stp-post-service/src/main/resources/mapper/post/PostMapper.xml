@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.summit.stp.post.infrastructure.persistence.mapper.PostsMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.summit.stp.post.application.vo.PostVO">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="creator_id" property="creatorId" jdbcType="BIGINT"/>
+        <result column="title" property="title" jdbcType="VARCHAR"/>
+        <result column="type" property="type" jdbcType="VARCHAR"/>
+        <result column="content" property="content" jdbcType="VARCHAR"/>
+        <result column="reply_count" property="replyCount" jdbcType="INTEGER"/>
+        <result column="status" property="status" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="extraMedia" property="extraMediaUrl" javaType="String"/>
+        <result column="is_top" property="isTop" jdbcType="INTEGER"/>
+        <result column="view_count" property="viewCount" jdbcType="BIGINT"/>
+        <result column="visible_scope" property="visibleScope" jdbcType="INTEGER"/>
+        <result column="hot_score" property="hotScore" jdbcType="DOUBLE"/>
+        <collection property="mediaUrls" ofType="com.summit.stp.post.application.vo.PostImageVO" autoMapping="true" >
+            <id column="pi_id" property="id" jdbcType="BIGINT"/>
+            <result column="post_id" property="postId" jdbcType="BIGINT"/>
+            <result column="image_url" property="imageUrl" jdbcType="VARCHAR"/>
+            <result column="width" property="width" jdbcType="VARCHAR"/>
+            <result column="height" property="height" jdbcType="VARCHAR"/>
+            <result column="sortOrder" property="sortOrder" jdbcType="VARCHAR"/>
+            <result column="pi_status" property="status" jdbcType="VARCHAR"/>
+            <result column="pi_create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        </collection>
+    </resultMap>
+
+
+
+    <select id="queryByPostIds" resultMap="BaseResultMap">
+        select ps.id as id,
+        ps.creator_id as creator_id,
+        ps.title as title,
+        ps.type as type,
+        ps.content as content,
+        ps.reply_count as reply_count,
+        ps.status as status,
+        ps.create_time as create_time,
+        ps.update_time as update_time,
+        ps.media_urls as extraMedia,
+        ps.is_top as is_top,
+        ps.view_count as view_count,
+        ps.hot_score as hot_score,
+        ps.visible_scope as visible_scope
+        from posts ps
+        <where>
+            ps.status = #{status}
+            <if test="posts != null and posts.size() > 0">
+                and ps.id in
+                <foreach item="item" collection="posts" separator="," open="(" close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="userId != null">
+                and (
+                    ps.creator_id = #{userId}
+                    or ps.visible_scope = 1
+                )
+            </if>
+        </where>
+    </select>
+    <select id="queryByPage" resultMap="BaseResultMap">
+        select ps.id as id,
+        ps.creator_id as creator_id,
+        ps.title as title,
+        ps.type as type,
+        ps.content as content,
+        ps.reply_count as reply_count,
+        ps.status as status,
+        ps.create_time as create_time,
+        ps.update_time as update_time,
+        ps.media_urls as extraMedia,
+        ps.is_top as is_top,
+        ps.view_count as view_count,
+        ps.visible_scope as visible_scope
+        from posts ps
+        <where>
+            <if test="cursorId != null">
+                and ps.id <![CDATA[<]]> #{cursorId}
+            </if>
+            <if test="creatorId != null">
+                and ps.creator_id = #{creatorId}
+            </if>
+            <choose>
+                <when test="status != null">
+                    and ps.status = #{status}
+                </when>
+                <otherwise>
+                    <choose>
+                        <when test="userId != null and userId == creatorId">
+                            and ps.status in (1,2,3,4,6)
+                        </when>
+                        <otherwise>
+                            and ps.status = 1
+                        </otherwise>
+                    </choose>
+                </otherwise>
+            </choose>
+            <choose>
+                <when test="userId != null and userId == creatorId">
+                    and visible_scope IN(1,2,3)
+                </when>
+                <otherwise>
+                    and visible_scope = 1
+                </otherwise>
+            </choose>
+        </where>
+        order by ps.is_top desc, ps.id desc
+        limit #{limit}
+    </select>
+
+    <select id="getHotPostsByTag" resultType="java.lang.Long">
+        select p.id from posts p join post_tag_rel ptr on ptr.post_id = p.id and ptr.tag_id = #{tagId}
+        <where>
+            <if test="cursor != null">
+                p.id
+                &lt;
+                #{cursor}
+            </if>
+            and p.status = 1
+            order by p.hot_score desc,p.id desc
+            limit #{limit}
+        </where>
+    </select>
+    <select id="getPostsByTag" resultType="java.lang.Long">
+        select p.id from posts p join post_tag_rel ptr on ptr.post_id = p.id and ptr.tag_id = #{tagId}
+        <where>
+            <if test="cursor != null">
+                p.id
+                &lt;
+                #{cursor}
+            </if>
+            and p.status = 1
+            order by p.id desc
+            limit #{limit}
+        </where>
+    </select>
+
+
+</mapper>

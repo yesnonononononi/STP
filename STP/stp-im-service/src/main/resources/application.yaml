@@ -1,0 +1,20 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: stp-im-service
+  config:
+    import:
+      - optional:nacos:stp-im-service.yaml
+      - optional:nacos:jdbc.yaml
+      - optional:nacos:redis.yaml
+      - optional:nacos:queue.yaml
+      - optional:nacos:minio.yaml
+
+
+
+stp:
+  jdbc:
+    mapper-locations: classpath*:mapper/message/**/*.xml,classpath*:mapper/entertainment/**/*.xml
+    type-aliases-package: com.summit.stp.message.infrastructure.persistence.po,com.summit.stp.entertainment.infrastructure.persistence.po

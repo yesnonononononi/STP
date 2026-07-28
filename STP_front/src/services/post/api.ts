@@ -41,8 +41,16 @@ export class PostAPI {
     self: boolean
     creatorId?: string | number
     status?: number
+    orderType?: string
   }): Promise<Result<PostVO[]>> {
     return await request.post('/post/page', query)
+  }
+
+  /**
+   * 帖子搜索
+   */
+  static async search(keyWord: string): Promise<Result<PostVO[]>> {
+    return await request.get(`/post/search/${keyWord}`)
   }
 
   /**
@@ -68,7 +76,7 @@ export class PostAPI {
   /**
    * 删除帖子
    */
-  static async delete(id: number): Promise<Result<void>> {
+  static async delete(id: string | number): Promise<Result<void>> {
     return await request.delete(`/post/${id}`)
   }
 
@@ -89,28 +97,34 @@ export class PostAPI {
   /**
    * 获取当前登录用户对指定帖子的点赞状态
    */
-  static async getLikeStatus(id: number): Promise<Result<boolean>> {
+  static async getLikeStatus(id: string | number): Promise<Result<boolean>> {
     return await request.get(`/post/like/status/${id}`)
   }
 
   /**
    * 获取当前登录用户对指定帖子的收藏状态
    */
-  static async getCollectStatus(id: number): Promise<Result<boolean>> {
+  static async getCollectStatus(id: string | number): Promise<Result<boolean>> {
     return await request.get(`/post/collect/status/${id}`)
   }
 
   /**
    * 获取当前用户收藏的帖子列表
    */
-  static async getMyCollectList(userId: string | number | null, cursor: string | number | null): Promise<Result<PostVO[]>> {
+  static async getMyCollectList(
+    userId: string | number | null,
+    cursor: string | number | null,
+  ): Promise<Result<PostVO[]>> {
     return await request.get(`/post/collect/my`, { params: { userId, cursor } })
   }
 
   /**
    * 获取当前用户点赞的帖子列表
    */
-  static async getMyLikeList(userId: string | number | null, cursor: string | number | null): Promise<Result<PostVO[]>> {
+  static async getMyLikeList(
+    userId: string | number | null,
+    cursor: string | number | null,
+  ): Promise<Result<PostVO[]>> {
     return await request.get(`/post/like/my`, { params: { userId, cursor } })
   }
 
@@ -124,7 +138,7 @@ export class PostAPI {
   /**
    * 增加帖子浏览数
    */
-  static async view(id: number | string): Promise<Result<void>> {
+  static async view(id: string | number): Promise<Result<void>> {
     return await request.post(`/post/view/${id}`)
   }
 }
@@ -178,6 +192,20 @@ export class TagAPI {
   static async getPage(page: number, pageSize: number): Promise<Result<PageResult<TagVO>>> {
     return await request.get('/post/tag/page', {
       params: { page, pageSize },
+    })
+  }
+
+  /**
+   * 根据标签获取帖子列表 (支持游标分页和最新/最热排序)
+   */
+  static async getPostsByTag(
+    tagId: number | string,
+    cursor: string | null,
+    limit: number,
+    isHot: boolean
+  ): Promise<any> {
+    return await request.get(`/post/tag/${tagId}/posts`, {
+      params: { cursor, limit, isHot }
     })
   }
 }

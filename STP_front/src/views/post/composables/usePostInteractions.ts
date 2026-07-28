@@ -3,6 +3,7 @@ import { PostAPI, PostType, type PostVO } from '@/services/post'
 import { parseMediaUrls } from '@/utils/post'
 import { useUserInfoStore } from '@/stores/userInfo'
 import { UserAPI } from '@/services/user'
+import { useAuthStore } from '@/views/auth/store'
 import { log } from '@/utils/log'
 import router from '@/router'
 
@@ -64,6 +65,12 @@ export function usePostInteractions(topicList: Ref<PostVO[]>) {
   // 点赞逻辑
   async function like(topicId: string | undefined | number) {
     if (!topicId) return;
+    const authStore = useAuthStore()
+    if (!authStore.token) {
+      log.warning('请先登录后操作')
+      authStore.showLoginDialog()
+      return
+    }
     const res = await PostAPI.like(topicId.toString());
     if (res.code === 1) {
       const topic = topicList.value.find(t => t.id == topicId)
@@ -95,6 +102,12 @@ export function usePostInteractions(topicList: Ref<PostVO[]>) {
   // 收藏逻辑
   async function collect(topicId: string | undefined | number) {
     if (!topicId) return;
+    const authStore = useAuthStore()
+    if (!authStore.token) {
+      log.warning('请先登录后操作')
+      authStore.showLoginDialog()
+      return
+    }
     const res = await PostAPI.collect(topicId.toString());
     if (res.code === 1) {
       const topic = topicList.value.find(t => t.id == topicId)

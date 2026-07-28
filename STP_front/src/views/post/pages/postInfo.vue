@@ -14,7 +14,7 @@
                             <div class="text-sm text-gray-500 flex gap-2 items-center">
                                 <span>{{ TimeUtils.timestampToDate(postInfo.createTime) }}</span>
                                 <span>{{ postInfo.publisher?.ip }}</span>
-                                <span v-if="isOwner" class="text-blue-500 hover:text-blue-700 font-medium cursor-pointer text-xs ml-2 select-none" @click="showSettingsModal = true">设置</span>
+
                             </div>
                         </div>
                     </div>
@@ -31,18 +31,19 @@
             </div>
 
             <div class="content px-4   w-full">
-                <div class="title font-semibold">{{ postInfo?.title }}</div>
+                <div class="title font-bold text-lg mb-2 text-gray-900">{{ postInfo?.title }}</div>
                 <div class="content flex flex-col gap-2">
-                    <div class="text flex flex-wrap whitespace-pre-wrap break-all" v-html="parseEmoji(parseTag(postInfo?.content || '', postInfo?.tags))"></div>
+                    <div class="text flex flex-wrap whitespace-pre-wrap break-all text-sm text-gray-700"
+                        v-html="parseEmoji(parseTag(postInfo?.content || '', postInfo?.tags))"></div>
                     <div v-if="postInfo.type === PostType.IMAGE" class="img flex flex-wrap gap-2 w-full">
-                        <div v-for="item in postInfo.mediaUrls" :key="item.id">
-                            <el-image class="w-45 h-45 object-contain" :src="item.imageUrl" alt="" />
+                        <div v-for="(item, index) in postInfo.mediaUrls" :key="item.id || index">
+                            <el-image class="w-45 h-45 rounded-lg" :src="item.imageUrl" :preview-src-list="postInfo.mediaUrls?.map(m => m.imageUrl) || []" :initial-index="index" fit="cover" preview-teleported alt="" />
                         </div>
                     </div>
-                    <div v-if="postInfo.type !== PostType.TEXT && postInfo.type !== PostType.IMAGE" class="extraMedia">
-                        <video v-if="postInfo.type === PostType.VIDEO" class="w-72 h-45 object-contain"
+                    <div v-if="postInfo.type !== PostType.TEXT && postInfo.type !== PostType.IMAGE" class="extraMedia my-3">
+                        <video v-if="postInfo.type === PostType.VIDEO" class="max-w-[360px] max-h-[480px] w-auto h-auto rounded-xl shadow-md object-contain bg-black"
                             :src="postInfo.extraMediaUrl || ''" controls></video>
-                        <audio v-if="postInfo.type === PostType.AUDIO" class="w-72 h-45 object-contain"
+                        <audio v-if="postInfo.type === PostType.AUDIO" class="w-72 h-10 rounded-md"
                             :src="postInfo.extraMediaUrl || ''" controls></audio>
                     </div>
                 </div>
@@ -56,21 +57,28 @@
                         <span>{{ formatNum(comments.length) }}</span>
                     </div>
 
-                    <div class="like flex items-center gap-2 text-md hover:text-blue-500 cursor-pointer" @click="handleLikePost">
-                        <svg class="w-4 h-4" :fill="postInfo?.isLike ? '#1890ff' : '#8a8a8a'" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M64 483.04V872c0 37.216 30.144 67.36 67.36 67.36H192V416.32l-60.64-0.64A67.36 67.36 0 0 0 64 483.04zM857.28 344.992l-267.808 1.696c12.576-44.256 18.944-83.584 18.944-118.208 0-78.56-68.832-155.488-137.568-145.504-60.608 8.8-67.264 61.184-67.264 126.816v59.264c0 76.064-63.84 140.864-137.856 148L256 416.96v522.4h527.552a102.72 102.72 0 0 0 100.928-83.584l73.728-388.96a102.72 102.72 0 0 0-100.928-121.824z" />
+                    <div class="like flex items-center gap-2 text-md hover:text-blue-500 cursor-pointer"
+                        @click="handleLikePost">
+                        <svg class="w-4 h-4" :fill="postInfo?.isLike ? '#1890ff' : '#8a8a8a'" viewBox="0 0 1024 1024"
+                            version="1.1" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M64 483.04V872c0 37.216 30.144 67.36 67.36 67.36H192V416.32l-60.64-0.64A67.36 67.36 0 0 0 64 483.04zM857.28 344.992l-267.808 1.696c12.576-44.256 18.944-83.584 18.944-118.208 0-78.56-68.832-155.488-137.568-145.504-60.608 8.8-67.264 61.184-67.264 126.816v59.264c0 76.064-63.84 140.864-137.856 148L256 416.96v522.4h527.552a102.72 102.72 0 0 0 100.928-83.584l73.728-388.96a102.72 102.72 0 0 0-100.928-121.824z" />
                         </svg>
-                        <span :class="postInfo?.isLike ? 'text-blue-500' : 'text-gray-500'">{{ formatNum(postInfo?.likeCount || 0) }}</span>
+                        <span :class="postInfo?.isLike ? 'text-blue-500' : 'text-gray-500'">{{
+                            formatNum(postInfo?.likeCount || 0) }}</span>
                     </div>
 
-                    <div class="collect flex items-center gap-2 text-md hover:text-amber-500 cursor-pointer" @click="handleCollectPost">
+                    <div class="collect flex items-center gap-2 text-md hover:text-amber-500 cursor-pointer"
+                        @click="handleCollectPost">
                         <el-icon :color="postInfo?.isCollect ? '#f7ba2a' : ''">
                             <Star />
                         </el-icon>
-                        <span :class="postInfo?.isCollect ? 'text-amber-500' : 'text-gray-500'">{{ formatNum(postInfo?.collectCount || 0) }}</span>
+                        <span :class="postInfo?.isCollect ? 'text-amber-500' : 'text-gray-500'">{{
+                            formatNum(postInfo?.collectCount || 0) }}</span>
                     </div>
 
-                    <div class="shared flex items-center gap-2 text-md hover:text-blue-500 cursor-pointer" @click="handleShare">
+                    <div class="shared flex items-center gap-2 text-md hover:text-blue-500 cursor-pointer"
+                        @click="handleShare">
                         <el-icon>
                             <Share />
                         </el-icon>
@@ -84,13 +92,22 @@
 
         <CommentInput v-model="replyInput" :publish="publish" />
 
-        <div v-if="comments.length > 0" class="reply-area overscroll-contain  w-full flex flex-col   z-14 mb-1">
+        <div class="reply-area overscroll-contain  w-full flex flex-col min-h-12   z-14 mb-1 relative">
             <div class="comment-area flex flex-col p-2 gap-2 mt-2">
                 <div class="title flex justify-between items-center w-full">
                     <span class="text-xl font-bold">全部评论</span>
                     <span></span>
                 </div>
                 <div class="body flex flex-col max-h-144 overflow-auto no-scrollbar gap-2 p-4" ref="commentArea">
+                    <!-- 评论列表空状态提示 -->
+                    <div v-if="!loading && comments.length === 0" class="flex flex-col items-center justify-center py-10 px-4 text-center select-none">
+                        <svg class="w-14 h-14 text-gray-200 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 18.09c-.445-.195-.908-.32-1.364-.326A3.99 3.99 0 012 14c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                        </svg>
+                        <span class="text-sm font-semibold text-gray-400">暂无评论</span>
+                        <span class="text-xs text-gray-300 mt-1">发条友善的评论，开启今日话题吧 ~</span>
+                    </div>
+
                     <div v-for="comment in comments" :key="comment.id" class="w-full h-full">
                         <Comment :comment="comment" :reply="reply" :like="like" :post="post" :top="top"
                             :attempt-acquire-replied-comment="attemptAcquireRepliedComment" />
@@ -128,7 +145,8 @@
                             ease: 'easeInOut',
                             duration: 0.3
                         }" class="relative  overflow-hidden pl-12 w-full bg-gray-100 origin-top"
-                            v-for="item in comment.FunctionField?.replys.slice(0, comment.FunctionField.showCount || 2)" :key="item.id">
+                            v-for="item in comment.FunctionField?.replys.slice(0, comment.FunctionField.showCount || 2)"
+                            :key="item.id">
 
                             <Comment :comment="item" :reply="reply" :top="top"
                                 :attempt-acquire-replied-comment="attemptAcquireRepliedComment" :like="like"
@@ -155,12 +173,14 @@
                                 <span v-if="(comment.FunctionField.showCount || 2) < (comment.item.replyCount || 0)"
                                     class="text-gray-400 text-xs cursor-pointer hover:text-blue-500 py-1"
                                     @click="handleLoadMoreReplies(comment)" @click.stop>
-                                    查看更多回复 ({{ Math.min(comment.FunctionField.showCount || 2, comment.item.replyCount || 0) }}/{{ comment.item.replyCount }})
+                                    查看更多回复 ({{ Math.min(comment.FunctionField.showCount || 2, comment.item.replyCount ||
+                                        0) }}/{{ comment.item.replyCount }})
                                 </span>
 
                                 <!-- 收起回复 -->
                                 <span class="text-gray-400 text-xs cursor-pointer hover:text-blue-500 py-1"
-                                    @click="comment.FunctionField!.expandMore = false; comment.FunctionField!.showCount = 2" @click.stop>
+                                    @click="comment.FunctionField!.expandMore = false; comment.FunctionField!.showCount = 2"
+                                    @click.stop>
                                     收起回复
                                 </span>
                             </template>
@@ -188,17 +208,9 @@
                 </div>
             </div>
         </div>
-        <div v-else class="flex-1 flex items-center justify-center">
-            <span>这里空空如也~~</span>
-        </div>
 
-        <PostVisibilitySettings
-            v-if="postInfo"
-            :visible="showSettingsModal"
-            :post="postInfo"
-            @close="showSettingsModal = false"
-            @update-scope="postInfo.visibleScope = $event"
-        />
+        <PostVisibilitySettings v-if="postInfo" :visible="showSettingsModal" :post="postInfo"
+            @close="showSettingsModal = false" @update-scope="postInfo.visibleScope = $event" />
 
         <!-- 分享 Toast 提示 -->
         <Teleport to="body">
@@ -226,10 +238,13 @@ import { scrollerFromBottom } from '@/utils/scollerbar.ts';
 import { useComment } from '@/views/comment/composables/useComment';
 import CommentInput from '@/presentation/components/CommentInput.vue';
 import PostVisibilitySettings from '@/views/post/components/PostVisibilitySettings.vue';
+import Loading from '@/presentation/components/loading.vue';
+import { useAuthStore } from '@/views/auth/store';
+import { log } from '@/utils/log';
+import router from '@/router';
 
 const commentArea = ref<HTMLDivElement>();
 const user = useUserInfoStore().user;
-
 const showSettingsModal = ref(false);
 const showShareTip = ref(false);
 
@@ -319,14 +334,20 @@ watch(() => props.visible, (visible) => {
     }
 }, { immediate: true });
 
-async function handleView(id: number | string) {
+async function handleView(id: string) {
     if (!id || !props.post) return;
-    await PostAPI.view(id.toString())
+    await PostAPI.view(id)
     props.post.viewCount = (Number(props.post.viewCount) || 0) + 1;
 }
 
 async function handleLikePost() {
     if (!postInfo.value || !postInfo.value.id) return;
+    const authStore = useAuthStore()
+    if (!authStore.token) {
+        log.warning('请先登录后操作')
+        authStore.showLoginDialog()
+        return
+    }
     const topicId = postInfo.value.id;
     const res = await PostAPI.like(topicId.toString());
     if (res.code === 1) {
@@ -344,6 +365,12 @@ async function handleLikePost() {
 
 async function handleCollectPost() {
     if (!postInfo.value || !postInfo.value.id) return;
+    const authStore = useAuthStore()
+    if (!authStore.token) {
+        log.warning('请先登录后操作')
+        authStore.showLoginDialog()
+        return
+    }
     const topicId = postInfo.value.id;
     const res = await PostAPI.collect(topicId.toString());
     if (res.code === 1) {

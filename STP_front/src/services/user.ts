@@ -2,7 +2,7 @@ import type { Result } from '@/types/result'
 import request from '@/services/request'
 
 export interface UserProfileData {
-  id: number
+  id: string | number
   nick: string
   avatar: string
   gender?: number
@@ -20,6 +20,14 @@ export interface UserProfileData {
   vipConfigIcon: string
   followed?: boolean
   bgImage: string
+}
+
+export interface UserFansData {
+  id: string
+  userId: string
+  nick: string
+  avatar: string
+  followed: boolean
 }
 
 /**
@@ -84,14 +92,14 @@ export class UserAPI {
   /**
    * 根据用户ID获取指定用户的详细信息
    */
-  static async getUserById(id: number): Promise<Result<UserProfileData>> {
+  static async getUserById(id: string | number): Promise<Result<UserProfileData>> {
     return await request.get(`/user/${id}`)
   }
 
   /**
    * 根据用户ID获取用户简单公开展示信息 (头像、昵称、粉丝、话题数、获赞数)
    */
-  static async getSimpleUserById(id: number): Promise<Result<UserSimpleData>> {
+  static async getSimpleUserById(id: string | number): Promise<Result<UserSimpleData>> {
     return await request.get(`/user/simple/${id}`)
   }
 
@@ -120,10 +128,37 @@ export class UserAPI {
    * 关注/取消关注用户 (Toggle)
    */
   static async toggleFollow(
-    followerId: number,
-    followeeId: number,
+    followerId: string | number,
+    followeeId: string | number,
     source: string = 'profile',
   ): Promise<Result<void>> {
     return await request.post('/user/follow/follow', { followerId, followeeId, source })
   }
+
+  /**
+   * 分页获取当前用户的粉丝列表
+   */
+  static async getMyFans(page: number, pageSize: number): Promise<Result<{ records: UserFansData[], total: number }>> {
+    return await request.get('/user/follow/my-fans', { params: { page, pageSize } })
+  }
+
+  /**
+   * 获取当前用户偏好设置，如果不存在则自动初始化
+   */
+  static async getSettings(): Promise<Result<UserSettingData>> {
+    return await request.get('/user/setting/current')
+  }
+
+  /**
+   * 更新当前用户的偏好设置
+   */
+  static async updateSettings(form: { showDelPost: number; customizationRecommend: number }): Promise<Result<void>> {
+    return await request.post('/user/setting/update', form)
+  }
+}
+
+export interface UserSettingData {
+  userId: string | number
+  showDelPost: number
+  customizationRecommend: number
 }

@@ -22,16 +22,19 @@
 
     <!-- 帖子内容区 -->
     <div :class="[isCard ? 'pl-14' : 'pl-0', 'content flex flex-col gap-2']">
-      <div class="title font-bold text-gray-900 text-base leading-snug" v-if="props.self">
-        <el-tag v-if="post.isTop === 1" size="small" type="danger" effect="dark" class="mr-1">置顶</el-tag>
-        <el-tag v-if="self && Number(post.status) === PostStatus.DRAFT" size="small" type="info" effect="dark"
-          class="mr-1 bg-amber-500 border-amber-500">草稿</el-tag>
-        <el-tag v-if="self && Number(post.status) === PostStatus.DELETED" size="small" type="info" effect="dark"
-          class="mr-1 bg-gray-500 border-gray-500">已删除</el-tag>
-        <el-tag v-if="self && Number(post.status) === PostStatus.BLOCKED" size="small" type="danger" effect="dark"
-          class="mr-1">禁用</el-tag>
-        <el-tag v-if="self && Number(post.status) === PostStatus.REPORTED" size="small" type="warning" effect="dark"
-          class="mr-1">被举报</el-tag>
+      <div class="title font-bold text-gray-900 text-base leading-snug flex items-center">
+        <div v-if="props.self">
+          <el-tag v-if="post.isTop === 1 && !props.hideTop" size="small" type="danger" effect="dark" class="mr-1">置顶</el-tag>
+          <el-tag v-if="self && Number(post.status) === PostStatus.DRAFT" size="small" type="info" effect="dark"
+            class="mr-1 bg-amber-500 border-amber-500">草稿</el-tag>
+          <el-tag v-if="self && Number(post.status) === PostStatus.DELETED" size="small" type="info" effect="dark"
+            class="mr-1 bg-gray-500 border-gray-500">已删除</el-tag>
+          <el-tag v-if="self && Number(post.status) === PostStatus.BLOCKED" size="small" type="danger" effect="dark"
+            class="mr-1">禁用</el-tag>
+          <el-tag v-if="self && Number(post.status) === PostStatus.REPORTED" size="small" type="warning" effect="dark"
+            class="mr-1">被举报</el-tag>
+        </div>
+
         {{ post.title }}
       </div>
       <p :class="[
@@ -41,7 +44,7 @@
         'leading-relaxed',
         'whitespace-pre-wrap',
         'break-all'
-      ]" v-html="parseEmoji(parseTag(post.content || '', post.tags))">
+      ]" @click="handleTextClick" v-html="parseEmoji(parseTag(post.content || '', post.tags))">
       </p>
       <div v-if="shouldShowExpand(post.content || '')" class="mt-0.5">
         <span @click="toggleExpand"
@@ -148,6 +151,10 @@
 
       <!-- 管理员专有操作 -->
       <div v-if="self && isOwner && isCard" class="flex items-center text-blue-300 gap-8 ml-auto">
+        <span class="hover:text-red-600 text-red-500 cursor-pointer text-xs" @click="emit('delete', post.id)"
+          v-if="post.status !== PostStatus.DELETED">
+          删除
+        </span>
         <span class="hover:text-blue-600 cursor-pointer text-xs" @click="emit('top', post)">
           {{ post.isTop === 1 ? '取消置顶' : '置顶' }}
         </span>
@@ -229,10 +236,12 @@ const props = withDefaults(
     post: PostVO
     self?: boolean
     isCard?: boolean
+    hideTop?: boolean
   }>(),
   {
     self: false,
-    isCard: false
+    isCard: false,
+    hideTop: false
   }
 )
 
@@ -263,6 +272,17 @@ function shouldShowExpand(content: string) {
 
 function toggleExpand() {
   isExpanded.value = !isExpanded.value
+}
+
+function handleTextClick(e: MouseEvent) {
+  const target = e.target as HTMLElement
+  if (target.tagName === 'A') {
+    let tagText = target.innerText || ''
+    tagText = tagText.replace(/^#|#$/g, '').trim()
+    if (tagText) {
+      router.push({ name: 'postTagInfo', params: { tagName: tagText } })
+    }
+  }
 }
 
 // 视频预览控制
