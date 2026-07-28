@@ -1,10 +1,10 @@
 package com.summit.stp.member.application.service.impl;
 
 import com.summit.stp.member.application.service.MemberTypeService;
-import com.summit.stp.shared.application.vo.MemberTypeVO;
+import com.summit.stp.common.application.vo.MemberTypeVO;
 import com.summit.stp.member.domain.model.MemberType;
-import com.summit.stp.shared.api.dto.MemberTypeUpdateRequest;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.application.dto.MemberTypeUpdateRequest;
+import com.summit.stp.common.result.Result;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

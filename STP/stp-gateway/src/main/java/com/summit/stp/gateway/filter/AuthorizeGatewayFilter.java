@@ -1,9 +1,9 @@
 package com.summit.stp.gateway.filter;
 
-import com.summit.stp.userAuth.infrastructure.constants.UserAuthConstants;
+import com.summit.stp.common.constants.UserAuthConstants;
 import org.jspecify.annotations.NonNull;
 import tools.jackson.databind.json.JsonMapper;
-import com.summit.stp.userAuth.domain.model.UserSession;
+import com.summit.stp.common.application.domain.model.UserSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -24,9 +24,10 @@ public class AuthorizeGatewayFilter implements GlobalFilter, Ordered {
     private final JsonMapper objectMapper;
 
     @Override
-    public @NonNull Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+    public @NonNull Mono<Void> filter(ServerWebExchange exchange, @NonNull GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
+
 
         // 认证相关接口直接放行，由 auth 服务自主完成登录与 Token 生成
         if (path.contains("/user-auth/login") || 

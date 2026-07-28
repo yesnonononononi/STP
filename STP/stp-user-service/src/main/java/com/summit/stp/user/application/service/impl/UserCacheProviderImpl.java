@@ -5,7 +5,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import com.summit.stp.user.infrastructure.constants.UserConstants;
 import com.summit.stp.user.application.service.UserCacheProvider;
-import com.summit.stp.shared.application.vo.UserSimpleVO;
+import com.summit.stp.common.application.vo.UserSimpleVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;

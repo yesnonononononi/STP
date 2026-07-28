@@ -1,8 +1,8 @@
 package com.summit.stp.coupon.api;
 
 import com.summit.stp.coupon.application.service.CouponAppService;
-import com.summit.stp.shared.application.vo.CouponQueryVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.application.vo.CouponQueryVO;
+import com.summit.stp.common.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

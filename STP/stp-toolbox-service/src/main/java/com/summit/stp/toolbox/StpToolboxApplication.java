@@ -8,11 +8,10 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@ComponentScan(basePackages = {"com.summit.stp.toolbox", "com.summit.stp.shared"})
+@ComponentScan(basePackages = {"com.summit.stp.common","com.summit.stp.toolbox"})
 @MapperScan("com.summit.stp.toolbox.infrastructure.persistence.mapper")
 public class StpToolboxApplication {
     public static void main(String[] args) {
-        System.setProperty("nacos.server.grpc.port.offset", "1768");
         SpringApplication.run(StpToolboxApplication.class, args);
     }
 }

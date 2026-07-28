@@ -3,7 +3,7 @@ package com.summit.stp.entertainment.api;
 import com.summit.stp.entertainment.application.service.EmojiAppService;
 import com.summit.stp.entertainment.application.vo.EmojiPackageVO;
 import com.summit.stp.entertainment.application.vo.EmojiVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

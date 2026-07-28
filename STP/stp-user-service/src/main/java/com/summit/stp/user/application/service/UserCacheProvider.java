@@ -1,6 +1,6 @@
 package com.summit.stp.user.application.service;
 
-import com.summit.stp.shared.application.vo.UserSimpleVO;
+import com.summit.stp.common.application.vo.UserSimpleVO;
 
 import java.util.List;
 import java.util.Map;

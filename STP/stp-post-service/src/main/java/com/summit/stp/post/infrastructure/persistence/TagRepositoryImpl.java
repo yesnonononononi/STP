@@ -11,12 +11,12 @@ import com.summit.stp.post.infrastructure.persistence.mapper.TagMapper;
 import com.summit.stp.post.infrastructure.persistence.po.PostTagRelPO;
 import com.summit.stp.post.infrastructure.persistence.po.PostsPO;
 import com.summit.stp.post.infrastructure.persistence.po.TagPO;
-import com.summit.stp.shared.ThreadContext.UserHolder;
-import com.summit.stp.shared.result.Result;
-import com.summit.stp.shared.service.SearchSuggest.AbstractSuggest;
-import com.summit.stp.shared.service.SearchSuggest.SuggestDto;
-import com.summit.stp.shared.service.SearchSuggest.SuggestListVO;
-import com.summit.stp.shared.service.SearchSuggest.SuggestVO;
+import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.service.SearchSuggest.AbstractSuggest;
+import com.summit.stp.common.application.service.SearchSuggest.SuggestDto;
+import com.summit.stp.common.application.service.SearchSuggest.SuggestListVO;
+import com.summit.stp.common.application.service.SearchSuggest.SuggestVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 

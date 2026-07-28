@@ -2,9 +2,9 @@ package com.summit.stp.relationship.api;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.relationship.application.vo.FriendVO;
-import com.summit.stp.shared.application.vo.UserSimpleVO;
-import com.summit.stp.shared.result.Result;
-import com.summit.stp.shared.annotation.Login;
+import com.summit.stp.common.application.vo.UserSimpleVO;
+import com.summit.stp.common.result.Result;
+import com.summit.stp.common.annotation.Login;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

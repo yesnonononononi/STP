@@ -3,7 +3,7 @@ package com.summit.stp.rank_board.application.service;
 import com.summit.stp.rank_board.application.vo.CreatorRankVO;
 import com.summit.stp.rank_board.application.vo.PostRankVO;
 import com.summit.stp.rank_board.application.vo.TopicRankVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.result.Result;
 
 import java.util.List;
 

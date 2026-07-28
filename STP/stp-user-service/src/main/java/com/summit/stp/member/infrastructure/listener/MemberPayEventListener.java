@@ -6,7 +6,7 @@ import com.summit.stp.member.domain.model.UserMember;
 import com.summit.stp.member.domain.repository.MemberLevelConfigRepository;
 import com.summit.stp.member.domain.repository.MemberRepository;
 import com.summit.stp.member.domain.repository.UserMemberRepository;
-import com.summit.stp.shared.domain.event.OrderPaidEvent;
+import com.summit.stp.common.application.domain.event.OrderPaidEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 

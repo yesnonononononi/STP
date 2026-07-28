@@ -1,6 +1,6 @@
 package com.summit.stp.user.domain.service;
-import com.summit.stp.shared.domain.model.PhoneNumber;
-import com.summit.stp.shared.domain.service.CaptchaService;
+import com.summit.stp.common.application.domain.model.PhoneNumber;
+import com.summit.stp.common.application.domain.service.CaptchaService;
 import com.summit.stp.user.domain.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

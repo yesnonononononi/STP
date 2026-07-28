@@ -3,7 +3,7 @@ package com.summit.stp.payment.api;
 import com.summit.stp.payment.api.dto.PayCallbackRequest;
 import com.summit.stp.payment.application.command.PayCallbackCheckCommand;
 import com.summit.stp.payment.application.service.PayAppService;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.result.Result;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -11,12 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.summit.stp.shared.application.command.PayCommand;
-import com.summit.stp.shared.application.vo.PayVO;
 
 import java.util.List;
 

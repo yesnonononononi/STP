@@ -1,6 +1,6 @@
 package com.summit.stp.user.domain.model;
 
-import com.summit.stp.shared.exception.ParameterException;
+import com.summit.stp.common.application.domain.exception.ParameterException;
 import io.netty.util.internal.StringUtil;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

@@ -2,13 +2,13 @@ package com.summit.stp.member.infrastructure.persistence;
 
 import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
-import com.summit.stp.shared.application.vo.MemberVO;
+import com.summit.stp.common.application.vo.MemberVO;
 import com.summit.stp.member.domain.model.Member;
 import com.summit.stp.member.domain.model.MemberType;
 import com.summit.stp.member.domain.repository.MemberRepository;
 import com.summit.stp.member.infrastructure.persistence.po.MemberPackagePO;
 import com.summit.stp.member.infrastructure.persistence.mapper.MemberMapper;
-import com.summit.stp.shared.domain.exception.NoSuchMemberException;
+import com.summit.stp.common.application.domain.exception.NoSuchMemberException;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;

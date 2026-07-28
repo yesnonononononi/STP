@@ -9,7 +9,7 @@ import com.summit.stp.post.domain.model.Tag;
 import com.summit.stp.post.domain.repository.PostRepository;
 import com.summit.stp.post.domain.repository.PostTagRelRepository;
 import com.summit.stp.post.domain.repository.TagRepository;
-import com.summit.stp.shared.exception.BusinessException;
+import com.summit.stp.common.application.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

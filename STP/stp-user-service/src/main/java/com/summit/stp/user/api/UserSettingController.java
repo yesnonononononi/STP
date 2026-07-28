@@ -1,12 +1,12 @@
 package com.summit.stp.user.api;
 
-import com.summit.stp.shared.ThreadContext.UserHolder;
-import com.summit.stp.shared.annotation.Login;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.annotation.Login;
+import com.summit.stp.common.result.Result;
 import com.summit.stp.user.api.dto.request.UpdateUserSettingRequest;
 import com.summit.stp.user.application.command.UpdateUserSettingCommand;
 import com.summit.stp.user.application.service.UserSettingAppService;
-import com.summit.stp.user.application.vo.UserSettingVO;
+import com.summit.stp.common.application.vo.UserSettingVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;

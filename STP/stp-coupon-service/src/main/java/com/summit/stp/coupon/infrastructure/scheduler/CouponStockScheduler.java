@@ -2,10 +2,8 @@ package com.summit.stp.coupon.infrastructure.scheduler;
 
 import com.summit.stp.coupon.domain.repository.CouponActivityRepository;
 import com.summit.stp.coupon.domain.service.CouponCacheProvider;
-import com.summit.stp.coupon.infrastructure.persistence.CouponActivityRepositoryImpl;
-import com.summit.stp.coupon.infrastructure.persistence.CouponRepositoryImpl;
 import com.summit.stp.coupon.infrastructure.constants.CouponConstants;
-import com.summit.stp.shared.util.DistributedLockUtil;
+import com.summit.stp.common.util.DistributedLockUtil;
 import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;

@@ -1,12 +1,12 @@
 package com.summit.stp.order.application.service;
 
 import com.summit.stp.order.api.dto.OrderCreateRequest;
-import com.summit.stp.shared.application.vo.OrderQueryVO;
-import com.summit.stp.shared.application.vo.PayVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.application.vo.OrderQueryVO;
+import com.summit.stp.common.application.vo.PayVO;
+import com.summit.stp.common.result.Result;
+import com.summit.stp.order.domain.model.Order;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * 订单应用服务接口
@@ -41,7 +41,7 @@ public interface OrderAppService {
      * 取消单笔超时订单
      * @param orderId
      */
-    void cancelOrderTimeout(Set<String> orders);
+    void cancelOrderTimeout(List<Order> orders);
 
 
 

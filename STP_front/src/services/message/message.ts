@@ -101,7 +101,7 @@ export class MessageAPI {
 }
 
 export interface InteractionMessageVO {
-  uuid: string
+  publicId: string
   senderId: string
   senderAvatar: string
   senderName: string
@@ -111,6 +111,8 @@ export interface InteractionMessageVO {
   associateContent: string
   createTime: string
   associateContentTitle: string
+  postId: string
+  isLike?: boolean
 }
 
 export interface SessionVO {

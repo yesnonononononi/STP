@@ -1,6 +1,6 @@
 package com.summit.stp.payment.domain.event;
 
-import com.summit.stp.shared.domain.model.PayType;
+import com.summit.stp.common.application.domain.model.PayType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

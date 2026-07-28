@@ -1,6 +1,7 @@
 package com.summit.stp.shared.service.TextSafe;
 
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
+import com.summit.stp.common.application.service.TextSafe.TextSafeServiceProviderImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

@@ -1,7 +1,7 @@
 package com.summit.stp.user.api;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.result.Result;
 import com.summit.stp.user.api.dto.request.CreateUserFollowRequest;
 import com.summit.stp.user.api.dto.request.UpdateUserFollowRequest;
 import com.summit.stp.user.application.command.CreateUserFollowCommand;
@@ -9,7 +9,7 @@ import com.summit.stp.user.application.command.UpdateUserFollowCommand;
 import com.summit.stp.user.application.service.UserFollowAppService;
 import com.summit.stp.user.application.vo.UserFollowVO;
 import com.summit.stp.user.application.vo.UserFansVO;
-import com.summit.stp.shared.annotation.Login;
+import com.summit.stp.common.annotation.Login;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;

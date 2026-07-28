@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.summit.stp.comment.infrastructure.persistence.mapper.CommentsMapper;
 import com.summit.stp.comment.infrastructure.persistence.po.CommentsPO;
 import com.summit.stp.comment.infrastructure.constants.CommentConstants;
-import com.summit.stp.shared.util.DistributedLockUtil;
+import com.summit.stp.common.util.DistributedLockUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -100,7 +100,7 @@ public class CommentReplyCountScheduler {
             transactionTemplate.executeWithoutResult(status -> {
                 for (Long commentId : commentIds) {
                     LambdaUpdateWrapper<CommentsPO> updateWrapper = new LambdaUpdateWrapper<>();
-                    updateWrapper.eq(CommentsPO::getId, commentId)
+                    updateWrapper.eq(CommentsPO::getPublicId, commentId)
                             .set(CommentsPO::getReplyCount, replyCountMap.getOrDefault(commentId, 0L));
                     commentsMapper.update(null, updateWrapper);
                 }

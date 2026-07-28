@@ -2,8 +2,8 @@ package com.summit.stp.comment.domain.model;
 
 import cn.hutool.json.JSONConfig;
 import cn.hutool.json.JSONUtil;
-import com.summit.stp.shared.util.ScoreUtil;
-import com.summit.stp.shared.exception.BusinessException;
+import com.summit.stp.common.util.ScoreUtil;
+import com.summit.stp.common.application.domain.exception.BusinessException;
 import io.netty.util.internal.StringUtil;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;

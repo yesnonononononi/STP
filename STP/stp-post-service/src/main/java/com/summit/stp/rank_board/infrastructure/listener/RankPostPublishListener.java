@@ -1,13 +1,13 @@
 package com.summit.stp.rank_board.infrastructure.listener;
 
 import com.rabbitmq.client.Channel;
-import com.summit.stp.shared.domain.event.PostPublishEvent;
+import com.summit.stp.common.application.domain.event.PostPublishEvent;
 import com.summit.stp.post.domain.model.Post;
 import com.summit.stp.post.domain.model.PostTag;
 import com.summit.stp.post.domain.repository.PostRepository;
 import com.summit.stp.post.domain.repository.PostTagRelRepository;
 import com.summit.stp.rank_board.application.service.RankCacheProvider;
-import com.summit.stp.shared.constants.MqConstants;
+import com.summit.stp.common.constants.MqConstants;
 import com.summit.stp.rank_board.application.service.CreatorRankBufferManager;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
 import lombok.RequiredArgsConstructor;

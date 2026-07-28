@@ -1,28 +1,23 @@
 package com.summit.stp.comment.infrastructure.persistence;
 
-import cn.hutool.json.JSON;
-import cn.hutool.json.JSONConfig;
-import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.github.houbb.heaven.util.util.JsonUtil;
 import com.summit.stp.comment.application.vo.CommentVO;
 import com.summit.stp.comment.domain.model.Comment;
-import com.summit.stp.comment.domain.model.CommentImage;
 import com.summit.stp.comment.domain.model.CommentType;
 import com.summit.stp.comment.domain.repository.CommentRepository;
 import com.summit.stp.comment.infrastructure.persistence.mapper.CommentImageMapper;
 import com.summit.stp.comment.infrastructure.persistence.mapper.CommentLikeMapper;
 import com.summit.stp.comment.infrastructure.persistence.mapper.CommentsMapper;
-import com.summit.stp.comment.infrastructure.persistence.po.CommentImagePO;
 import com.summit.stp.comment.infrastructure.persistence.po.CommentLikePO;
 import com.summit.stp.comment.infrastructure.persistence.po.CommentsPO;
-import com.summit.stp.shared.exception.BusinessException;
+import com.summit.stp.common.application.domain.exception.BusinessException;
 import io.netty.util.internal.StringUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -44,14 +39,25 @@ public class CommentRepositoryImpl implements CommentRepository {
 
     @Override
     public Comment findById(Long id) {
-        CommentsPO commentsPO = commentsMapper.selectById(id);
+        CommentsPO commentsPO = commentsMapper.selectOne(
+                new LambdaQueryWrapper<CommentsPO>().eq(CommentsPO::getPublicId, id));
         return convertToDomain(commentsPO);
+    }
+
+    @Override
+    public List<Comment> findByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        List<CommentsPO> poList = commentsMapper.selectList(
+                new LambdaQueryWrapper<CommentsPO>().in(CommentsPO::getPublicId, ids));
+        return poList.stream().map(this::convertToDomain).toList();
     }
 
     private Comment convertToDomain(CommentsPO commentsPO) {
         Comment.Extra extra = Comment.deserializeExtra(commentsPO.getExtra());
         return Comment.builder()
-                .id(commentsPO.getId())
+                .id(commentsPO.getPublicId())
                 .rootId(commentsPO.getRootId())
                 .publisherId(commentsPO.getUserId())
                 .parentId(commentsPO.getParentId())
@@ -92,8 +98,8 @@ public class CommentRepositoryImpl implements CommentRepository {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        commentsMapper.deleteById(id);
-        commentLikeMapper.delete(new LambdaQueryWrapper<CommentLikePO>().eq(CommentLikePO::getCommentId,id));
+        commentsMapper.delete(new LambdaQueryWrapper<CommentsPO>().eq(CommentsPO::getPublicId, id));
+        commentLikeMapper.delete(new LambdaQueryWrapper<CommentLikePO>().eq(CommentLikePO::getCommentId, id));
     }
 
 
@@ -120,8 +126,9 @@ public class CommentRepositoryImpl implements CommentRepository {
 
     @Override
     public void update(Comment comment) {
-        int update = commentsMapper.update(convertToPO(comment), new LambdaQueryWrapper<CommentsPO>().eq(CommentsPO::getId, comment.getId()));
-        if(update == 0){
+        int update = commentsMapper.update(convertToPO(comment),
+                new LambdaQueryWrapper<CommentsPO>().eq(CommentsPO::getPublicId, comment.getId()));
+        if (update == 0) {
             throw new BusinessException("更新评论失败");
         }
     }
@@ -137,7 +144,9 @@ public class CommentRepositoryImpl implements CommentRepository {
     public void batchUpdate(List<Comment> comments) {
         if (comments == null || comments.isEmpty()) return;
         for (Comment comment : comments) {
-            commentsMapper.updateById(convertToPO(comment));
+            CommentsPO po = convertToPO(comment);
+            commentsMapper.update(po,
+                    new LambdaUpdateWrapper<CommentsPO>().eq(CommentsPO::getPublicId, comment.getId()));
         }
     }
 
@@ -146,17 +155,15 @@ public class CommentRepositoryImpl implements CommentRepository {
     public void batchUpdateHs(List<Comment> comments) {
         if (comments == null || comments.isEmpty()) return;
         for (Comment comment : comments) {
-            CommentsPO po = CommentsPO.builder()
-                    .id(comment.getId())
-                    .hotScore(comment.getItem() != null && comment.getItem().getHotScore() != null ? comment.getItem().getHotScore().longValue() : 0L)
-                    .updateTime(comment.getUpdateTime() != null ? comment.getUpdateTime() : new Timestamp(System.currentTimeMillis()))
-                    .build();
-            commentsMapper.updateById(po);
+            commentsMapper.update(null,
+                    new LambdaUpdateWrapper<CommentsPO>()
+                            .eq(CommentsPO::getPublicId, comment.getId())
+                            .set(CommentsPO::getHotScore, comment.getItem() != null && comment.getItem().getHotScore() != null ? comment.getItem().getHotScore().longValue() : 0L)
+                            .set(CommentsPO::getUpdateTime, comment.getUpdateTime() != null ? comment.getUpdateTime() : new Timestamp(System.currentTimeMillis())));
         }
     }
 
     private CommentsPO convertToPO(Comment comment) {
-        Comment.Extra extra = comment.getExtra();
         CommentType type = comment.getType();
         return CommentsPO.builder()
                 .isAudit(comment.getIsAudit())
@@ -164,7 +171,7 @@ public class CommentRepositoryImpl implements CommentRepository {
                 .type(type == null ? null :type.getCode())
                 .clientType(comment.getClientType())
                 .createTime(comment.getCreateTime())
-                .id(comment.getId())
+                .publicId(comment.getId())
                 .extra(comment.getExtraJsonString())
                 .ipLocation(comment.getIpLocation())
                 .postId(comment.getPostId())
@@ -182,7 +189,7 @@ public class CommentRepositoryImpl implements CommentRepository {
     @Override
     public Map<Long, Long> queryLikeCounts(List<Long> commentIds) {
         Map<Long, Long> map = new HashMap<>(commentIds.size());
-        if (commentIds == null || commentIds.isEmpty()) return map;
+        if (commentIds.isEmpty()) return map;
         List<Map<String, Object>> rows = commentLikeMapper.selectMaps(
                 new QueryWrapper<CommentLikePO>()
                         .select("comment_id as commentId", "count(1) as likeCount")

@@ -1,6 +1,6 @@
 package com.summit.stp.user.application;
 
-import com.summit.stp.shared.application.vo.UserSimpleVO;
+import com.summit.stp.common.application.vo.UserSimpleVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

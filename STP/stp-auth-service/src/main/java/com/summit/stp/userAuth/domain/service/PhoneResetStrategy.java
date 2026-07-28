@@ -1,6 +1,6 @@
 package com.summit.stp.userAuth.domain.service;
 
-import com.summit.stp.shared.domain.service.CaptchaService;
+import com.summit.stp.common.application.domain.service.CaptchaService;
 import com.summit.stp.userAuth.domain.exception.ResetPasswordException;
 import com.summit.stp.userAuth.domain.model.ResetType;
 import lombok.RequiredArgsConstructor;

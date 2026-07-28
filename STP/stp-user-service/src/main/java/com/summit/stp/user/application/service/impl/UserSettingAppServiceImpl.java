@@ -3,7 +3,7 @@ package com.summit.stp.user.application.service.impl;
 import cn.hutool.core.util.IdUtil;
 import com.summit.stp.user.application.command.UpdateUserSettingCommand;
 import com.summit.stp.user.application.service.UserSettingAppService;
-import com.summit.stp.user.application.vo.UserSettingVO;
+import com.summit.stp.common.application.vo.UserSettingVO;
 import com.summit.stp.user.domain.model.UserSetting;
 import com.summit.stp.user.domain.repository.UserSettingRepository;
 import lombok.RequiredArgsConstructor;

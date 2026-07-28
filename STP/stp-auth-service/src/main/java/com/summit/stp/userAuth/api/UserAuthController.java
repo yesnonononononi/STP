@@ -1,8 +1,8 @@
 package com.summit.stp.userAuth.api;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.summit.stp.shared.result.Result;
-import com.summit.stp.shared.util.IpUtil;
+import com.summit.stp.common.result.Result;
+import com.summit.stp.common.util.IpUtil;
 import com.summit.stp.userAuth.api.dto.request.ForgetRequest;
 import com.summit.stp.userAuth.api.dto.request.LoginRequest;
 import com.summit.stp.userAuth.api.dto.request.RefreshTokenRequest;
@@ -14,7 +14,7 @@ import com.summit.stp.userAuth.application.command.RefreshTokenCommand;
 import com.summit.stp.userAuth.application.command.RegisterCommand;
 import com.summit.stp.userAuth.application.vo.LoginVO;
 import com.summit.stp.userAuth.application.vo.RefreshTokenVO;
-import com.summit.stp.shared.annotation.Login;
+import com.summit.stp.common.annotation.Login;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;

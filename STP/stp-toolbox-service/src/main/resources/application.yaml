@@ -1,31 +1,37 @@
-spring:
-  application:
-    name: stp-toolbox-service
-  cloud:
-    nacos:
-      discovery:
-        server-addr: 127.0.0.1:8080
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/stp-project?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true&tinyInt1isBit=false&serverTimezone=Asia/Shanghai
-    username: root
-    password: root
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      database: 1
-      timeout: 500ms
-
 server:
   port: 8085
 
+spring:
+  application:
+    name: stp-toolbox-service
+  config:
+    import:
+      - optional:nacos:jdbc.yaml
+      - optional:nacos:redis.yaml
+      - optional:nacos:queue.yaml
+      - optional:nacos:minio.yaml
+  cloud:
+    nacos:
+      config:
+        shared-dataids: minio.yaml,jdbc.yaml,redis.yaml,queue.yaml
+        import-check:
+          enabled: false
+        username: nacos
+        password: nacos
+        refresh-enabled: true
+        file-extension: yaml
+
 mybatis-plus:
-  mapper-locations: classpath*:mapper/toolbox/**/*.xml
-  type-aliases-package: com.summit.stp.toolbox.infrastructure.persistence.po
+  mapper-locations: ${stp.jdbc.mapper-locations}
+  type-aliases-package: ${stp.jdbc.type-aliases-package}
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       id-type: auto
+
+stp:
+  jdbc:
+    mapper-locations: classpath*:mapper/toolbox/**/*.xml
+    type-aliases-package: com.summit.stp.toolbox.infrastructure.persistence.po

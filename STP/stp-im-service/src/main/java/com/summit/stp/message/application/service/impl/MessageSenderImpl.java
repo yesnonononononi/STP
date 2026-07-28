@@ -7,9 +7,6 @@ import com.corundumstudio.socketio.SocketIOServer;
 import com.summit.stp.common.infrastructure.websocket.Connector;
 import com.summit.stp.common.infrastructure.websocket.Event;
 import com.summit.stp.message.application.service.MessageSender;
-import com.summit.stp.shared.application.vo.MessageVO;
-import com.summit.stp.shared.application.vo.SysMessageVO;
-import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

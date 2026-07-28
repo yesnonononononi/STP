@@ -10,11 +10,10 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = {"com.summit.stp.common.feign"})
-@ComponentScan(basePackages = {"com.summit.stp.coupon", "com.summit.stp.shared", "com.summit.stp.common"})
+@ComponentScan(basePackages = {"com.summit.stp.coupon", "com.summit.stp.common"})
 @MapperScan("com.summit.stp.coupon.infrastructure.persistence.mapper")
 public class StpCouponApplication {
     public static void main(String[] args) {
-        System.setProperty("nacos.server.grpc.port.offset", "1768");
         SpringApplication.run(StpCouponApplication.class, args);
     }
 }

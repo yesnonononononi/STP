@@ -10,14 +10,13 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableScheduling
 @EnableDiscoveryClient
-@ComponentScan(basePackages = {"com.summit.stp.user", "com.summit.stp.member", "com.summit.stp.relationship", "com.summit.stp.shared"})
+@ComponentScan(basePackages = {"com.summit.stp.user", "com.summit.stp.member", "com.summit.stp.relationship","com.summit.stp.common"})
 @MapperScan(basePackages = {
     "com.summit.stp.user.infrastructure.persistence.mapper",
     "com.summit.stp.member.infrastructure.persistence.mapper",
 })
 public class StpUserApplication {
     public static void main(String[] args) {
-        System.setProperty("nacos.server.grpc.port.offset", "1768");
         SpringApplication.run(StpUserApplication.class, args);
     }
 }

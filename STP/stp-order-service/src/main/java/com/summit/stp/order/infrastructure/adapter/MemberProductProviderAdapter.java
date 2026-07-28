@@ -1,10 +1,10 @@
 package com.summit.stp.order.infrastructure.adapter;
 
-import com.summit.stp.shared.application.vo.MemberVO;
+import com.summit.stp.common.application.vo.MemberVO;
 import com.summit.stp.order.application.service.ProductProvider;
 import com.summit.stp.order.application.vo.ProductVO;
-import com.summit.stp.shared.exception.ParameterException;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.application.domain.exception.ParameterException;
+import com.summit.stp.common.result.Result;
 import com.summit.stp.common.feign.MemberFeignClient;
 import lombok.RequiredArgsConstructor;
 import java.math.BigDecimal;

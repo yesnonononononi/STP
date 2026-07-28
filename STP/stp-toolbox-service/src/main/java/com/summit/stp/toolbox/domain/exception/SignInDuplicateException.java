@@ -1,6 +1,6 @@
 package com.summit.stp.toolbox.domain.exception;
 
-import com.summit.stp.shared.exception.BusinessException;
+import com.summit.stp.common.application.domain.exception.BusinessException;
 
 public class SignInDuplicateException extends BusinessException {
     public SignInDuplicateException() {

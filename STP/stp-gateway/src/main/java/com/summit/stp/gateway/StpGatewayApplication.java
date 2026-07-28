@@ -8,7 +8,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 @EnableDiscoveryClient
 public class StpGatewayApplication {
     public static void main(String[] args) {
-        System.setProperty("nacos.server.grpc.port.offset", "1768");
+
         SpringApplication.run(StpGatewayApplication.class, args);
     }
 }

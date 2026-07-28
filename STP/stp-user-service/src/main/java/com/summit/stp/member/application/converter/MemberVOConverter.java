@@ -1,6 +1,6 @@
 package com.summit.stp.member.application.converter;
 
-import com.summit.stp.shared.application.vo.MemberVO;
+import com.summit.stp.common.application.vo.MemberVO;
 import com.summit.stp.member.domain.model.Member;
 
 import java.util.Collections;

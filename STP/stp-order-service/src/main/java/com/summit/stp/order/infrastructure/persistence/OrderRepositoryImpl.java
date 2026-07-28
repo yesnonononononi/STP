@@ -2,22 +2,24 @@ package com.summit.stp.order.infrastructure.persistence;
 
 import cn.hutool.core.lang.generator.SnowflakeGenerator;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.summit.stp.shared.application.vo.OrderQueryVO;
+import com.summit.stp.common.application.vo.OrderQueryVO;
 import com.summit.stp.order.domain.model.Order;
 import com.summit.stp.order.domain.model.OrderStatus;
 import com.summit.stp.order.domain.repository.OrderRepository;
 import com.summit.stp.order.infrastructure.persistence.mapper.OrderMapper;
 import com.summit.stp.order.infrastructure.persistence.po.OrderPO;
-import com.summit.stp.shared.domain.model.PayType;
-import com.summit.stp.shared.ThreadContext.UserHolder;
+import com.summit.stp.common.application.domain.model.PayType;
+import com.summit.stp.common.ThreadContext.UserHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Timestamp;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -76,18 +78,6 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public void timeout(Long orderId) {
-        OrderPO po = new OrderPO();
-        po.setId(orderId);
-        po.setStatus(OrderStatus.CANCELLED.getCode());
-        
-        LambdaQueryWrapper<OrderPO> updateWrapper = new LambdaQueryWrapper<>();
-        updateWrapper.eq(OrderPO::getId, orderId).eq(OrderPO::getStatus, OrderStatus.PENDING.getCode());
-        
-        orderMapper.update(po, updateWrapper);
-    }
-
-    @Override
     public Map<Long, OrderQueryVO> findOrderByCouponIds(Long currentUserId, List<Long> ids) {
         LambdaQueryWrapper<OrderPO> wrapper = new LambdaQueryWrapper<OrderPO>().in(OrderPO::getCouponId, ids).eq(OrderPO::getCreatorId, currentUserId).in(OrderPO::getStatus, OrderStatus.PAID.getCode(), OrderStatus.COMPLETED.getCode());
         List<OrderPO> orderPOS = orderMapper.selectList(wrapper);
@@ -101,15 +91,46 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public Map<Long, Order> findOrderByIds(Set<String> orders) {
-        List<OrderPO> orderPOS = orderMapper.selectByIds(orders);
-        return orderPOS.stream().collect(Collectors.toMap(OrderPO::getId,this::toDomain));
+    public List<Order> findOrderByIds(Collection<Long> orderIds) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            return List.of();
+        }
+        return orderMapper.selectByIds(orderIds).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<Order> findPendingExpiredOrders(Timestamp currentTime, int limit) {
+        if (limit <= 0) {
+            return List.of();
+        }
+        LambdaQueryWrapper<OrderPO> wrapper = new LambdaQueryWrapper<OrderPO>()
+                .eq(OrderPO::getStatus, OrderStatus.PENDING.getCode())
+                .le(OrderPO::getTimeoutTime, currentTime)
+                .orderByAsc(OrderPO::getTimeoutTime)
+                .orderByAsc(OrderPO::getId);
+        Page<OrderPO> page = new Page<>(1, limit, false);
+        return orderMapper.selectPage(page, wrapper).getRecords().stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     @Override
     public void batchUpdate(List<Order> changedOrders) {
-        if(changedOrders.isEmpty())return;
-        orderMapper.updateById(changedOrders.stream().map(this::toPO).toList());
+        if (changedOrders == null || changedOrders.isEmpty()) {
+            return;
+        }
+        List<Long> orderIds = changedOrders.stream()
+                .map(Order::getId)
+                .toList();
+        OrderPO update = new OrderPO();
+        update.setStatus(OrderStatus.CANCELLED.getCode());
+        update.setUpdateTime(new Timestamp(System.currentTimeMillis()));
+        LambdaUpdateWrapper<OrderPO> wrapper = new LambdaUpdateWrapper<OrderPO>()
+                .in(OrderPO::getId, orderIds)
+                .eq(OrderPO::getStatus, OrderStatus.PENDING.getCode());
+        orderMapper.update(update, wrapper);
     }
 
     private Order toDomain(OrderPO po) {
@@ -128,6 +149,7 @@ public class OrderRepositoryImpl implements OrderRepository {
                 .unitPrice(po.getUnitPrice())
                 .discountAmount(po.getDiscountAmount())
                 .createTime(po.getCreateTime())
+                .timeoutTime(po.getTimeoutTime())
                 .payTime(po.getPayTime())
                 .build();
     }
@@ -148,6 +170,7 @@ public class OrderRepositoryImpl implements OrderRepository {
                 .unitPrice(order.getUnitPrice())
                 .discountAmount(order.getDiscountAmount())
                 .createTime(order.getCreateTime())
+                .timeoutTime(order.getTimeoutTime())
                 .payTime(order.getPayTime())
                 .build();
     }

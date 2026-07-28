@@ -5,15 +5,13 @@ import com.summit.stp.coupon.application.dto.CouponActivityDTO;
 import com.summit.stp.coupon.application.service.CouponAppService;
 import com.summit.stp.coupon.application.vo.CouponActivityQueryVO;
 import com.summit.stp.coupon.domain.model.CouponStatus;
-import com.summit.stp.shared.application.vo.CouponQueryVO;
-import com.summit.stp.shared.result.Result;
-import com.summit.stp.shared.annotation.Login;
+import com.summit.stp.common.application.vo.CouponQueryVO;
+import com.summit.stp.common.result.Result;
+import com.summit.stp.common.annotation.Login;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 @Login
 @RequestMapping("/coupon")

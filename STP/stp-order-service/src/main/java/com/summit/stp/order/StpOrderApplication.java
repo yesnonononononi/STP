@@ -12,11 +12,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableDiscoveryClient
 @EnableScheduling
 @EnableFeignClients(basePackages = "com.summit.stp.common.feign")
-@ComponentScan(basePackages = {"com.summit.stp.order", "com.summit.stp.shared"})
+@ComponentScan(basePackages = {"com.summit.stp.common","com.summit.stp.order"})
 @MapperScan("com.summit.stp.order.infrastructure.persistence.mapper")
 public class StpOrderApplication {
     public static void main(String[] args) {
-        System.setProperty("nacos.server.grpc.port.offset", "1768");
         SpringApplication.run(StpOrderApplication.class, args);
     }
 }

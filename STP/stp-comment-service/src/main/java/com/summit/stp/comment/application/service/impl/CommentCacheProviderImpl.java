@@ -3,7 +3,7 @@ package com.summit.stp.comment.application.service.impl;
 import com.summit.stp.comment.application.service.CommentCacheProvider;
 import com.summit.stp.comment.application.vo.CommentVO;
 import com.summit.stp.comment.domain.repository.CommentRepository;
-import com.summit.stp.shared.ThreadContext.UserHolder;
+import com.summit.stp.common.ThreadContext.UserHolder;
 import com.summit.stp.comment.infrastructure.constants.CommentConstants;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;

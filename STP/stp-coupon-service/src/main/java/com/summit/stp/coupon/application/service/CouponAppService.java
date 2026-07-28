@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.coupon.application.dto.CouponActivityDTO;
 import com.summit.stp.coupon.application.vo.CouponActivityQueryVO;
 import com.summit.stp.coupon.domain.model.CouponStatus;
-import com.summit.stp.shared.application.vo.CouponQueryVO;
+import com.summit.stp.common.application.vo.CouponQueryVO;
 
 import java.math.BigDecimal;
 import java.util.List;

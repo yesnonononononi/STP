@@ -98,7 +98,7 @@
 
         <div class="reply-input w-full tranistion-all duration-300 relative z-41"
             :class="isReply ? 'h-12 p-4' : 'h-0 overflow-hidden'">
-            <el-input ref="commentInputRef" placeholder="请输入内容" v-model="userInput" class="w-full">
+            <el-input ref="commentInputRef" :placeholder="`回复@${comment.comment.publisher.nick}`" v-model="userInput" class="w-full">
                 <template #suffix>
                     <div class="relative cursor-pointer mr-4 ">
                         <Emoji v-model="userInput" :place-holder="''" :textarea-ref="commentInputRef" />

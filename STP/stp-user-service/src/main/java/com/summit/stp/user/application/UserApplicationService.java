@@ -3,8 +3,8 @@ package com.summit.stp.user.application;
 import com.summit.stp.user.application.command.UserPasswordUpdateCommand;
 import com.summit.stp.user.application.command.UserPhoneBindCommand;
 import com.summit.stp.user.application.command.UserProfileUpdateCommand;
-import com.summit.stp.user.application.vo.UserProfileVO;
-import com.summit.stp.shared.application.vo.UserSimpleVO;
+import com.summit.stp.common.application.vo.UserProfileVO;
+import com.summit.stp.common.application.vo.UserSimpleVO;
 
 import java.util.Collection;
 import java.util.Map;

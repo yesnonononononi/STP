@@ -4,9 +4,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.post.application.command.UpdateTagCommand;
 import com.summit.stp.post.application.vo.PostVO;
 import com.summit.stp.post.application.vo.TagVO;
-import com.summit.stp.shared.result.CursorPageResult;
-import com.summit.stp.shared.result.Result;
-import com.summit.stp.shared.service.SearchSuggest.SuggestVO;
+import com.summit.stp.common.result.CursorPageResult;
+import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.service.SearchSuggest.SuggestVO;
 
 import java.util.List;
 

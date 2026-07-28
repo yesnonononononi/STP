@@ -2,12 +2,12 @@ package com.summit.stp.member.application.service.impl;
 
 import com.summit.stp.member.application.converter.MemberVOConverter;
 import com.summit.stp.member.application.service.MemberAppService;
-import com.summit.stp.shared.application.vo.MemberTypeVO;
-import com.summit.stp.shared.application.vo.MemberVO;
+import com.summit.stp.common.application.vo.MemberTypeVO;
+import com.summit.stp.common.application.vo.MemberVO;
 import com.summit.stp.member.domain.model.Member;
 import com.summit.stp.member.domain.model.MemberType;
 import com.summit.stp.member.domain.repository.MemberRepository;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

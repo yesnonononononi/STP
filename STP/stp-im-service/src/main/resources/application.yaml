@@ -1,56 +1,20 @@
-spring:
-  application:
-    name: stp-im-service
-  cloud:
-    nacos:
-      discovery:
-        server-addr: 127.0.0.1:8080
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/stp-project?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true&tinyInt1isBit=false&serverTimezone=Asia/Shanghai
-    username: root
-    password: root
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      database: 1
-      timeout: 500ms
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
-    listener:
-      simple:
-        acknowledge-mode: manual
-        concurrency: 5
-        max-concurrency: 10
-        prefetch: 1
-        retry:
-          enabled: true
-          initial-interval: 1000
-          max-attempts: 3
-          max-interval: 10000
-          multiplier: 2
-
 server:
   port: 8087
 
-mybatis-plus:
-  mapper-locations: classpath*:mapper/message/**/*.xml, classpath*:mapper/entertainment/**/*.xml
-  type-aliases-package: com.summit.stp.message.infrastructure.persistence.po,com.summit.stp.entertainment.infrastructure.persistence.po
-  configuration:
-    map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-  global-config:
-    db-config:
-      id-type: auto
+spring:
+  application:
+    name: stp-im-service
+  config:
+    import:
+      - optional:nacos:stp-im-service.yaml
+      - optional:nacos:jdbc.yaml
+      - optional:nacos:redis.yaml
+      - optional:nacos:queue.yaml
+      - optional:nacos:minio.yaml
 
-ws:
-  session:
-    pingInterval: 10000
-    pingTimeout: 10000
-    hostname: localhost
-    port: 3000
-    ttl: 24
+
+
+stp:
+  jdbc:
+    mapper-locations: classpath*:mapper/message/**/*.xml,classpath*:mapper/entertainment/**/*.xml
+    type-aliases-package: com.summit.stp.message.infrastructure.persistence.po,com.summit.stp.entertainment.infrastructure.persistence.po

@@ -2,8 +2,8 @@ package com.summit.stp.payment.application.service.impl;
 
 import com.summit.stp.payment.application.service.PayEventPublishProvider;
 import com.summit.stp.payment.application.service.PayMessageSender;
-import com.summit.stp.shared.domain.event.PayFailEvent;
-import com.summit.stp.shared.domain.event.PaySuccessEvent;
+import com.summit.stp.common.application.domain.event.PayFailEvent;
+import com.summit.stp.common.application.domain.event.PaySuccessEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;

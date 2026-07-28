@@ -2,8 +2,8 @@ package com.summit.stp.post.domain.repository;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.post.domain.model.Tag;
-import com.summit.stp.shared.result.Result;
-import com.summit.stp.shared.service.SearchSuggest.SuggestVO;
+import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.service.SearchSuggest.SuggestVO;
 
 import java.util.List;
 

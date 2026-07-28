@@ -1,8 +1,8 @@
 package com.summit.stp.common.feign;
 
-import com.summit.stp.shared.application.command.PayCommand;
-import com.summit.stp.shared.application.vo.PayVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.application.command.PayCommand;
+import com.summit.stp.common.application.vo.PayVO;
+import com.summit.stp.common.result.Result;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

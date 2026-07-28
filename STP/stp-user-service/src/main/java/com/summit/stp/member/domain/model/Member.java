@@ -1,6 +1,6 @@
 package com.summit.stp.member.domain.model;
 
-import com.summit.stp.shared.exception.ParameterException;
+import com.summit.stp.common.application.domain.exception.ParameterException;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

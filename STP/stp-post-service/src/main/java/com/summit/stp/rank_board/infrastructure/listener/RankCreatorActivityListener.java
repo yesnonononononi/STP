@@ -3,8 +3,9 @@ package com.summit.stp.rank_board.infrastructure.listener;
 import com.rabbitmq.client.Channel;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
 import com.summit.stp.rank_board.application.service.CreatorRankBufferManager;
-import com.summit.stp.shared.constants.MqConstants;
-import com.summit.stp.shared.domain.event.UserLikedChangeEvent;
+import com.summit.stp.common.constants.MqConstants;
+import com.summit.stp.common.application.domain.event.UserFansChangeEvent;
+import com.summit.stp.common.application.domain.event.UserLikedChangeEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
@@ -15,7 +16,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Map;
 
 @Slf4j
 @Component
@@ -50,21 +50,20 @@ public class RankCreatorActivityListener {
     }
 
     /**
-     * 监听粉丝变更事件队列（由于契约类定义在user服务中，此处使用Map兼容反序列化）
+     * 监听粉丝变更事件队列
      */
     @RabbitListener(bindings = @QueueBinding(
             value = @Queue(name = MqConstants.Rank.QUEUE_CREATOR_FANS, durable = "true"),
             exchange = @Exchange(name = MqConstants.User.EXCHANGE, type = "topic"),
             key = MqConstants.User.ROUTING_KEY_FANS
     ))
-    public void listenFansChange(Map<String, Object> eventMap, Channel channel, Message message) {
+    public void listenFansChange(UserFansChangeEvent event, Channel channel, Message message) {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         try {
             channel.basicAck(deliveryTag, false);
-            if (eventMap != null && eventMap.containsKey("userId") && eventMap.containsKey("fansDelta")) {
-                Long userId = ((Number) eventMap.get("userId")).longValue();
-                Integer delta = ((Number) eventMap.get("fansDelta")).intValue();
-                
+            Long userId = event.getUserId();
+            Integer delta = event.getFansDelta();
+            if (userId != null && delta != null) {
                 double scoreDelta = delta * PostConstants.Business.CREATOR_SCORE_FAN;
                 creatorRankBufferManager.incrementScore(userId, scoreDelta);
                 log.info("【CreatorRank】粉丝监听 收到粉丝变更, userId={}, delta={}, score={}", userId, delta, scoreDelta);

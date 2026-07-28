@@ -11,7 +11,7 @@ import com.summit.stp.post.domain.model.PostStatus;
 import com.summit.stp.post.domain.repository.PostImageRepository;
 import com.summit.stp.post.domain.repository.PostRepository;
 import com.summit.stp.post.infrastructure.persistence.po.PostImagePO;
-import com.summit.stp.shared.exception.BusinessException;
+import com.summit.stp.common.application.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +19,7 @@ import java.sql.Timestamp;
 import java.util.List;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
 import org.springframework.context.ApplicationEventPublisher;
-import com.summit.stp.shared.event.FileDeleteEvent;
+import com.summit.stp.common.application.domain.event.FileDeleteEvent;
 
 @Service
 @RequiredArgsConstructor

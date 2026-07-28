@@ -5,7 +5,7 @@ import com.summit.stp.member.application.service.MemberLevelConfigAppService;
 import com.summit.stp.member.application.vo.MemberLevelConfigVO;
 import com.summit.stp.member.domain.model.MemberLevelConfig;
 import com.summit.stp.member.domain.repository.MemberLevelConfigRepository;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

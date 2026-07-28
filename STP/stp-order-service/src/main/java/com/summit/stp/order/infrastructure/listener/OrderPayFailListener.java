@@ -1,7 +1,7 @@
 package com.summit.stp.order.infrastructure.listener;
 
 import com.summit.stp.order.application.service.OrderAppService;
-import com.summit.stp.shared.domain.event.PayFailEvent;
+import com.summit.stp.common.application.domain.event.PayFailEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

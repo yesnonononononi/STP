@@ -5,8 +5,8 @@ import com.summit.stp.message.api.dto.request.AddSessionRequest;
 import com.summit.stp.message.application.command.CreateSessionCommand;
 import com.summit.stp.message.application.service.SessionService;
 import com.summit.stp.message.application.vo.SessionVO;
-import com.summit.stp.shared.result.Result;
-import com.summit.stp.shared.annotation.Login;
+import com.summit.stp.common.result.Result;
+import com.summit.stp.common.annotation.Login;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.web.bind.annotation.*;
 

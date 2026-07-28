@@ -1,8 +1,8 @@
 package com.summit.stp.userAuth.domain.model;
 
-import com.summit.stp.shared.domain.model.Password;
-import com.summit.stp.shared.domain.model.PhoneNumber;
-import com.summit.stp.shared.domain.model.Username;
+import com.summit.stp.common.application.domain.model.Password;
+import com.summit.stp.common.application.domain.model.PhoneNumber;
+import com.summit.stp.common.application.domain.model.Username;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

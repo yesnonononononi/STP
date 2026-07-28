@@ -9,7 +9,7 @@ import com.summit.stp.rank_board.domain.model.BoardType;
 import com.summit.stp.rank_board.domain.model.RankBoard;
 import com.summit.stp.rank_board.domain.repository.RankRepository;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
-import com.summit.stp.shared.util.DistributedLockUtil;
+import com.summit.stp.common.util.DistributedLockUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

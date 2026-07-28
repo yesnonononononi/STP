@@ -42,6 +42,7 @@
         <hutool.version>5.8.42</hutool.version>
         <pagehelper.version>2.1.0</pagehelper.version>
         <mybatis.version>3.5.17</mybatis.version>
+        <feign-okhttp-version>13.6</feign-okhttp-version>
         <minio.version>8.6.0</minio.version>
     </properties>
 
@@ -70,6 +71,13 @@
                 <version>${spring-cloud-alibaba.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <!-- Nacos Config -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
             </dependency>
 
             <!-- Inner Module Dependency -->
@@ -127,6 +135,13 @@
                 <artifactId>sensitive-word</artifactId>
                 <version>${sensitive-word.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.github.openfeign</groupId>
+                <artifactId>feign-okhttp</artifactId>
+                <version>${feign-okhttp-version}</version>
+            </dependency>
+
+
         </dependencies>
     </dependencyManagement>
 

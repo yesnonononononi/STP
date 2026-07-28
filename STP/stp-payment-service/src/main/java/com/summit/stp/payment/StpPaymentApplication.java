@@ -8,11 +8,10 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@ComponentScan(basePackages = {"com.summit.stp.payment", "com.summit.stp.shared"})
+@ComponentScan(basePackages = {"com.summit.stp.common","com.summit.stp.payment"})
 @MapperScan("com.summit.stp.payment.infrastructure.persistence.mapper")
 public class StpPaymentApplication {
     public static void main(String[] args) {
-        System.setProperty("nacos.server.grpc.port.offset", "1768");
         SpringApplication.run(StpPaymentApplication.class, args);
     }
 }

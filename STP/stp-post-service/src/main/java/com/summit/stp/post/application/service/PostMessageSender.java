@@ -1,10 +1,9 @@
 package com.summit.stp.post.application.service;
 
-import com.summit.stp.shared.application.vo.MessageVO;
-import com.summit.stp.shared.domain.event.PostPublishEvent;
-import com.summit.stp.shared.domain.event.PostInteractionEvent;
-import com.summit.stp.shared.constants.MqConstants;
-import com.summit.stp.shared.service.queue.QueueSender;
+import com.summit.stp.common.application.domain.event.PostPublishEvent;
+import com.summit.stp.common.application.domain.event.PostInteractionEvent;
+import com.summit.stp.common.constants.MqConstants;
+import com.summit.stp.common.application.service.queue.QueueSender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

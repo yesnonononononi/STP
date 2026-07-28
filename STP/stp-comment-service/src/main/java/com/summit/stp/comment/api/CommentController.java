@@ -9,19 +9,15 @@ import com.summit.stp.comment.application.command.QueryCommentCommand;
 import com.summit.stp.comment.application.service.CommentAppService;
 import com.summit.stp.comment.application.service.CommentQueryService;
 import com.summit.stp.comment.application.vo.CommentVO;
-import com.summit.stp.comment.domain.model.Comment;
-import com.summit.stp.comment.infrastructure.persistence.po.CommentsPO;
-import com.summit.stp.shared.result.Result;
-import com.summit.stp.shared.annotation.Login;
+import com.summit.stp.common.result.Result;
+import com.summit.stp.common.annotation.Login;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiModelProperty;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import com.summit.stp.shared.result.CursorPageResult;
+import com.summit.stp.common.result.CursorPageResult;
 
 @RestController
 @RequestMapping("/post/comment")

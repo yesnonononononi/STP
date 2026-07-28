@@ -2,11 +2,11 @@ package com.summit.stp.post.infrastructure.listener;
 
 import com.rabbitmq.client.Channel;
 import com.summit.stp.post.application.service.TagCacheProvider;
-import com.summit.stp.shared.domain.event.PostPublishEvent;
+import com.summit.stp.common.application.domain.event.PostPublishEvent;
 import com.summit.stp.post.domain.model.PostTag;
 import com.summit.stp.post.domain.repository.PostTagRelRepository;
 import com.summit.stp.post.domain.repository.TagRepository;
-import com.summit.stp.shared.constants.MqConstants;
+import com.summit.stp.common.constants.MqConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.Exchange;

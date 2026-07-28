@@ -1,7 +1,8 @@
 package com.summit.stp.common.infrastructure.websocket.provide;
 
-import com.summit.stp.userAuth.infrastructure.constants.UserAuthConstants;
-import com.summit.stp.message.infrastructure.constants.ImConstants;
+import com.summit.stp.common.constants.UserAuthConstants;
+import com.summit.stp.common.constants.ImConstants;
+import com.summit.stp.common.infrastructure.properties.ImProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -14,9 +15,8 @@ import java.util.concurrent.TimeUnit;
 public class CacheProviderImpl implements CacheProvider {
 
     private final StringRedisTemplate stringRedisTemplate;
+    private final ImProperties imProperties;
 
-    @Value("${ws.session.ttl}")
-    private Long duration;
 
     @Override
     public void setOnline(Long uid, String ticket) {
@@ -24,7 +24,7 @@ public class CacheProviderImpl implements CacheProvider {
             return;
         }
         String key = buildOnlineKey(uid);
-        stringRedisTemplate.opsForValue().set(key, ticket, duration, TimeUnit.HOURS);
+        stringRedisTemplate.opsForValue().set(key, ticket, imProperties.getTtl(), TimeUnit.HOURS);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class CacheProviderImpl implements CacheProvider {
         }
         String key = UserAuthConstants.Cache.ACCESS_SESSION + token;
         if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(key))) {
-            stringRedisTemplate.expire(key, duration, TimeUnit.HOURS);
+            stringRedisTemplate.expire(key, imProperties.getTtl(), TimeUnit.HOURS);
             return true;
         }
         return false;

@@ -1,23 +1,23 @@
 package com.summit.stp.order.application.service.impl;
 
-import com.summit.stp.shared.application.vo.CouponQueryVO;
-import com.summit.stp.shared.application.vo.MemberVO;
+import com.summit.stp.common.application.vo.CouponQueryVO;
+import com.summit.stp.common.application.vo.MemberVO;
 import com.summit.stp.order.api.dto.OrderCreateRequest;
 import com.summit.stp.order.application.service.*;
-import com.summit.stp.shared.application.vo.OrderQueryVO;
+import com.summit.stp.common.application.vo.OrderQueryVO;
 import com.summit.stp.order.application.vo.ProductVO;
-import com.summit.stp.shared.domain.event.OrderPaidEvent;
+import com.summit.stp.common.application.domain.event.OrderPaidEvent;
 import com.summit.stp.order.domain.model.Order;
 import com.summit.stp.order.domain.model.OrderStatus;
 import com.summit.stp.order.domain.repository.OrderRepository;
-import com.summit.stp.shared.application.command.PayCommand;
-import com.summit.stp.shared.application.vo.PayVO;
-import com.summit.stp.shared.domain.model.PayType;
-import com.summit.stp.shared.ThreadContext.UserHolder;
+import com.summit.stp.common.application.command.PayCommand;
+import com.summit.stp.common.application.vo.PayVO;
+import com.summit.stp.common.application.domain.model.PayType;
+import com.summit.stp.common.ThreadContext.UserHolder;
 import com.summit.stp.order.infrastructure.constants.OrderConstants;
-import com.summit.stp.shared.exception.ParameterException;
-import com.summit.stp.shared.result.Result;
-import com.summit.stp.userAuth.domain.model.UserSession;
+import com.summit.stp.common.application.domain.exception.ParameterException;
+import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.domain.model.UserSession;
 import com.summit.stp.common.feign.CouponFeignClient;
 import com.summit.stp.common.feign.PayFeignClient;
 import com.summit.stp.common.feign.MemberFeignClient;
@@ -137,6 +137,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 
         Long orderId = orderRepository.generateOrderId();
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        Timestamp timeoutTime = new Timestamp(timestamp.getTime() + OrderConstants.Business.TIMEOUT_MILLIS);
         Long couponId = orderCreateRequest.getCouponId();
 
         // 前置强校验：优惠券适用范围校验
@@ -191,13 +192,14 @@ public class OrderAppServiceImpl implements OrderAppService {
                             .unitPrice(unitPrice)
                             .discountAmount(discountAmount)
                             .createTime(timestamp)
+                            .timeoutTime(timeoutTime)
                             .updateTime(timestamp)
                             .status(OrderStatus.PENDING)
                             .build()
             );
 
-            // 3. 注册订单超时
-            orderTimeoutProvider.registerTimeout(OrderConstants.Business.TIMEOUT, orderId);
+            // 3. 事务提交后注册订单超时，Redis 不可用不影响订单落库
+            orderTimeoutProvider.registerTimeout(timeoutTime, orderId);
 
             // 4. 远程调用支付微服务发起支付
             PayCommand payCommand = PayCommand.builder()
@@ -235,42 +237,52 @@ public class OrderAppServiceImpl implements OrderAppService {
             propagation = Propagation.REQUIRES_NEW,
             rollbackFor = Exception.class
     )
-    public void cancelOrderTimeout(Set<String> orders) {
-        List<Order> changedOrders = new ArrayList<>();
-        Map<Long, Order> order = orderRepository.findOrderByIds(orders);
+    public void cancelOrderTimeout(List<Order> orders) {
+        if (orders == null || orders.isEmpty()) {
+            return;
+        }
 
-        order.forEach((key, orderEntity) -> {
-            Long orderId = orderEntity.getId();
-            if (orderEntity.getStatus() != OrderStatus.PENDING) {
+        List<Order> changedOrders = new ArrayList<>();
+        for (Order order : orders) {
+            Long orderId = order.getId();
+            if (order.getStatus() != OrderStatus.PENDING) {
                 log.info("【超时取消】订单状态不是待支付，忽略取消订单操作，订单ID: {}", orderId);
-                return;
+                continue;
             }
-            changedOrders.add(orderEntity);
+
             try {
                 Result<String> reconcileResult = orderReconciliationAppService.reconcileOrder(orderId);
                 if (reconcileResult.isSuccess()) {
                     log.warn("【超时取消】检测到该订单在三方已支付，已成功触发补单。取消关单逻辑，订单ID: {}", orderId);
-                    return;
+                    continue;
                 }
             } catch (Exception e) {
                 log.error("【超时取消】前置对账异常，订单ID: {}", orderId, e);
             }
-            orderEntity.cancel();
-            orderTimeoutProvider.cancelTimeout(orderId);
-            
-            Long couponId = orderEntity.getCouponId();
-            if (couponId != null) {
-                try {
-                    couponFeignClient.refund(couponId);
-                    log.info("【超时取消】订单优惠券已退回，ID: {}, 优惠券ID: {}", orderId, couponId);
-                } catch (Exception e) {
-                    log.error("【超时取消】订单优惠券退回异常，ID: {}, 优惠券ID: {}", orderId, couponId, e);
-                    throw e;
-                }
-            }
-        });
+
+            // 订单状态变更必须通过领域动作完成，仓储层只负责批量持久化。
+            order.cancel();
+            changedOrders.add(order);
+        }
+
+        if (changedOrders.isEmpty()) {
+            return;
+        }
 
         orderRepository.batchUpdate(changedOrders);
+        for (Order order : changedOrders) {
+            Long couponId = order.getCouponId();
+            if (couponId == null) {
+                continue;
+            }
+            try {
+                couponFeignClient.refund(couponId);
+                log.info("【超时取消】订单优惠券已退回，ID: {}, 优惠券ID: {}", order.getId(), couponId);
+            } catch (Exception e) {
+                log.error("【超时取消】订单优惠券退回异常，ID: {}, 优惠券ID: {}", order.getId(), couponId, e);
+                throw e;
+            }
+        }
     }
 
     @Override

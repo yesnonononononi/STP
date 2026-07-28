@@ -1,8 +1,9 @@
 package com.summit.stp.post.infrastructure.persistence.scheduler;
 
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.summit.stp.common.constants.CacheFieldConstants;
 import com.summit.stp.post.application.service.PostCacheProvider;
-import com.summit.stp.shared.domain.event.UserLikedChangeEvent;
+import com.summit.stp.common.application.domain.event.UserLikedChangeEvent;
 import com.summit.stp.post.domain.model.Post;
 import com.summit.stp.post.domain.repository.PostCollectRepository;
 import com.summit.stp.post.domain.repository.PostLikeRepository;
@@ -10,10 +11,10 @@ import com.summit.stp.post.infrastructure.persistence.mapper.PostsMapper;
 import com.summit.stp.post.infrastructure.persistence.po.PostCollectPO;
 import com.summit.stp.post.infrastructure.persistence.po.PostLikePO;
 import com.summit.stp.post.infrastructure.persistence.po.PostsPO;
-import com.summit.stp.shared.constants.MqConstants;
+import com.summit.stp.common.constants.MqConstants;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
-import com.summit.stp.shared.util.DistributedLockUtil;
-import com.summit.stp.shared.service.queue.QueueSender;
+import com.summit.stp.common.util.DistributedLockUtil;
+import com.summit.stp.common.application.service.queue.QueueSender;
 import com.summit.stp.rank_board.application.service.RankCacheProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -222,10 +223,10 @@ public class PostSyncScheduler {
                 String postKey = PostConstants.Cache.DETAIL_PREFIX + postId;
                 if (Boolean.TRUE.equals(redisTemplate.hasKey(postKey))) {
                     Map<String, Object> fields = new HashMap<>();
-                    fields.put(com.summit.stp.shared.constants.CacheFieldConstants.LIKE_COUNT, likeCount);
-                    fields.put(com.summit.stp.shared.constants.CacheFieldConstants.COLLECT_COUNT, collectCount);
-                    fields.put(com.summit.stp.shared.constants.CacheFieldConstants.VIEW_COUNT, viewCount);
-                    fields.put(com.summit.stp.shared.constants.CacheFieldConstants.REPLY_COUNT, replyCount);
+                    fields.put(CacheFieldConstants.LIKE_COUNT, likeCount);
+                    fields.put(CacheFieldConstants.COLLECT_COUNT, collectCount);
+                    fields.put(CacheFieldConstants.VIEW_COUNT, viewCount);
+                    fields.put(CacheFieldConstants.REPLY_COUNT, replyCount);
                     fields.put("hotScore", (long) Math.ceil(hotScore));
                     redisTemplate.opsForHash().putAll(postKey, fields);
                 }

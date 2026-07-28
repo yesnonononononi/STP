@@ -1,13 +1,13 @@
 package com.summit.stp.user.infrastructure.listener;
 
 import com.rabbitmq.client.Channel;
-import com.summit.stp.shared.constants.MqConstants;
-import com.summit.stp.shared.domain.model.Password;
-import com.summit.stp.shared.domain.model.PhoneNumber;
-import com.summit.stp.shared.domain.model.Username;
+import com.summit.stp.common.constants.MqConstants;
+import com.summit.stp.common.application.domain.model.Password;
+import com.summit.stp.common.application.domain.model.PhoneNumber;
+import com.summit.stp.common.application.domain.model.Username;
 import com.summit.stp.user.domain.model.User;
 import com.summit.stp.user.domain.repository.UserRepository;
-import com.summit.stp.shared.domain.event.UserRegisterEvent;
+import com.summit.stp.common.application.domain.event.UserRegisterEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;

@@ -3,7 +3,7 @@ package com.summit.stp.member.api;
 import com.summit.stp.member.api.dto.LevelConfigSaveRequest;
 import com.summit.stp.member.application.service.MemberLevelConfigAppService;
 import com.summit.stp.member.application.vo.MemberLevelConfigVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.result.Result;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;

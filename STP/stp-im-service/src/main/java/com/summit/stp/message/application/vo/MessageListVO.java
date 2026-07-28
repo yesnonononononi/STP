@@ -2,7 +2,7 @@ package com.summit.stp.message.application.vo;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import com.summit.stp.shared.application.vo.MessageVO;
+import com.summit.stp.common.application.vo.MessageVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

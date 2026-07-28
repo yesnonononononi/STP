@@ -1,9 +1,9 @@
 package com.summit.stp.payment.api;
 
-import com.summit.stp.shared.application.command.PayCommand;
+import com.summit.stp.common.application.command.PayCommand;
 import com.summit.stp.payment.application.service.PayAppService;
-import com.summit.stp.shared.application.vo.PayVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.application.vo.PayVO;
+import com.summit.stp.common.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

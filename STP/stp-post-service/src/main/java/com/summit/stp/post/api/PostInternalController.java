@@ -1,7 +1,7 @@
 package com.summit.stp.post.api;
 
-import com.summit.stp.shared.application.vo.PostSimpleVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.application.vo.PostSimpleVO;
+import com.summit.stp.common.result.Result;
 import com.summit.stp.post.application.service.PostCacheProvider;
 import com.summit.stp.post.domain.model.Post;
 import com.summit.stp.post.domain.repository.PostRepository;

@@ -10,14 +10,18 @@ import com.summit.stp.comment.domain.model.CommentImage;
 import com.summit.stp.comment.domain.repository.CommentImageRepository;
 import com.summit.stp.comment.domain.repository.CommentRepository;
 import com.summit.stp.common.feign.UserFeignClient;
-import com.summit.stp.shared.application.vo.UserSimpleVO;
-import com.summit.stp.shared.result.CursorPageResult;
+import com.summit.stp.common.application.vo.CommentSimpleVO;
+import com.summit.stp.common.application.vo.UserSimpleVO;
+import com.summit.stp.common.result.CursorPageResult;
+import com.summit.stp.common.ThreadContext.UserHolder;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class CommentQueryServiceImpl implements CommentQueryService {
@@ -30,7 +34,9 @@ public class CommentQueryServiceImpl implements CommentQueryService {
     public CursorPageResult<CommentVO> queryCommentByPostIdWithCursor(QueryCommentCommand command) {
         //装配基础数据
         Integer limit = command.getLimit();
-        List<CommentVO> list  = assembleExtraData(commentRepository.queryCommentByPostIdWithCursor(String.valueOf(command.getIdCursor()),command.getHsCursor(),command.getPostId(), limit));
+        Long idCursor = command.getIdCursor();
+        List<CommentVO> voList = commentRepository.queryCommentByPostIdWithCursor(idCursor == null ? null : idCursor.toString(), command.getHsCursor(), command.getPostId(), limit);
+        List<CommentVO> list  = assembleExtraData(voList);
         boolean hasMore = list.size() >= limit;
         String nextCursor = null;
         if (!list.isEmpty()) {
@@ -103,5 +109,75 @@ public class CommentQueryServiceImpl implements CommentQueryService {
             vo.setExtra(extra);
         });
         return list;
+    }
+
+    @Override
+    public CommentSimpleVO querySimpleCommentWithLikeStatus(Long commentId) {
+        Comment comment = commentRepository.findById(commentId);
+        if (comment == null) {
+            return null;
+        }
+
+        // 检查当前用户是否已点赞该评论
+        Boolean isLiked = checkCurrentUserLiked(commentId);
+        return toSimpleVO(comment, isLiked);
+    }
+
+    @Override
+    public List<CommentSimpleVO> querySimpleCommentsWithLikeStatus(List<Long> commentIds) {
+        if (commentIds == null || commentIds.isEmpty()) {
+            return List.of();
+        }
+
+        // 批量从 DB 查询评论
+        List<Comment> comments = commentRepository.findByIds(commentIds);
+        if (comments.isEmpty()) {
+            return List.of();
+        }
+
+        // 批量预热点赞缓存
+        commentCacheProvider.loadCache(commentIds);
+
+        // 获取当前用户 ID，用于批量判断点赞状态
+        Long currentUserId;
+        try {
+            currentUserId = UserHolder.getUser().getId();
+        } catch (Exception e) {
+            currentUserId = null;
+        }
+
+        final Long uid = currentUserId;
+        return comments.stream().map(comment -> {
+            Boolean isLiked = false;
+            if (uid != null) {
+                isLiked = commentCacheProvider.getLikeUserIds(comment.getId()).contains(uid);
+            }
+            return toSimpleVO(comment, isLiked);
+        }).toList();
+    }
+
+    private Boolean checkCurrentUserLiked(Long commentId) {
+        try {
+            Long currentUserId = UserHolder.getUser().getId();
+            if (currentUserId != null) {
+                commentCacheProvider.loadCache(commentId);
+                return commentCacheProvider.getLikeUserIds(commentId).contains(currentUserId);
+            }
+        } catch (Exception e) {
+            log.debug("无法获取用户点赞状态, commentId={}", commentId, e);
+        }
+        return false;
+    }
+
+    private CommentSimpleVO toSimpleVO(Comment comment, Boolean isLiked) {
+        return CommentSimpleVO.builder()
+                .id(comment.getId())
+                .postId(comment.getPostId())
+                .parentId(comment.getParentId())
+                .publisherId(comment.getPublisherId())
+                .content(comment.getContent())
+                .type(comment.getType() != null ? comment.getType().getCode() : null)
+                .isLiked(isLiked)
+                .build();
     }
 }

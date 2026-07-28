@@ -4,7 +4,7 @@ import com.summit.stp.post.application.command.CreatePostCommand;
 import com.summit.stp.post.application.command.QueryPostListByCursorCommand;
 import com.summit.stp.post.application.command.UpdatePostCommand;
 import com.summit.stp.post.application.vo.PostVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.result.Result;
 
 import java.util.List;
 

@@ -1,7 +1,7 @@
 package com.summit.stp.member.application.service;
 
-import com.summit.stp.shared.constants.MqConstants;
-import com.summit.stp.shared.service.queue.QueueSender;
+import com.summit.stp.common.constants.MqConstants;
+import com.summit.stp.common.application.service.queue.QueueSender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

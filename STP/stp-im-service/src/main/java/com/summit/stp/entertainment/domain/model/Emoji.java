@@ -1,7 +1,7 @@
 package com.summit.stp.entertainment.domain.model;
 
 import com.summit.stp.entertainment.infrastructure.constants.EntertainmentConstants;
-import com.summit.stp.shared.exception.BusinessException;
+import com.summit.stp.common.application.domain.exception.BusinessException;
 import lombok.*;
 
 import java.sql.Timestamp;

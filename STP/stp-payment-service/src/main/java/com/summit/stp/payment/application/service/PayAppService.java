@@ -2,9 +2,9 @@ package com.summit.stp.payment.application.service;
 
 
 import com.summit.stp.payment.application.command.PayCallbackCheckCommand;
-import com.summit.stp.shared.application.command.PayCommand;
-import com.summit.stp.shared.application.vo.PayVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.application.command.PayCommand;
+import com.summit.stp.common.application.vo.PayVO;
+import com.summit.stp.common.result.Result;
 
 import java.util.List;
 

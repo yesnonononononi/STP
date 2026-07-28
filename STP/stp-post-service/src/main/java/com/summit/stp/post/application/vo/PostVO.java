@@ -1,6 +1,6 @@
 package com.summit.stp.post.application.vo;
 
-import com.summit.stp.shared.application.vo.UserSimpleVO;
+import com.summit.stp.common.application.vo.UserSimpleVO;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;

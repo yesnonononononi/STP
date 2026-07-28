@@ -1,16 +1,16 @@
 package com.summit.stp.user.application.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.summit.stp.shared.exception.ParameterException;
+import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.stp.user.application.command.CreateUserFollowCommand;
 import com.summit.stp.user.application.command.UpdateUserFollowCommand;
 import com.summit.stp.user.application.service.UserFollowAppService;
 import com.summit.stp.user.application.vo.UserFollowVO;
 import com.summit.stp.user.application.vo.UserFansVO;
 import com.summit.stp.user.domain.repository.UserRepository;
-import com.summit.stp.shared.ThreadContext.UserHolder;
+import com.summit.stp.common.ThreadContext.UserHolder;
 import com.summit.stp.user.domain.model.User;
-import com.summit.stp.user.domain.event.UserFansChangeEvent;
+import com.summit.stp.common.application.domain.event.UserFansChangeEvent;
 import com.summit.stp.user.domain.repository.UserFollowRepository;
 import com.summit.stp.user.infrastructure.persistence.po.UserFollowPO;
 import lombok.RequiredArgsConstructor;

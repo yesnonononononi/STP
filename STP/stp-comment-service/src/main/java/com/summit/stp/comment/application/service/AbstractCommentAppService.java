@@ -1,7 +1,7 @@
 package com.summit.stp.comment.application.service;
 
-import com.summit.stp.shared.domain.event.CommentNotificationMessage;
-import com.summit.stp.shared.constants.MqConstants;
+import com.summit.stp.common.application.domain.event.CommentNotificationMessage;
+import com.summit.stp.common.constants.MqConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,6 +1,6 @@
 package com.summit.stp.relationship.application.vo;
 
-import com.summit.stp.shared.application.vo.UserSimpleVO;
+import com.summit.stp.common.application.vo.UserSimpleVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

@@ -1,6 +1,6 @@
 package com.summit.stp.coupon.domain.model;
 
-import com.summit.stp.shared.exception.BusinessException;
+import com.summit.stp.common.application.domain.exception.BusinessException;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

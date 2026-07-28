@@ -1,6 +1,6 @@
 package com.summit.stp.post.domain.model;
 
-import com.summit.stp.shared.exception.ParameterException;
+import com.summit.stp.common.application.domain.exception.ParameterException;
 import jakarta.annotation.Nullable;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;

@@ -1,9 +1,9 @@
 package com.summit.stp.post.application.service.impl.cache;
 
-import com.summit.stp.shared.constants.CacheFieldConstants;
+import com.summit.stp.common.constants.CacheFieldConstants;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
-import com.summit.stp.shared.util.IpUtil;
-import com.summit.stp.shared.ThreadContext.UserHolder;
+import com.summit.stp.common.util.IpUtil;
+import com.summit.stp.common.ThreadContext.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;

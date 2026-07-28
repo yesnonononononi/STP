@@ -1,9 +1,9 @@
 package com.summit.stp.user.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.summit.stp.shared.domain.model.Password;
-import com.summit.stp.shared.domain.model.PhoneNumber;
-import com.summit.stp.shared.domain.model.Username;
+import com.summit.stp.common.application.domain.model.Password;
+import com.summit.stp.common.application.domain.model.PhoneNumber;
+import com.summit.stp.common.application.domain.model.Username;
 import com.summit.stp.user.domain.model.Email;
 import com.summit.stp.user.domain.model.User;
 import com.summit.stp.user.domain.repository.UserRepository;

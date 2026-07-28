@@ -2,8 +2,8 @@ package com.summit.stp.common.api;
 
 import com.summit.stp.common.api.dto.response.UploadVO;
 import com.summit.stp.common.application.service.CommonAppService;
-import com.summit.stp.shared.result.Result;
-import com.summit.stp.shared.annotation.Login;
+import com.summit.stp.common.result.Result;
+import com.summit.stp.common.annotation.Login;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;

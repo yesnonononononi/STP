@@ -4,7 +4,7 @@ import com.summit.stp.rank_board.application.service.RankService;
 import com.summit.stp.rank_board.application.vo.CreatorRankVO;
 import com.summit.stp.rank_board.application.vo.PostRankVO;
 import com.summit.stp.rank_board.application.vo.TopicRankVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;

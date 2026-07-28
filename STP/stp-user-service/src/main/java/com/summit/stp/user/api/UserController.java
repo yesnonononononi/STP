@@ -1,7 +1,7 @@
 package com.summit.stp.user.api;
 
-import com.summit.stp.shared.ThreadContext.UserHolder;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.result.Result;
 import com.summit.stp.user.api.dto.request.UserPasswordUpdateRequest;
 import com.summit.stp.user.api.dto.request.UserPhoneBindRequest;
 import com.summit.stp.user.api.dto.request.UserProfileUpdateRequest;
@@ -9,9 +9,9 @@ import com.summit.stp.user.application.UserApplicationService;
 import com.summit.stp.user.application.command.UserPasswordUpdateCommand;
 import com.summit.stp.user.application.command.UserPhoneBindCommand;
 import com.summit.stp.user.application.command.UserProfileUpdateCommand;
-import com.summit.stp.user.application.vo.UserProfileVO;
-import com.summit.stp.shared.application.vo.UserSimpleVO;
-import com.summit.stp.shared.annotation.Login;
+import com.summit.stp.common.application.vo.UserProfileVO;
+import com.summit.stp.common.application.vo.UserSimpleVO;
+import com.summit.stp.common.annotation.Login;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;

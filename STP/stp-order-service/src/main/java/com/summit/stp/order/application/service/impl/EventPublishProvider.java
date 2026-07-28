@@ -1,8 +1,8 @@
 package com.summit.stp.order.application.service.impl;
 
-import com.summit.stp.shared.constants.MqConstants;
-import com.summit.stp.shared.domain.event.OrderPaidEvent;
-import com.summit.stp.shared.service.queue.QueueSender;
+import com.summit.stp.common.constants.MqConstants;
+import com.summit.stp.common.application.domain.event.OrderPaidEvent;
+import com.summit.stp.common.application.service.queue.QueueSender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;

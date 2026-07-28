@@ -4,7 +4,7 @@ import com.summit.stp.comment.application.service.CommentCacheProvider;
 import com.summit.stp.comment.domain.model.Comment;
 import com.summit.stp.comment.domain.repository.CommentRepository;
 import com.summit.stp.comment.infrastructure.constants.CommentConstants;
-import com.summit.stp.shared.util.DistributedLockUtil;
+import com.summit.stp.common.util.DistributedLockUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;

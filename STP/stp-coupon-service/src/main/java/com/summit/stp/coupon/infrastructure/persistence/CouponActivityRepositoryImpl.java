@@ -5,7 +5,7 @@ import com.summit.stp.coupon.domain.model.CouponActivity;
 import com.summit.stp.coupon.domain.repository.CouponActivityRepository;
 import com.summit.stp.coupon.infrastructure.persistence.mapper.CouponActivityMapper;
 import com.summit.stp.coupon.infrastructure.persistence.po.CouponActivityPO;
-import com.summit.stp.shared.exception.ParameterException;
+import com.summit.stp.common.application.domain.exception.ParameterException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;

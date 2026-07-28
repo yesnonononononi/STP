@@ -1,12 +1,12 @@
 package com.summit.stp.user.infrastructure.listener;
 
-import com.summit.stp.shared.domain.model.Password;
-import com.summit.stp.shared.domain.model.PhoneNumber;
-import com.summit.stp.shared.domain.model.Username;
+import com.summit.stp.common.application.domain.model.Password;
+import com.summit.stp.common.application.domain.model.PhoneNumber;
+import com.summit.stp.common.application.domain.model.Username;
 import com.summit.stp.user.domain.exception.UserExistException;
 import com.summit.stp.user.domain.model.User;
 import com.summit.stp.user.domain.repository.UserRepository;
-import com.summit.stp.shared.domain.event.UserRegisterEvent;
+import com.summit.stp.common.application.domain.event.UserRegisterEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 

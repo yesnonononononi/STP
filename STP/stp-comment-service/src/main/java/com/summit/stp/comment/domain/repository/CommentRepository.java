@@ -12,6 +12,7 @@ import java.util.Set;
 
 public interface CommentRepository {
     Comment findById(Long id);
+    List<Comment> findByIds(List<Long> ids);
     void save(Comment comment);
     void delete(Long id);
 

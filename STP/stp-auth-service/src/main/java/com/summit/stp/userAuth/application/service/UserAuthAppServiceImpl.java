@@ -1,15 +1,15 @@
 package com.summit.stp.userAuth.application.service;
 
 import cn.hutool.core.util.IdUtil;
-import com.summit.stp.shared.ThreadContext.UserHolder;
-import com.summit.stp.shared.constants.UserAuthConstants;
-import com.summit.stp.shared.domain.model.Password;
-import com.summit.stp.shared.domain.model.PhoneNumber;
-import com.summit.stp.shared.domain.model.Username;
-import com.summit.stp.shared.domain.service.CaptchaService;
-import com.summit.stp.shared.exception.ParameterException;
-import com.summit.stp.shared.result.Result;
-import com.summit.stp.shared.util.IpUtil;
+import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.application.domain.model.Password;
+import com.summit.stp.common.application.domain.model.PhoneNumber;
+import com.summit.stp.common.application.domain.model.Username;
+import com.summit.stp.common.application.domain.service.CaptchaService;
+import com.summit.stp.common.application.domain.exception.ParameterException;
+import com.summit.stp.common.result.Result;
+import com.summit.stp.common.constants.UserAuthConstants;
+import com.summit.stp.common.util.IpUtil;
 import com.summit.stp.common.feign.UserFeignClient;
 import com.summit.stp.userAuth.application.UserAuthApplicationService;
 import com.summit.stp.userAuth.application.command.ForgetCommand;
@@ -18,15 +18,15 @@ import com.summit.stp.userAuth.application.command.RefreshTokenCommand;
 import com.summit.stp.userAuth.application.command.RegisterCommand;
 import com.summit.stp.userAuth.application.vo.LoginVO;
 import com.summit.stp.userAuth.application.vo.RefreshTokenVO;
-import com.summit.stp.shared.domain.event.UserRegisterEvent;
+import com.summit.stp.common.application.domain.event.UserRegisterEvent;
 import com.summit.stp.userAuth.domain.exception.RefreshTokenNoValidException;
 import com.summit.stp.userAuth.domain.exception.ResetPasswordException;
 import com.summit.stp.userAuth.domain.model.AuthToken;
 import com.summit.stp.userAuth.domain.model.AuthUser;
 import com.summit.stp.userAuth.domain.model.ResetType;
-import com.summit.stp.userAuth.domain.model.UserSession;
+import com.summit.stp.common.application.domain.model.UserSession;
 import com.summit.stp.userAuth.domain.repository.AuthUserRepository;
-import com.summit.stp.userAuth.domain.repository.TokenRepository;
+import com.summit.stp.common.application.repository.TokenRepository;
 import com.summit.stp.userAuth.domain.service.ResetPasswordStrategy;
 import com.summit.stp.userAuth.domain.service.ResetStrategyRegistry;
 import com.summit.stp.userAuth.domain.service.UserAuthDomainService;
@@ -82,7 +82,7 @@ public class UserAuthAppServiceImpl implements UserAuthApplicationService {
                 .token(authToken.getAccessToken())
                 .refreshToken(authToken.getRefreshToken())
                 .username(user.getUsername().getValue())
-                .expireTime(UserAuthConstants.DEFAULT_TOKEN_EXPIRE_SECONDS)
+                .expireTime(UserAuthConstants.Business.DEFAULT_TOKEN_EXPIRE_SECONDS)
                 .build();
 
         return Result.success(loginVO);
@@ -203,12 +203,12 @@ public class UserAuthAppServiceImpl implements UserAuthApplicationService {
         tokenRepository.deleteByUsername(username, UserSession.TokenType.ACCESS);
 
         // 获取 accessToken
-        accessToken = acquireAccessToken(username, username, ip,UserAuthConstants.DEFAULT_TOKEN_EXPIRE_SECONDS,userId, UserSession.TokenType.ACCESS,  UserSession.TokenType.ACCESS);
+        accessToken = acquireAccessToken(username, username, ip,UserAuthConstants.Business.DEFAULT_TOKEN_EXPIRE_SECONDS,userId, UserSession.TokenType.ACCESS,  UserSession.TokenType.ACCESS);
 
         // 如果需要刷新令牌,则删除原有映射,使 token 失效
         tokenRepository.deleteByUsername(username, UserSession.TokenType.REFRESH);
         // 获取刷新令牌
-        refreshToken = acquireAccessToken(username, username, ip, UserAuthConstants.DEFAULT_REFRESH_TOKEN_EXPIRE_SECONDS,userId, UserSession.TokenType.REFRESH,  UserSession.TokenType.REFRESH);
+        refreshToken = acquireAccessToken(username, username, ip, UserAuthConstants.Business.DEFAULT_REFRESH_TOKEN_EXPIRE_SECONDS,userId, UserSession.TokenType.REFRESH,  UserSession.TokenType.REFRESH);
         return AuthToken.builder().accessToken(accessToken).refreshToken(refreshToken).build();
     }
 

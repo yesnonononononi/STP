@@ -1,8 +1,8 @@
 package com.summit.stp.member.application.service;
 
-import com.summit.stp.shared.application.vo.MemberTypeVO;
-import com.summit.stp.shared.application.vo.MemberVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.application.vo.MemberTypeVO;
+import com.summit.stp.common.application.vo.MemberVO;
+import com.summit.stp.common.result.Result;
 
 import java.util.List;
 import java.util.Map;

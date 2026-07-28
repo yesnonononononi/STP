@@ -2,17 +2,15 @@ package com.summit.stp.comment.application.service.impl;
 
 import cn.hutool.core.util.IdUtil;
 import com.summit.stp.comment.application.command.CreateCommentCommand;
-import com.summit.stp.comment.application.service.CommentAppService;
 import com.summit.stp.comment.application.service.CommentCacheProvider;
 import com.summit.stp.comment.domain.model.Comment;
 import com.summit.stp.comment.domain.model.CommentImage;
 import com.summit.stp.comment.domain.model.CommentType;
 import com.summit.stp.comment.domain.repository.CommentImageRepository;
 import com.summit.stp.comment.domain.repository.CommentRepository;
-import com.summit.stp.comment.infrastructure.persistence.po.CommentsPO;
-import com.summit.stp.shared.ThreadContext.UserHolder;
-import com.summit.stp.shared.exception.BusinessException;
-import com.summit.stp.userAuth.domain.model.UserSession;
+import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.application.domain.exception.BusinessException;
+import com.summit.stp.common.application.domain.model.UserSession;
 import io.netty.util.internal.StringUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,16 +20,16 @@ import java.sql.Timestamp;
 import java.util.List;
 import com.summit.stp.comment.infrastructure.constants.CommentConstants;
 import org.springframework.context.ApplicationEventPublisher;
-import com.summit.stp.shared.event.FileDeleteEvent;
+import com.summit.stp.common.application.domain.event.FileDeleteEvent;
 import com.summit.stp.comment.infrastructure.persistence.po.CommentImagePO;
-import com.summit.stp.shared.service.TextSafe.TextSafeServiceProvider;
+import com.summit.stp.common.application.service.TextSafe.TextSafeServiceProvider;
 import com.summit.stp.comment.application.vo.CommentVO;
 import com.summit.stp.common.feign.PostFeignClient;
 import com.summit.stp.common.feign.UserFeignClient;
-import com.summit.stp.shared.application.vo.PostSimpleVO;
-import com.summit.stp.shared.application.vo.UserSimpleVO;
+import com.summit.stp.common.application.vo.PostSimpleVO;
+import com.summit.stp.common.application.vo.UserSimpleVO;
 import com.summit.stp.comment.application.service.AbstractCommentAppService;
-import com.summit.stp.shared.domain.event.CommentNotificationMessage;
+import com.summit.stp.common.application.domain.event.CommentNotificationMessage;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,16 +56,23 @@ public class CommentAppServiceImpl extends AbstractCommentAppService {
         }
         PostSimpleVO post = postFeignClient.findSimplePostById(postId).getData();
         Comment.Extra extra = command.getExtra();
-        Long rootId = command.getRootId();
         long id = IdUtil.getSnowflakeNextId();
+
+        // 服务端根据 parentId 推断 rootId，不信任前端传入的 rootId
         Long parentId = command.getParentId();
-        if(rootId == null){
-            parentId = null;
+        Long rootId = null;
+        if (parentId != null) {
+            Comment parentComment = commentRepository.findById(parentId);
+            if (parentComment == null) {
+                throw new BusinessException("未找到父评论信息");
+            }
+            // 父评论是根评论 → rootId = parentId；父评论是回复 → rootId = 父评论的 rootId
+            rootId = parentComment.getRootId() != null ? parentComment.getRootId() : parentComment.getId();
         }
 
         String content = textSafeServiceProvider.xssFilter(command.getContent());
 
-        checkComment(post,command);
+        checkComment(post, command);
 
         Comment comment = Comment.builder()
                 .content(content)
@@ -99,21 +104,18 @@ public class CommentAppServiceImpl extends AbstractCommentAppService {
         initCommentCache(comment.getId());
         postFeignClient.incrReplyCount(postId);
         if (parentId != null) {
+            commentCacheProvider.reply(parentId);
             commentCacheProvider.markReplyChanged(parentId);
+            // 二级回复时，根评论的总回复数也需要增加
+            if (rootId != null && !rootId.equals(parentId)) {
+                commentCacheProvider.reply(rootId);
+                commentCacheProvider.markReplyChanged(rootId);
+            }
         }
 
         UserSimpleVO publisherVO = userFeignClient.findSimpleUserById(user.getId()).getData();
         try {
-            String displayContent = comment.getContent();
-            if (comment.getType() != null) {
-                if (comment.getType() == CommentType.IMAGE) {
-                    displayContent = "[图片] " + (displayContent != null ? displayContent : "");
-                } else if (comment.getType() == CommentType.VIDEO) {
-                    displayContent = "[视频] " + (displayContent != null ? displayContent : "");
-                } else if (comment.getType() == CommentType.AUDIO) {
-                    displayContent = "[音频] " + (displayContent != null ? displayContent : "");
-                }
-            }
+            String displayContent = resolveContent(comment);
 
             CommentNotificationMessage msg = CommentNotificationMessage.builder()
                     .commentId(comment.getId())
@@ -135,17 +137,31 @@ public class CommentAppServiceImpl extends AbstractCommentAppService {
         return vo;
     }
 
+    private  String resolveContent(Comment comment) {
+        String displayContent = comment.getContent();
+        if (comment.getType() != null) {
+            if (comment.getType() == CommentType.IMAGE) {
+                displayContent = "[图片] " + (displayContent != null ? displayContent : "");
+            } else if (comment.getType() == CommentType.VIDEO) {
+                displayContent = "[视频] " + (displayContent != null ? displayContent : "");
+            } else if (comment.getType() == CommentType.AUDIO) {
+                displayContent = "[音频] " + (displayContent != null ? displayContent : "");
+            }
+        }
+        return displayContent;
+    }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteComment(Long id) {
         Comment comment = commentRepository.findById(id);
-        
+
         List<CommentImagePO> images = commentImageRepository.findByCommentId(id);
-        
+
         commentRepository.delete(id);
         commentImageRepository.deleteByCommentId(id);
-        
+
         if (images != null && !images.isEmpty()) {
             List<String> urls = images.stream()
                     .map(CommentImagePO::getImageUrl)
@@ -155,7 +171,7 @@ public class CommentAppServiceImpl extends AbstractCommentAppService {
                 applicationEventPublisher.publishEvent(new FileDeleteEvent(this, urls));
             }
         }
-        
+
         if (comment != null) {
             postFeignClient.decrReplyCount(comment.getPostId());
             if (comment.getParentId() != null) {
@@ -193,12 +209,9 @@ public class CommentAppServiceImpl extends AbstractCommentAppService {
     private void checkComment(PostSimpleVO post, CreateCommentCommand command){
         String content = command.getContent();
         Comment.Extra extra = command.getExtra();
-        //检查根评论是否存在
-        if(command.getRootId() != null){
-            Comment comment = commentRepository.findById(command.getRootId());
-            if(comment == null){
-                throw new BusinessException("未找到评论信息");
-            }
+        // parentId / rootId 已在 postComment 中校验，此处不再重复查库
+        if (post == null) {
+            throw new BusinessException("未找到帖子信息");
         }
         if(!StringUtil.isNullOrEmpty(content)){
             if (content.length() > CommentConstants.Business.MAX_CONTENT_LENGTH) {

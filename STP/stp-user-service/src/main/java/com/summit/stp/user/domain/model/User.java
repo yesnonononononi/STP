@@ -1,9 +1,9 @@
 package com.summit.stp.user.domain.model;
 
-import com.summit.stp.shared.domain.model.Password;
-import com.summit.stp.shared.domain.model.PhoneNumber;
-import com.summit.stp.shared.domain.model.Username;
-import com.summit.stp.shared.exception.ParameterException;
+import com.summit.stp.common.application.domain.model.Password;
+import com.summit.stp.common.application.domain.model.PhoneNumber;
+import com.summit.stp.common.application.domain.model.Username;
+import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.stp.user.domain.exception.UserPasswordErrorException;
 import io.netty.util.internal.StringUtil;
 import jakarta.annotation.Nullable;

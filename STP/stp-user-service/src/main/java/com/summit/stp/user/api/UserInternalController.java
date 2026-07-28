@@ -1,11 +1,11 @@
 package com.summit.stp.user.api;
 
-import com.summit.stp.shared.application.vo.UserSimpleVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.application.vo.UserSimpleVO;
+import com.summit.stp.common.result.Result;
 import com.summit.stp.user.application.UserApplicationService;
 import com.summit.stp.user.application.service.UserSettingAppService;
-import com.summit.stp.user.application.vo.UserProfileVO;
-import com.summit.stp.user.application.vo.UserSettingVO;
+import com.summit.stp.common.application.vo.UserProfileVO;
+import com.summit.stp.common.application.vo.UserSettingVO;
 import com.summit.stp.user.domain.model.User;
 import com.summit.stp.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

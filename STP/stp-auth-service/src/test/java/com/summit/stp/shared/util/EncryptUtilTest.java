@@ -1,5 +1,6 @@
 package com.summit.stp.shared.util;
 
+import com.summit.stp.common.util.EncryptUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

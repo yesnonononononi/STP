@@ -1,9 +1,9 @@
 package com.summit.stp.userAuth.infrastructure.publisher;
 
-import com.summit.stp.shared.constants.MqConstants;
-import com.summit.stp.shared.service.queue.QueueSender;
+import com.summit.stp.common.constants.MqConstants;
+import com.summit.stp.common.application.service.queue.QueueSender;
 import com.summit.stp.userAuth.application.service.UserRegisterEventPublishProvider;
-import com.summit.stp.shared.domain.event.UserRegisterEvent;
+import com.summit.stp.common.application.domain.event.UserRegisterEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

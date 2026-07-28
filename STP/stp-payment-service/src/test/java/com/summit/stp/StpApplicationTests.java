@@ -1,5 +1,6 @@
 package com.summit.stp;
 
+import com.summit.stp.common.application.domain.event.PaySuccessEvent;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,7 +25,7 @@ class StpApplicationTests {
 
     @Test
     void testSendMq() {
-        com.summit.stp.shared.domain.event.PaySuccessEvent event = new com.summit.stp.shared.domain.event.PaySuccessEvent(2058208390793920512L);
+        PaySuccessEvent event = new PaySuccessEvent(2058208390793920512L);
         rabbitTemplate.convertAndSend("pay.exchange", "pay.queue.success", event);
         System.out.println("====== MQ Test Message Sent Successfully ======");
     }

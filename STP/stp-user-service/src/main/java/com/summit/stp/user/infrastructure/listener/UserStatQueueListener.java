@@ -1,10 +1,10 @@
 package com.summit.stp.user.infrastructure.listener;
 
 import com.rabbitmq.client.Channel;
-import com.summit.stp.shared.domain.event.PostPublishEvent;
-import com.summit.stp.shared.domain.event.UserLikedChangeEvent;
-import com.summit.stp.shared.constants.MqConstants;
-import com.summit.stp.user.domain.event.UserFansChangeEvent;
+import com.summit.stp.common.application.domain.event.PostPublishEvent;
+import com.summit.stp.common.application.domain.event.UserLikedChangeEvent;
+import com.summit.stp.common.constants.MqConstants;
+import com.summit.stp.common.application.domain.event.UserFansChangeEvent;
 import com.summit.stp.user.infrastructure.persistence.mapper.UserStatMapper;
 import com.summit.stp.user.infrastructure.persistence.po.UserStatPO;
 import lombok.RequiredArgsConstructor;

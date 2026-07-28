@@ -1,9 +1,9 @@
 package com.summit.stp.payment.domain;
 
-import com.summit.stp.shared.application.vo.PayVO;
-import com.summit.stp.shared.domain.model.PayType;
-import com.summit.stp.shared.util.EncryptUtil;
-import com.summit.stp.shared.util.PaymentSignHelper;
+import com.summit.stp.common.application.vo.PayVO;
+import com.summit.stp.common.application.domain.model.PayType;
+import com.summit.stp.common.util.EncryptUtil;
+import com.summit.stp.common.util.PaymentSignHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

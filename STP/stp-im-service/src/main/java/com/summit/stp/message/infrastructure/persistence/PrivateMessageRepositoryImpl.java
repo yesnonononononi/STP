@@ -1,14 +1,11 @@
 package com.summit.stp.message.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.summit.stp.message.domain.exception.MessageNoExistException;
 import com.summit.stp.message.domain.model.PrivateMessage;
 import com.summit.stp.message.domain.repository.PrivateMessageRepository;
 import com.summit.stp.message.infrastructure.persistence.mapper.PrivateMessageMapper;
 import com.summit.stp.message.infrastructure.persistence.po.PrivateMessagePO;
-import com.summit.stp.shared.exception.BusinessException;
-import io.netty.util.internal.StringUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 

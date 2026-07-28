@@ -1,7 +1,7 @@
 package com.summit.stp.order.domain.model;
 
 
-import com.summit.stp.shared.domain.model.PayType;
+import com.summit.stp.common.application.domain.model.PayType;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -32,6 +32,7 @@ public class Order {
     private final BigDecimal unitPrice;
     private final BigDecimal discountAmount;
     private final Timestamp createTime;
+    private final Timestamp timeoutTime;
     private Timestamp updateTime;
     private Timestamp payTime;
 

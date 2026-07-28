@@ -2,11 +2,11 @@ package com.summit.stp.order.infrastructure.listener;
 
 import com.rabbitmq.client.Channel;
 import com.summit.stp.order.application.service.OrderAppService;
-import com.summit.stp.shared.domain.event.PayFailEvent;
-import com.summit.stp.shared.domain.event.PaySuccessEvent;
-import com.summit.stp.shared.constants.MqConstants;
+import com.summit.stp.common.application.domain.event.PayFailEvent;
+import com.summit.stp.common.application.domain.event.PaySuccessEvent;
+import com.summit.stp.common.constants.MqConstants;
 import com.summit.stp.order.infrastructure.constants.OrderConstants;
-import com.summit.stp.shared.util.DistributedLockUtil;
+import com.summit.stp.common.util.DistributedLockUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;

@@ -1,9 +1,9 @@
 package com.summit.stp.common.feign;
 
-import com.summit.stp.user.application.vo.UserProfileVO;
-import com.summit.stp.shared.application.vo.UserSimpleVO;
-import com.summit.stp.user.application.vo.UserSettingVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.application.vo.UserProfileVO;
+import com.summit.stp.common.application.vo.UserSimpleVO;
+import com.summit.stp.common.application.vo.UserSettingVO;
+import com.summit.stp.common.result.Result;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

@@ -10,11 +10,10 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.summit.stp.common.feign")
-@ComponentScan(basePackages = {"com.summit.stp.comment", "com.summit.stp.shared"})
+@ComponentScan(basePackages = {"com.summit.stp.comment", "com.summit.stp.common"})
 @MapperScan("com.summit.stp.comment.infrastructure.persistence.mapper")
 public class StpCommentApplication {
     public static void main(String[] args) {
-        System.setProperty("nacos.server.grpc.port.offset", "1768");
         SpringApplication.run(StpCommentApplication.class, args);
     }
 }

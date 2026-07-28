@@ -1,7 +1,7 @@
 package com.summit.stp.order.api;
 
-import com.summit.stp.shared.application.vo.OrderQueryVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.application.vo.OrderQueryVO;
+import com.summit.stp.common.result.Result;
 import com.summit.stp.order.domain.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

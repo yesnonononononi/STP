@@ -1,7 +1,7 @@
 package com.summit.stp.common.feign;
 
-import com.summit.stp.shared.application.vo.OrderQueryVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.application.vo.OrderQueryVO;
+import com.summit.stp.common.result.Result;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;

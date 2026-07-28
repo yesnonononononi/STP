@@ -1,17 +1,17 @@
 package com.summit.stp.message.infrastructure.listener;
 
 import com.rabbitmq.client.Channel;
-import com.summit.stp.shared.service.TextSafe.TextSafeServiceProvider;
+import com.summit.stp.common.application.service.TextSafe.TextSafeServiceProvider;
 import cn.hutool.core.util.IdUtil;
 import com.summit.stp.message.domain.model.InteractionMessage;
 import com.summit.stp.message.domain.model.InteractionMessageType;
 import com.summit.stp.message.domain.repository.InteractionMessageRepository;
-import com.summit.stp.shared.domain.event.PostInteractionEvent;
-import com.summit.stp.shared.application.vo.PostSimpleVO;
+import com.summit.stp.common.application.domain.event.PostInteractionEvent;
+import com.summit.stp.common.application.vo.PostSimpleVO;
 import com.summit.stp.common.feign.UserFeignClient;
 import com.summit.stp.common.feign.PostFeignClient;
-import com.summit.stp.shared.application.vo.UserSimpleVO;
-import com.summit.stp.shared.constants.MqConstants;
+import com.summit.stp.common.application.vo.UserSimpleVO;
+import com.summit.stp.common.constants.MqConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;

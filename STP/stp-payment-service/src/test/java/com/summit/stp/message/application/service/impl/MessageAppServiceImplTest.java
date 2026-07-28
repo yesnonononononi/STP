@@ -1,6 +1,6 @@
 package com.summit.stp.message.application.service.impl;
 
-import com.summit.stp.shared.util.DateUtil;
+import com.summit.stp.common.util.DateUtil;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -39,4 +39,4 @@ class MessageAppServiceImplTest {
         Assertions.assertTrue(parsedNull.toEpochMilli() >= before.toEpochMilli());
         Assertions.assertTrue(parsedNull.toEpochMilli() <= after.toEpochMilli());
     }
-}
+}

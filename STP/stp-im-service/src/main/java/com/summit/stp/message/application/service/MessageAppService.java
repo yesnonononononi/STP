@@ -2,9 +2,8 @@ package com.summit.stp.message.application.service;
 
 import com.summit.stp.message.application.command.CreateMessageCommand;
 import com.summit.stp.message.application.vo.MessageListVO;
-import com.summit.stp.shared.application.vo.MessageVO;
-import com.summit.stp.message.application.vo.SendMessageVO;
-import com.summit.stp.shared.application.vo.SysMessageVO;
+import com.summit.stp.common.application.vo.MessageVO;
+import com.summit.stp.common.application.vo.SysMessageVO;
 
 import java.util.List;
 

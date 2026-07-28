@@ -1,7 +1,7 @@
 package com.summit.stp.common.application.service;
 
 import com.summit.stp.common.api.dto.response.UploadVO;
-import com.summit.stp.shared.result.Result;
+import com.summit.stp.common.result.Result;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface CommonAppService {

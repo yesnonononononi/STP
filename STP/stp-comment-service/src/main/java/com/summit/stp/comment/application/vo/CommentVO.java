@@ -2,8 +2,7 @@ package com.summit.stp.comment.application.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.summit.stp.comment.domain.model.Comment;
-import com.summit.stp.comment.domain.model.CommentType;
-import com.summit.stp.shared.application.vo.UserSimpleVO;
+import com.summit.stp.common.application.vo.UserSimpleVO;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +10,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
-import java.util.List;
 
 
 @Data

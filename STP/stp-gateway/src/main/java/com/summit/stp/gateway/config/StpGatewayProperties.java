@@ -5,11 +5,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Data
 @Component
-@ConfigurationProperties(prefix = "stp.gateway")
+@ConfigurationProperties(prefix = "spring.cloud.gateway.server.webflux.routes")
 public class StpGatewayProperties {
     private List<RouteConfig> routes = new ArrayList<>();
 
@@ -17,6 +18,9 @@ public class StpGatewayProperties {
     public static class RouteConfig {
         private String id;
         private String uri;
-        private List<String> paths = new ArrayList<>();
+        private String predicates;
+        public List<String> getPaths(){
+            return Arrays.stream(predicates.split(",")).toList();
+        }
     }
 }

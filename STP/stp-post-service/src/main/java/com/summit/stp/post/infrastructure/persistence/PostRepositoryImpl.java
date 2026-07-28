@@ -9,7 +9,7 @@ import com.summit.stp.post.infrastructure.persistence.mapper.PostsMapper;
 import com.summit.stp.post.infrastructure.persistence.po.PostImagePO;
 import com.summit.stp.post.infrastructure.persistence.po.PostsPO;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
-import com.summit.stp.shared.exception.BusinessException;
+import com.summit.stp.common.application.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;

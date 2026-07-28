@@ -2,16 +2,13 @@ package com.summit.stp.coupon.application.service.impl;
 
 import com.summit.stp.coupon.domain.model.CouponActivity;
 import com.summit.stp.coupon.domain.repository.CouponActivityRepository;
-import com.summit.stp.coupon.domain.repository.CouponRepository;
 import com.summit.stp.coupon.domain.service.CouponCacheProvider;
 
-import com.summit.stp.coupon.infrastructure.persistence.CouponActivityRepositoryImpl;
-import com.summit.stp.coupon.infrastructure.persistence.CouponRepositoryImpl;
-import com.summit.stp.shared.ThreadContext.UserHolder;
+import com.summit.stp.common.ThreadContext.UserHolder;
 import com.summit.stp.coupon.infrastructure.constants.CouponConstants;
-import com.summit.stp.shared.exception.BusinessException;
-import com.summit.stp.shared.exception.DisTributeLockAcquireException;
-import com.summit.stp.shared.util.DistributedLockUtil;
+import com.summit.stp.common.application.domain.exception.BusinessException;
+import com.summit.stp.common.application.domain.exception.DisTributeLockAcquireException;
+import com.summit.stp.common.util.DistributedLockUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.RedisHashCommands;
@@ -25,7 +22,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 
 @Component

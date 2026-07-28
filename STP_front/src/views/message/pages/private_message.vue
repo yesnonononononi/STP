@@ -7,12 +7,15 @@
             <div class="flex flex-col grow overflow-y-auto">
                 <!-- 互动消息固定会话栏 -->
                 <div class="p-2 flex w-full min-h-18 gap-3 items-center hover:bg-gray-100 cursor-pointer transition-all duration-150 border-b border-gray-50/70"
-                    @click="clickInteractionMessage()"
-                    :class="isCurSessionInteraction ? 'bg-gray-100' : ''">
+                    @click="clickInteractionMessage()" :class="isCurSessionInteraction ? 'bg-gray-100' : ''">
                     <div class="relative size-12 shrink-0 flex items-center justify-center">
-                        <svg t="1784882544725" class="icon size-12" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6749" width="200" height="200">
-                            <path d="M512 512m-512 0a512 512 0 1 0 1024 0 512 512 0 1 0-1024 0Z" fill="#7CBCF7" p-id="6750"></path>
-                            <path d="M505.856 225.28C350.208 225.28 225.28 333.824 225.28 468.992c0 81.92 47.104 155.648 118.784 200.704v75.776c0 10.24 6.144 16.384 14.336 16.384 4.096 0 6.144-2.048 8.192-2.048l77.824-51.2c20.48 4.096 38.912 4.096 59.392 4.096 153.6 0 280.576-108.544 280.576-243.712 0-135.168-124.928-243.712-278.528-243.712z m0 446.464c-18.432 0-34.816-2.048-53.248-4.096l-8.192-2.048c-4.096-2.048-10.24 0-14.336 4.096l-6.144 4.096-36.864 22.528v-38.912c0-6.144-4.096-14.336-10.24-18.432l-10.24-6.144c-61.44-36.864-100.352-100.352-100.352-165.888 0-110.592 106.496-200.704 239.616-200.704s239.616 90.112 239.616 200.704c-2.048 112.64-110.592 204.8-239.616 204.8z m-159.744-196.608c0 18.432 14.336 32.768 32.768 32.768 18.432 0 32.768-14.336 32.768-32.768s-14.336-32.768-32.768-32.768c-18.432 0-32.768 14.336-32.768 32.768z m126.976 0c0 12.288 6.144 22.528 16.384 28.672 10.24 6.144 22.528 6.144 32.768 0s16.384-16.384 16.384-28.672c0-18.432-14.336-32.768-32.768-32.768-16.384 0-32.768 14.336-32.768 32.768z m122.88 0c0 18.432 14.336 32.768 32.768 32.768 18.432 0 32.768-14.336 32.768-32.768s-14.336-32.768-32.768-32.768c-16.384 0-32.768 14.336-32.768 32.768z m192.512 53.248c-6.144 14.336-12.288 30.72-20.48 45.056 0 0 0 2.048 2.048 2.048 4.096 12.288 8.192 26.624 8.192 38.912 0 36.864-20.48 71.68-57.344 92.16l-4.096 4.096c-4.096 2.048-6.144 4.096-6.144 10.24v22.528l-20.48-12.288-4.096-4.096c-4.096-2.048-4.096-2.048-8.192-2.048l-4.096 2.048c-10.24 2.048-20.48 4.096-28.672 4.096-22.528 0-45.056-4.096-63.488-14.336-20.48 4.096-38.912 6.144-59.392 8.192 30.72 28.672 75.776 45.056 124.928 45.056 12.288 0 24.576 0 36.864-4.096l47.104 32.768c2.048 0 4.096 2.048 4.096 2.048 4.096 0 10.24-4.096 10.24-10.24v-47.104c45.056-28.672 75.776-73.728 75.776-126.976-2.048-34.816-12.288-65.536-32.768-88.064z" fill="#FFFFFF" p-id="6751"></path>
+                        <svg t="1784882544725" class="icon size-12" viewBox="0 0 1024 1024" version="1.1"
+                            xmlns="http://www.w3.org/2000/svg" p-id="6749" width="200" height="200">
+                            <path d="M512 512m-512 0a512 512 0 1 0 1024 0 512 512 0 1 0-1024 0Z" fill="#7CBCF7"
+                                p-id="6750"></path>
+                            <path
+                                d="M505.856 225.28C350.208 225.28 225.28 333.824 225.28 468.992c0 81.92 47.104 155.648 118.784 200.704v75.776c0 10.24 6.144 16.384 14.336 16.384 4.096 0 6.144-2.048 8.192-2.048l77.824-51.2c20.48 4.096 38.912 4.096 59.392 4.096 153.6 0 280.576-108.544 280.576-243.712 0-135.168-124.928-243.712-278.528-243.712z m0 446.464c-18.432 0-34.816-2.048-53.248-4.096l-8.192-2.048c-4.096-2.048-10.24 0-14.336 4.096l-6.144 4.096-36.864 22.528v-38.912c0-6.144-4.096-14.336-10.24-18.432l-10.24-6.144c-61.44-36.864-100.352-100.352-100.352-165.888 0-110.592 106.496-200.704 239.616-200.704s239.616 90.112 239.616 200.704c-2.048 112.64-110.592 204.8-239.616 204.8z m-159.744-196.608c0 18.432 14.336 32.768 32.768 32.768 18.432 0 32.768-14.336 32.768-32.768s-14.336-32.768-32.768-32.768c-18.432 0-32.768 14.336-32.768 32.768z m126.976 0c0 12.288 6.144 22.528 16.384 28.672 10.24 6.144 22.528 6.144 32.768 0s16.384-16.384 16.384-28.672c0-18.432-14.336-32.768-32.768-32.768-16.384 0-32.768 14.336-32.768 32.768z m122.88 0c0 18.432 14.336 32.768 32.768 32.768 18.432 0 32.768-14.336 32.768-32.768s-14.336-32.768-32.768-32.768c-16.384 0-32.768 14.336-32.768 32.768z m192.512 53.248c-6.144 14.336-12.288 30.72-20.48 45.056 0 0 0 2.048 2.048 2.048 4.096 12.288 8.192 26.624 8.192 38.912 0 36.864-20.48 71.68-57.344 92.16l-4.096 4.096c-4.096 2.048-6.144 4.096-6.144 10.24v22.528l-20.48-12.288-4.096-4.096c-4.096-2.048-4.096-2.048-8.192-2.048l-4.096 2.048c-10.24 2.048-20.48 4.096-28.672 4.096-22.528 0-45.056-4.096-63.488-14.336-20.48 4.096-38.912 6.144-59.392 8.192 30.72 28.672 75.776 45.056 124.928 45.056 12.288 0 24.576 0 36.864-4.096l47.104 32.768c2.048 0 4.096 2.048 4.096 2.048 4.096 0 10.24-4.096 10.24-10.24v-47.104c45.056-28.672 75.776-73.728 75.776-126.976-2.048-34.816-12.288-65.536-32.768-88.064z"
+                                fill="#FFFFFF" p-id="6751"></path>
                         </svg>
                     </div>
                     <div class="flex flex-col gap-0.5 flex-1 min-w-0 h-full justify-center">
@@ -165,69 +168,104 @@
                 </div>
             </div>
         </div>
-        
-        <!-- 互动消息详情页面 -->
-        <div v-if="isCurSessionInteraction" class="body relative z-0 md:w-2/3 w-1/2 flex flex-col bg-slate-50/50">
-            <div class="top flex w-full justify-center h-12 gap-2 items-center border-b border-gray-150/40 bg-white shrink-0">
+
+        <!-- 互动消息详情页面 (列表模式) -->
+        <div v-if="isCurSessionInteraction && !showPostDetail"
+            class="body relative z-0 md:w-2/3 w-1/2 flex flex-col bg-slate-50/50">
+            <div
+                class="top flex w-full justify-center h-12 gap-2 items-center border-b border-gray-150/40 bg-white shrink-0">
                 <span class="font-semibold text-gray-800">收到的互动消息</span>
             </div>
-            
+
             <div @scroll="handleInteractionScroll" class="grow overflow-y-auto flex flex-col gap-4.5 p-4">
-                <div v-if="interactionList.length === 0 && !interactionLoading" class="flex flex-col items-center justify-center grow py-24 text-gray-400 gap-3">
-                    <svg class="size-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                <div v-if="interactionList.length === 0 && !interactionLoading"
+                    class="flex flex-col items-center justify-center grow py-24 text-gray-400 gap-3">
+                    <svg class="size-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        stroke-width="1.2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
                     <span class="text-sm font-medium">暂无任何互动消息哦</span>
                 </div>
-                
+
                 <div v-else class="flex flex-col gap-3.5">
-                    <div v-for="msg in interactionList" :key="msg.uuid" 
+                    <div v-for="msg in interactionList" :key="msg.publicId"
                         class="relative group bg-white p-4.5 rounded-xl border border-gray-100/80 shadow-xs flex gap-3.5 hover:shadow-md transition-all duration-200 animate-fade-in">
-                        
+
                         <!-- 互动者头像 (左侧) -->
                         <div class="avatar shrink-0 size-10.5 rounded-full overflow-hidden bg-slate-100 border border-gray-100 cursor-pointer"
-                             @click="goToUserProfile(msg.senderId)">
-                            <img :src="msg.senderAvatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" class="w-full h-full object-cover" />
+                            @click="goToUserProfile(msg.senderId)">
+                            <img :src="msg.senderAvatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
+                                class="w-full h-full object-cover" />
                         </div>
-                        
+
                         <!-- 中间内容与动作 -->
                         <div class="flex-1 min-w-0 flex flex-col gap-1.5">
                             <div class="flex flex-wrap items-baseline gap-1.5 text-sm">
-                                <span class="font-bold text-gray-800 hover:text-blue-500 cursor-pointer" @click="goToUserProfile(msg.senderId)">
+                                <span class="font-bold text-gray-800 hover:text-blue-500 cursor-pointer"
+                                    @click="goToUserProfile(msg.senderId)">
                                     {{ msg.senderName || '匿名用户' }}
                                 </span>
                                 <span class="text-gray-500 font-medium text-xs">
                                     {{ getActionDesc(msg.messageType) }}
                                 </span>
                             </div>
-                            
+
                             <!-- 回复/评论的内容显示 (支持 v-html) -->
-                            <div v-if="msg.content" class="text-gray-700 text-sm bg-slate-50 p-2.5 rounded-lg border border-gray-150/30 break-words leading-relaxed" 
+                            <div v-if="msg.content"
+                                class="text-gray-700 text-sm bg-slate-50 p-2.5 rounded-lg  wrap-break-word leading-relaxed"
                                 v-html="msg.content">
                             </div>
-                            
+
                             <!-- 如果是回复消息，下方增加两个互动图标 -->
-                            <div v-if="msg.messageType === 5" class="flex items-center gap-4 mt-1 select-none">
+                            <div v-if="msg.messageType === 5 || msg.messageType === 2"
+                                class="flex items-center gap-4 mt-1 select-none">
                                 <!-- 爱心点赞 -->
-                                <div class="flex items-center gap-1 text-xs text-gray-400 cursor-pointer hover:text-red-500 transition-colors">
-                                    <svg class="size-3.5 fill-current" viewBox="0 0 24 24">
-                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                <div @click="toggleLike(msg)"
+                                    class="flex items-center gap-1 text-xs cursor-pointer transition-colors"
+                                    :class="msg.isLike ? 'text-red-500' : 'text-gray-400 hover:text-red-500'">
+                                    <svg class="size-3.5" viewBox="0 0 24 24" :fill="msg.isLike ? '#f56c6c' : 'none'"
+                                        :stroke="msg.isLike ? '#f56c6c' : 'currentColor'">
+                                        <path
+                                            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                                     </svg>
                                     <span>赞</span>
                                 </div>
                                 <!-- 头像回复评论 -->
                                 <div class="flex items-center gap-1 text-xs text-gray-400 cursor-pointer hover:text-blue-500 transition-colors"
-                                     @click="replyToUserComment(msg)">
-                                    <img :src="msg.senderAvatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" class="size-3.5 rounded-full object-cover" />
-                                    <span>回复评论</span>
+                                    @click="toggleReplyInput(msg.publicId)">
+                                    <img :src="msg.senderAvatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
+                                        class="size-3.5 rounded-full object-cover" />
+                                    <span>{{ currentReplyMsgId === msg.publicId ? '收起' : '回复评论' }}</span>
                                 </div>
                             </div>
-                            
-                            <span class="text-gray-400 text-[10px]">{{ TimeUtils.timestampToDate(msg.createTime) }}</span>
+
+                            <!-- 内联回复输入框 -->
+                            <div v-if="currentReplyMsgId === msg.publicId"
+                                class="reply-input w-full transition-all duration-300 mt-2">
+                                <el-input ref="replyInputRef" :placeholder="`回复@${msg.senderName}`"
+                                    v-model="replyInputContent" class="w-full" size="small"
+                                    @keydown.enter.exact.prevent="submitInteractionReply(msg)">
+                                    <template #suffix>
+                                        <div class="relative cursor-pointer mr-2">
+                                            <Emoji v-model="replyInputContent" :place-holder="' '"
+                                                :textarea-ref="replyInputRef" />
+                                        </div>
+                                        <span class="cursor-pointer hover:text-blue-300 text-xs" v-if="!replyErrMsg"
+                                            @click="submitInteractionReply(msg)">回复</span>
+                                        <span v-else class="text-xs">
+                                            <span class="text-red-400">{{ replyErrMsg }}</span>
+                                        </span>
+                                    </template>
+                                </el-input>
+                            </div>
+
+                            <span class="text-gray-400 text-[10px]">{{ TimeUtils.timestampToDate(msg.createTime)
+                            }}</span>
                         </div>
-                        
-                        <!-- 互动对象快照 (右侧) -->
-                        <div v-if="msg.associateContentTitle" 
+
+                        <!-- 互动对象快照 (右侧) - 点击进入帖子详情与评论区 -->
+                        <div v-if="msg.associateContentTitle"
                             class="associate-right shrink-0 w-24 max-h-16 bg-slate-50 border border-gray-100 p-2.5 rounded-lg text-xs text-gray-400 hover:text-blue-500 transition-colors cursor-pointer line-clamp-3 select-none pr-6"
                             @click="clickAssociateContent(msg)">
                             {{ msg.associateContentTitle }}
@@ -235,33 +273,46 @@
 
                         <!-- 删除单个消息按钮 -->
                         <div class="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-all duration-150 cursor-pointer text-gray-300 hover:text-red-500"
-                             @click.stop="handleDeleteInteraction(msg.uuid)">
-                            <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            @click.stop="handleDeleteInteraction(msg.publicId)">
+                            <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                stroke-width="1.8">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- 加载中 -->
-                <div v-if="interactionLoading" class="w-full flex justify-center py-2 text-blue-400 text-xs shrink-0 animate-pulse">
+                <div v-if="interactionLoading"
+                    class="w-full flex justify-center py-2 text-blue-400 text-xs shrink-0 animate-pulse">
                     <svg class="animate-spin size-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
                     </svg>
                     <span>正在加载更多消息...</span>
                 </div>
             </div>
         </div>
-        
-        <!-- 帖子详情浮动层 -->
-        <Teleport to="body">
-            <div v-if="visible" class="fixed inset-0 w-screen h-screen bg-gray-400/50 z-40 flex items-center justify-center">
-                <div class="postInfo w-2/5 h-full">
-                    <postInfo v-if="curPost" @close="curPost = null; visible = false" :visible="visible" :post="curPost" />
-                </div>
+
+        <!-- 互动消息 -> 帖子详情与评论区 (内嵌模式) -->
+        <div v-if="isCurSessionInteraction && showPostDetail"
+            class="body relative z-0 md:w-2/3 w-1/2 flex flex-col bg-white">
+            <div
+                class="top flex w-full justify-start h-12 gap-2 items-center border-b border-gray-150/40 bg-white shrink-0 px-4">
+                <svg class="size-5 cursor-pointer hover:text-blue-500 text-gray-500 transition-colors shrink-0"
+                    @click="backToInteractionList" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                <span class="font-semibold text-gray-800 truncate">{{ curPostData?.title || '帖子详情' }}</span>
             </div>
-        </Teleport>
+            <div class="grow overflow-y-auto bg-white">
+                <postInfo v-if="curPostData" @close="backToInteractionList" :visible="true" :post="curPostData" />
+            </div>
+        </div>
     </div>
 </template>
 <script lang="ts" setup>
@@ -271,6 +322,7 @@ import UserMsgItem from '@/presentation/components/userMsgItem.vue';
 import { type messageVO, MessageAPI, type SendMessageDto, messageType, SessionAPI, type SessionVO, messageStatus, type InteractionMessageVO } from '@/services/message/message';
 import { TimeUtils } from '@/utils/time';
 import { ref, reactive, onMounted, nextTick, onUnmounted, watch, computed } from 'vue';
+import { CommentAPI } from '@/services/comment/api';
 import { scrollerFromTop } from '@/utils/scollerbar';
 import { CommonAPI } from '@/services/common/api';
 import { useUserInfoStore } from '@/stores/userInfo';
@@ -281,6 +333,10 @@ import { WsEventName } from '@/services/ws/config/config';
 
 import { useRouter } from 'vue-router';
 import postInfo from '@/views/post/pages/postInfo.vue';
+import { PostAPI, type PostVO } from '@/services/post';
+import { XssUtils } from '@/utils/xss';
+import { parseEmoji } from '@/utils/emoji';
+import { IM, removeIMListener } from '@/services/ws/im/init';
 
 const router = useRouter();
 
@@ -289,8 +345,14 @@ const interactionList = ref<InteractionMessageVO[]>([]);
 const interactionLoading = ref(false);
 const interactionHasMore = ref(true);
 
-const curPost = ref<any>(null);
-const visible = ref(false);
+// 互动消息内联回复评论
+const currentReplyMsgId = ref<string | null>(null);
+const replyInputContent = ref('');
+const replyInputRef = ref();
+const replyErrMsg = ref('');
+
+const showPostDetail = ref(false);
+const curPostData = ref<PostVO | null>(null);
 
 function getActionDesc(type: number) {
     switch (type) {
@@ -315,11 +377,11 @@ async function loadInteractions(isFirst = false) {
             interactionHasMore.value = true;
         }
 
-        const lastUuid = isFirst || interactionList.value.length === 0 
-            ? null 
-            : interactionList.value[interactionList.value.length - 1].uuid;
+        const lastUuid = isFirst || interactionList.value.length === 0
+            ? null
+            : interactionList.value[interactionList.value.length - 1]?.publicId;
 
-        const res = await MessageAPI.loadInteractionMessages(lastUuid, 10);
+        const res = await MessageAPI.loadInteractionMessages(lastUuid!, 10);
         if (res.code === 1 && res.data) {
             if (isFirst) {
                 interactionList.value = res.data;
@@ -356,31 +418,77 @@ function goToUserProfile(userId: string | number) {
     router.push({ name: 'userProfile', params: { id: String(userId) } });
 }
 
-function clickAssociateContent(msg: InteractionMessageVO) {
-    if (msg.postId) {
-        curPost.value = { id: msg.postId };
-        visible.value = true;
+async function clickAssociateContent(msg: InteractionMessageVO) {
+    if (!msg.postId) return;
+    try {
+        const res = await PostAPI.getById(msg.postId);
+        if (res.code === 1 && res.data) {
+            curPostData.value = res.data;
+            showPostDetail.value = true;
+        }
+    } catch (e) {
+        console.error('加载帖子详情失败:', e);
     }
 }
 
-async function replyToUserComment(msg: InteractionMessageVO) {
+function backToInteractionList() {
+    showPostDetail.value = false;
+    curPostData.value = null;
+}
+
+async function toggleLike(msg: InteractionMessageVO) {
+    if (!msg.associateContent) console.log('msg.associateContent is null');
     try {
-        await SessionAPI.saveSession({
-            targetId: String(msg.senderId),
-            targetNickName: msg.senderName || '',
-            targetAvatar: msg.senderAvatar || ''
-        });
-        isCurSessionInteraction.value = false;
-        const sessions = (await SessionAPI.querySessionList()).data || [];
-        if (sessionList.value) {
-            sessionList.value = sessions;
-        }
-        const newSession = sessions.find((s: SessionVO) => String(s.targetId) === String(msg.senderId));
-        if (newSession) {
-            curSession.value = newSession;
+        const res = await CommentAPI.like(msg.associateContent);
+        if (res.code === 1) {
+            msg.isLike = !msg.isLike;
         }
     } catch (e) {
-        console.error('发起回复私聊失败:', e);
+        console.error('点赞失败:', e);
+    }
+}
+
+function toggleReplyInput(publicId: string) {
+    if (currentReplyMsgId.value === publicId) {
+        currentReplyMsgId.value = null;
+        replyInputContent.value = '';
+        replyErrMsg.value = '';
+    } else {
+        currentReplyMsgId.value = publicId;
+        replyInputContent.value = '';
+        replyErrMsg.value = '';
+        nextTick(() => {
+            replyInputRef.value?.focus?.();
+        });
+    }
+}
+
+async function submitInteractionReply(msg: InteractionMessageVO) {
+    if (!replyInputContent.value.trim()) {
+        replyErrMsg.value = '请输入内容';
+        setTimeout(() => { replyErrMsg.value = '' }, 3000);
+        return;
+    }
+    try {
+        const content = replyInputContent.value;
+        currentReplyMsgId.value = null;
+        replyInputContent.value = '';
+        const res = await CommentAPI.post({
+            postId: msg.postId,
+            rootId: msg.associateContent,
+            parentId: msg.associateContent,
+            content: XssUtils.filter(content),
+            type: 1,
+        });
+        if (res.code === 1) {
+            log.success('回复发表成功');
+        } else {
+            throw new Error(res.errMsg || '回复发表失败');
+        }
+    } catch (e: any) {
+        console.error('回复失败:', e);
+        replyErrMsg.value = e.message || '回复失败,请重试';
+        setTimeout(() => { replyErrMsg.value = '' }, 3000);
     }
 }
 
@@ -388,7 +496,7 @@ async function handleDeleteInteraction(uuid: string) {
     try {
         const res = await MessageAPI.deleteInteractionMessage(uuid);
         if (res.code === 1) {
-            interactionList.value = interactionList.value.filter(msg => msg.uuid !== uuid);
+            interactionList.value = interactionList.value.filter(msg => msg.publicId !== uuid);
             log.success('删除互动消息成功');
         } else {
             log.error(res.errMsg || '删除互动消息失败');
@@ -398,15 +506,6 @@ async function handleDeleteInteraction(uuid: string) {
         log.error('删除互动消息失败');
     }
 }
-import { log } from '@/utils/log';
-import { getSnowflakeId } from '@/utils/snowflake';
-import { formatMessage } from '@/utils/messageFormat';
-import { WsEventName } from '@/services/ws/config/config';
-import { XssUtils } from '@/utils/xss';
-import { parseEmoji } from '@/utils/emoji';
-import { de } from 'element-plus/es/locale/index.mjs';
-import { IM, removeIMListener } from '@/services/ws/im/init';
-
 const imageInput = ref<any[]>([]);
 const me = useUserInfoStore().user;
 
@@ -797,7 +896,7 @@ onMounted(async () => {
     removeIMListener();
     window.addEventListener(IM, handleImMessage);
     if (sessionList.value && sessionList.value.length > 0) {
-        curSession.value = sessionList.value[0];
+        curSession.value = sessionList.value[0] as SessionVO;
     } else {
         clickInteractionMessage();
     }
