@@ -1,0 +1,28 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: stp-toolbox-service
+  config:
+    import:
+      - optional:nacos:jdbc.yaml
+      - optional:nacos:redis.yaml
+      - optional:nacos:queue.yaml
+      - optional:nacos:minio.yaml
+  cloud:
+    nacos:
+      config:
+        import-check:
+          enabled: false
+        username: ${NACOS_USER_NAME:nacos}
+        password: ${NACOS_USER_PASSWORD:nacos}
+        refresh-enabled: true
+        file-extension: yaml
+      server-addr: ${NACOS_HOST:localhost}:${NACOS_PORT:8848}
+
+
+stp:
+  jdbc:
+    mapper-locations: classpath*:mapper/toolbox/**/*.xml
+    type-aliases-package: com.summit.stp.toolbox.infrastructure.persistence.po

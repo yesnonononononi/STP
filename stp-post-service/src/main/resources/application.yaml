@@ -1,0 +1,35 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: stp-post-service
+  config:
+    import:
+      - optional:nacos:jdbc.yaml
+      - optional:nacos:redis.yaml
+      - optional:nacos:queue.yaml
+      - optional:nacos:minio.yaml
+  cloud:
+    nacos:
+      config:
+        import-check:
+          enabled: false
+        username: ${NACOS_USER_NAME:nacos}
+        password: ${NACOS_USER_PASSWORD:nacos}
+        refresh-enabled: true
+        file-extension: yaml
+      server-addr: ${NACOS_HOST:localhost}:${NACOS_PORT:8848}
+
+  # 文件上传限制：multipart 请求限制需要高于业务层的图片/视频限制
+  servlet:
+    multipart:
+      max-file-size: ${MAX_FILE_SIZE:50MB}
+      max-request-size: ${MAX_REQUEST_SIZE:60MB}
+
+
+stp:
+  jdbc:
+    mapper-locations: classpath*:mapper/post/**/*.xml,classpath*:mapper/rank_board/**/*.xml
+    type-aliases-package: com.summit.stp.post.infrastructure.persistence.po,com.summit.stp.rank_board.infrastructure.persistence.po
+

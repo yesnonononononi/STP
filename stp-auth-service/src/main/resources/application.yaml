@@ -1,0 +1,33 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: stp-auth-service
+  config:
+    import:
+      - optional:nacos:jdbc.yaml
+      - optional:nacos:redis.yaml
+      - optional:nacos:queue.yaml
+      - optional:nacos:minio.yaml
+  cloud:
+    nacos:
+      config:
+        import-check:
+          enabled: false
+        username: ${NACOS_USER_NAME:nacos}
+        password: ${NACOS_USER_PASSWORD:nacos}
+        refresh-enabled: true
+        file-extension: yaml
+      server-addr: ${NACOS_HOST:localhost}:${NACOS_PORT:8848}
+
+# JWT 配置优先使用 Nacos auth-jwt.yaml；Nacos 配置不可用时使用环境变量兜底。
+# 密钥至少需要 32 个字节，生产环境请通过 STP_AUTH_JWT_SECRET_KEY 注入独立密钥。
+stp:
+  auth:
+    jwt:
+      secret-key: ${STP_AUTH_JWT_SECRET_KEY}
+
+# 当前认证服务使用 MyBatis-Plus 注解/BaseMapper，没有 XML Mapper，避免配置不存在资源的 mapperLocations 警告。
+jdbc:
+  type-aliases-package: com.summit.stp.userAuth.infrastructure.persistence.po

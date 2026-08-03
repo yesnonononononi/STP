@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__puppeteer__puppeteer_click",
+      "mcp__puppeteer__puppeteer_evaluate",
+      "mcp__puppeteer__puppeteer_screenshot",
+      "Bash(npm run *)",
+      "mcp__puppeteer__puppeteer_navigate",
+      "Bash(cat)",
+      "Bash(bash /tmp/migrate.sh)",
+      "Bash(bash /tmp/update_imports.sh)",
+      "Bash(find /d/Code/STP/STP_front/src -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) -newer /tmp/migrate.sh | wc -l)",
+      "Read(//tmp/**)",
+      "Bash(git ls-tree *)",
+      "Bash(grep -E \"\\\\.vue$\")",
+      "Bash(grep \"\\\\.vue$\")",
+      "Bash(ls -d d:/Code/STP/STP/*/)",
+      "Read(//d/Code/STP/STP/**)"
+    ]
+  }
+}

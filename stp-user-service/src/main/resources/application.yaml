@@ -1,0 +1,31 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: stp-user-service
+  config:
+    import:
+      - optional:nacos:jdbc.yaml
+      - optional:nacos:redis.yaml
+      - optional:nacos:queue.yaml
+      - optional:nacos:minio.yaml
+  cloud:
+    nacos:
+      config:
+        import-check:
+          enabled: false
+        username: ${NACOS_USER_NAME:nacos}
+        password: ${NACOS_USER_PASSWORD:nacos}
+        refresh-enabled: true
+        file-extension: yaml
+      server-addr: ${NACOS_HOST:localhost}:${NACOS_PORT:8848}
+
+
+stp:
+  auth:
+    jwt:
+      secret-key: ${STP_AUTH_JWT_SECRET_KEY}
+  jdbc:
+    mapper-locations: classpath*:mapper/user/**/*.xml,classpath*:mapper/member/**/*.xml,classpath*:mapper/relationship/**/*.xml
+    type-aliases-package: com.summit.stp.user.infrastructure.persistence.po,com.summit.stp.member.infrastructure.persistence.po
