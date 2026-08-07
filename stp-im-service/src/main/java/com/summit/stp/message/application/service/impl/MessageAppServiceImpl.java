@@ -304,6 +304,11 @@ public class MessageAppServiceImpl implements MessageAppService {
         if (user == null) {
             throw new RuntimeException("接收者不存在");
         }
+        // 2,不能给自己发送私信
+        Long currentUserId = UserHolder.getUser().getId();
+        if (currentUserId != null && currentUserId.equals(receiverId)) {
+            throw new ParameterException("不能给自己发送私信");
+        }
     }
 
 

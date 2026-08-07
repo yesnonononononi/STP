@@ -18,7 +18,7 @@ public class PrivateMessageRepositoryImpl implements PrivateMessageRepository {
 
     public PrivateMessagePO toPO(PrivateMessage privateMessage){
         return PrivateMessagePO.builder()
-                .id(privateMessage.getId())
+                .publicId(privateMessage.getId())
                 .userId(privateMessage.getUserId())
                 .receiverId(privateMessage.getReceiverId())
                 .content(privateMessage.getContent())
@@ -33,7 +33,7 @@ public class PrivateMessageRepositoryImpl implements PrivateMessageRepository {
     }
     public PrivateMessage toDomain(PrivateMessagePO privateMessagePO){
         return PrivateMessage.builder()
-                .id(privateMessagePO.getId())
+                .id(privateMessagePO.getPublicId())
                 .userId(privateMessagePO.getUserId())
                 .receiverId(privateMessagePO.getReceiverId())
                 .content(privateMessagePO.getContent())
@@ -51,7 +51,7 @@ public class PrivateMessageRepositoryImpl implements PrivateMessageRepository {
 
     @Override
     public PrivateMessage findById(Long messageId) {
-        LambdaQueryWrapper<PrivateMessagePO> queryWrapper = new LambdaQueryWrapper<PrivateMessagePO>().eq(PrivateMessagePO::getId, messageId);
+        LambdaQueryWrapper<PrivateMessagePO> queryWrapper = new LambdaQueryWrapper<PrivateMessagePO>().eq(PrivateMessagePO::getPublicId, messageId);
         PrivateMessagePO privateMessagePO = privateMessageMapper.selectOne(queryWrapper);
         if(privateMessagePO == null){
             throw new MessageNoExistException();
@@ -61,7 +61,13 @@ public class PrivateMessageRepositoryImpl implements PrivateMessageRepository {
 
     @Override
     public void save(PrivateMessage domain) {
-        privateMessageMapper.insertOrUpdate(toPO(domain));
+        PrivateMessagePO po = toPO(domain);
+        PrivateMessagePO existing = findPOByPublicId(domain.getId());
+        if (existing == null) {
+            privateMessageMapper.insert(po);
+            return;
+        }
+        privateMessageMapper.updateById(withInternalId(po, existing.getId()));
     }
 
     @Override
@@ -73,7 +79,11 @@ public class PrivateMessageRepositoryImpl implements PrivateMessageRepository {
 
 
     public void update(PrivateMessage privateMessage) {
-        privateMessageMapper.updateById(toPO(privateMessage));
+        PrivateMessagePO existing = findPOByPublicId(privateMessage.getId());
+        if (existing == null) {
+            throw new MessageNoExistException();
+        }
+        privateMessageMapper.updateById(withInternalId(toPO(privateMessage), existing.getId()));
     }
 
     public List<PrivateMessage> findHistory(Long sessionId, Long cursorId, Integer limit) {
@@ -83,15 +93,40 @@ public class PrivateMessageRepositoryImpl implements PrivateMessageRepository {
         queryWrapper.ne(PrivateMessagePO::getStatus,PrivateMessage.Status.WITHDRAWN.getValue());
 
         if(cursorId != null){
-            queryWrapper.lt(PrivateMessagePO::getId, cursorId);
+            queryWrapper.lt(PrivateMessagePO::getPublicId, cursorId);
         }
-        queryWrapper.orderByDesc(PrivateMessagePO::getId).last("limit " + limit);
+        queryWrapper.orderByDesc(PrivateMessagePO::getPublicId).last("limit " + limit);
 
         List<PrivateMessagePO> privateMessagePOS = privateMessageMapper.selectList(queryWrapper);
         return privateMessagePOS.stream().map(this::toDomain).toList();
     }
 
     public void batchUpdate(List<PrivateMessage> lists) {
-        privateMessageMapper.updateById(lists.stream().map(this::toPO).toList());
+        lists.forEach(this::update);
+    }
+
+    private PrivateMessagePO findPOByPublicId(Long publicId) {
+        if (publicId == null) {
+            return null;
+        }
+        return privateMessageMapper.selectOne(new LambdaQueryWrapper<PrivateMessagePO>()
+                .eq(PrivateMessagePO::getPublicId, publicId));
+    }
+
+    private PrivateMessagePO withInternalId(PrivateMessagePO po, Long internalId) {
+        return PrivateMessagePO.builder()
+                .id(internalId)
+                .publicId(po.getPublicId())
+                .userId(po.getUserId())
+                .receiverId(po.getReceiverId())
+                .sendTime(po.getSendTime())
+                .content(po.getContent())
+                .image(po.getImage())
+                .audio(po.getAudio())
+                .video(po.getVideo())
+                .type(po.getType())
+                .status(po.getStatus())
+                .sessionId(po.getSessionId())
+                .build();
     }
 }

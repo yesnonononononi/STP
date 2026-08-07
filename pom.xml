@@ -45,6 +45,7 @@
         <feign-okhttp-version>13.6</feign-okhttp-version>
         <minio.version>8.6.0</minio.version>
         <jwt-version>0.12.6</jwt-version>
+
     </properties>
 
     <dependencyManagement>
@@ -159,7 +160,22 @@
                 <scope>runtime</scope>
             </dependency>
 
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-starter-alibaba-sentinel-datasource-nacos</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+            </dependency>
+
+
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+            </dependency>
         </dependencies>
+
+
+
     </dependencyManagement>
 
     <build>

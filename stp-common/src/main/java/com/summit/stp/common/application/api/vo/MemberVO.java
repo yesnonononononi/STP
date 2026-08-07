@@ -1,5 +1,6 @@
 package com.summit.stp.common.application.api.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -20,6 +21,7 @@ import java.math.BigDecimal;
 @ApiModel(value = "MemberVO", description = "会员套餐数据承载对象")
 public class MemberVO implements Serializable {
     @ApiModelProperty(value = "套餐ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     @ApiModelProperty(value = "套餐名称")
@@ -41,6 +43,7 @@ public class MemberVO implements Serializable {
     private Integer duration;
 
     @ApiModelProperty(value = "会员分类ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long typeId;
 
     @ApiModelProperty(value = "会员分类名称")

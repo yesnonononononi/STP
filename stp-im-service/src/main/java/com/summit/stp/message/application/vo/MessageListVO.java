@@ -1,5 +1,6 @@
 package com.summit.stp.message.application.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.summit.stp.common.application.api.vo.MessageVO;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -23,9 +24,11 @@ public class MessageListVO {
     private boolean hasMore;
 
     @ApiModelProperty("游标ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long cursorId;
 
     @ApiModelProperty("会话ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long sessionId;
 }
 

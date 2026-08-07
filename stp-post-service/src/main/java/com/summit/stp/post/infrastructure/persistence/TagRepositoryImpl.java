@@ -35,7 +35,8 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
 
     @Override
     public Tag findById(Long id) {
-        TagPO tagPO = tagMapper.selectById(id);
+        TagPO tagPO = tagMapper.selectOne(new LambdaQueryWrapper<TagPO>()
+                .eq(TagPO::getPublicId, id));
         return toDomain(tagPO);
     }
 
@@ -58,7 +59,7 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
         List<TagPO> pos = tagMapper.selectList(
                 new LambdaQueryWrapper<TagPO>().in(TagPO::getUuid, uuids)
         );
-        return pos.stream().map(TagPO::getId).toList();
+        return pos.stream().map(TagPO::getPublicId).toList();
     }
 
     @Override
@@ -75,16 +76,25 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
             return;
         }
         TagPO po = toPO(tag);
-        if (po.getId() == null || po.getId() == 0) {
+        if (po.getPublicId() == null || po.getPublicId() == 0) {
             tagMapper.insert(po);
         } else {
-            tagMapper.updateById(po);
+            TagPO existing = tagMapper.selectOne(new LambdaQueryWrapper<TagPO>()
+                    .eq(TagPO::getPublicId, po.getPublicId()));
+            if (existing == null) {
+                tagMapper.insert(po);
+            } else {
+                po.setId(existing.getId());
+                po.setPublicId(existing.getPublicId());
+                tagMapper.updateById(po);
+            }
         }
     }
 
     @Override
     public void delete(Long id) {
-        tagMapper.deleteById(id);
+        tagMapper.delete(new LambdaQueryWrapper<TagPO>()
+                .eq(TagPO::getPublicId, id));
     }
 
     @Override
@@ -106,7 +116,8 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
         if (ids == null || ids.isEmpty()) {
             return java.util.Collections.emptyList();
         }
-        List<TagPO> pos = tagMapper.selectBatchIds(ids);
+        List<TagPO> pos = tagMapper.selectList(new LambdaQueryWrapper<TagPO>()
+                .in(TagPO::getPublicId, ids));
         return pos.stream().map(this::toDomain).collect(Collectors.toList());
     }
 
@@ -147,7 +158,7 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
         postWrapper.last("limit " + limit);
 
         List<Long> postIds = postsMapper.selectList(postWrapper).stream()
-                .map(PostsPO::getId)
+                .map(PostsPO::getPublicId)
                 .toList();
         if (postIds.isEmpty()) {
             return Collections.emptyList();
@@ -169,10 +180,10 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
         }
 
         // 3. 批量查询标签并转换为领域实体 (保持时序)
-        LambdaQueryWrapper<TagPO> tagWrapper = new LambdaQueryWrapper<TagPO>().in(TagPO::getId, tagIds).orderByDesc(TagPO::getUseCount);
+        LambdaQueryWrapper<TagPO> tagWrapper = new LambdaQueryWrapper<TagPO>().in(TagPO::getPublicId, tagIds).orderByDesc(TagPO::getUseCount);
         List<TagPO> tagPOs = tagMapper.selectList(tagWrapper);
         Map<Long, TagPO> tagPOMap = tagPOs.stream()
-                .collect(Collectors.toMap(TagPO::getId, po -> po));
+                .collect(Collectors.toMap(TagPO::getPublicId, po -> po));
 
         return tagIds.stream()
                 .map(tagPOMap::get)
@@ -200,7 +211,7 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
             return null;
         }
         return Tag.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .uuid(po.getUuid())
                 .tagName(po.getTagName())
                 .sort(po.getSort())
@@ -215,7 +226,7 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
             return null;
         }
         TagPO po = new TagPO();
-        po.setId(tag.getId());
+        po.setPublicId(tag.getId());
         po.setUuid(tag.getUuid());
         po.setTagName(tag.getTagName());
         po.setSort(tag.getSort());

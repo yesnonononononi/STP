@@ -19,8 +19,7 @@ public class InteractionMessageRepositoryImpl implements InteractionMessageRepos
 
     private InteractionMessagePO toPO(InteractionMessage message) {
         return InteractionMessagePO.builder()
-                .id(message.getId())
-                .publicId(message.getPublicId())
+                .publicId(message.getPublicId() != null ? message.getPublicId() : message.getId())
                 .senderId(message.getSenderId())
                 .senderAvatar(message.getSenderAvatar())
                 .senderName(message.getSenderName())
@@ -38,7 +37,7 @@ public class InteractionMessageRepositoryImpl implements InteractionMessageRepos
 
     private InteractionMessage toDomain(InteractionMessagePO po) {
         return InteractionMessage.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .publicId(po.getPublicId())
                 .senderId(po.getSenderId())
                 .senderAvatar(po.getSenderAvatar())

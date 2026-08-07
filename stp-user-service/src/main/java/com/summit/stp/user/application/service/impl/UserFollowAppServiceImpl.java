@@ -199,7 +199,7 @@ public class UserFollowAppServiceImpl implements UserFollowAppService {
         List<UserFansVO> voList = records.stream().map(po -> {
             User user = userMap.get(po.getFollowerId());
             return UserFansVO.builder()
-                    .id(po.getId())
+                    .id(po.getPublicId())
                     .userId(po.getFollowerId())
                     .nick(user != null ? user.getNick() : "未知用户")
                     .avatar(user != null ? user.getAvatar() : "")
@@ -214,7 +214,7 @@ public class UserFollowAppServiceImpl implements UserFollowAppService {
     private UserFollowVO toVO(UserFollowPO po) {
         if (po == null) return null;
         return UserFollowVO.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .followerId(po.getFollowerId())
                 .followeeId(po.getFolloweeId())
                 .status(po.getStatus())

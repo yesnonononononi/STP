@@ -1,5 +1,6 @@
 package com.summit.stp.post.application.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.summit.stp.common.constants.CacheFieldConstants;
 import com.summit.stp.common.util.DistributedLockUtil;
 import com.summit.stp.post.application.service.PostCacheProvider;
@@ -160,7 +161,8 @@ public class PostCacheProviderImpl implements PostCacheProvider {
         if (postId == null) return;
         try {
             if (!contentCacheOps.exists(postId)) {
-                PostsPO po = postsMapper.selectById(postId);
+                PostsPO po = postsMapper.selectOne(new LambdaQueryWrapper<PostsPO>()
+                        .eq(PostsPO::getPublicId, postId));
                 if (po == null) return;
                 List<Long> likedUserIds = postLikeRepository.findUserIdsByPostId(postId);
                 List<Long> collectedUserIds = postCollectRepository.findUserIdsByPostId(postId);
@@ -214,7 +216,8 @@ public class PostCacheProviderImpl implements PostCacheProvider {
 
             // 2. 批量预热帖子主体 Hash
             if (!missingPostIds.isEmpty()) {
-                List<PostsPO> pos = postsMapper.selectByIds(missingPostIds);
+                List<PostsPO> pos = postsMapper.selectList(new LambdaQueryWrapper<PostsPO>()
+                        .in(PostsPO::getPublicId, missingPostIds));
                 if (pos != null && !pos.isEmpty()) {
                     List<com.summit.stp.post.domain.model.PostTag> tagRels = postTagRelRepository.findByPostIds(missingPostIds);
                     Map<Long, List<Long>> tagIdsMap = tagRels == null ? Collections.emptyMap() :

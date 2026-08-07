@@ -20,6 +20,7 @@ import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -93,13 +94,15 @@ public class AuthorizeGatewayFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange, String errMsg) {
-        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-        exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-        DataBuffer buffer = exchange.getResponse()
+        ServerHttpResponse response = exchange.getResponse();
+        if(response.isCommitted())return Mono.empty();
+        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        DataBuffer buffer = response
                 .bufferFactory()
                 .wrap(errMsg.getBytes(StandardCharsets.UTF_8));
         // 返回响应并结束，不再继续调用 chain.filter
-        return exchange.getResponse().writeWith(Mono.just(buffer));
+        return response.writeWith(Mono.just(buffer));
     }
 
     private Mono<Void> putUser(@NonNull UserSession session,@NonNull ServerHttpRequest request, @NonNull  GatewayFilterChain chain, @NonNull ServerWebExchange exchange) {

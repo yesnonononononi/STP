@@ -27,4 +27,7 @@ public interface MemberFeignClient {
 
     @GetMapping("/member/type/get/{id}")
     Result<MemberTypeVO> queryMemberTypeById(@PathVariable("id") Long id);
+
+    @PostMapping("/member/type/get/batch")
+    Result<Map<Long, MemberTypeVO>> queryMemberTypeByIds(@RequestBody List<Long> ids);
 }

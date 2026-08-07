@@ -1,5 +1,6 @@
 package com.summit.stp.coupon.infrastructure.persistence;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.stp.coupon.domain.model.CouponActivity;
@@ -22,7 +23,8 @@ public class CouponActivityRepositoryImpl implements CouponActivityRepository {
 
     @Override
     public CouponActivity findById(Long id) {
-        CouponActivityPO po = couponActivityMapper.selectById(id);
+        CouponActivityPO po = couponActivityMapper.selectOne(new LambdaQueryWrapper<CouponActivityPO>()
+                .eq(CouponActivityPO::getPublicId, id));
         if (po == null) {
             return null;
         }
@@ -45,17 +47,19 @@ public class CouponActivityRepositoryImpl implements CouponActivityRepository {
     @Override
     public void update(CouponActivity activity) {
         CouponActivityPO po = convertToPO(activity);
-        couponActivityMapper.updateById(po);
+        couponActivityMapper.update(po, new LambdaUpdateWrapper<CouponActivityPO>()
+                .eq(CouponActivityPO::getPublicId, activity.getId()));
     }
 
     @Override
     public void delete(Long id) {
-        couponActivityMapper.deleteById(id);
+        couponActivityMapper.delete(new LambdaQueryWrapper<CouponActivityPO>()
+                .eq(CouponActivityPO::getPublicId, id));
     }
 
     private CouponActivity convertToModel(CouponActivityPO po) {
         return CouponActivity.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .couponId(po.getCouponId())
                 .name(po.getName())
                 .stock(po.getStock())
@@ -71,7 +75,7 @@ public class CouponActivityRepositoryImpl implements CouponActivityRepository {
         CouponActivity.Type type = model.getType();
         if(type == null) throw new ParameterException("优惠券活动类型不能为空");
         return CouponActivityPO.builder()
-                .id(model.getId())
+                .publicId(model.getId())
                 .couponId(model.getCouponId())
                 .type(type.getCode())
                 .name(model.getName())
@@ -85,7 +89,9 @@ public class CouponActivityRepositoryImpl implements CouponActivityRepository {
 
     @Override
     public void updateStockByActivityId(Object activityId, Object stock) {
-        int update = couponActivityMapper.update(new LambdaUpdateWrapper<CouponActivityPO>().eq(CouponActivityPO::getId, activityId).set(CouponActivityPO::getStock, stock));
+        int update = couponActivityMapper.update(new CouponActivityPO(), new LambdaUpdateWrapper<CouponActivityPO>()
+                .eq(CouponActivityPO::getPublicId, activityId)
+                .set(CouponActivityPO::getStock, stock));
         if (update != 1) {
              throw new RuntimeException(String.format("更新活动:%s 库存: %s 失败",activityId,stock));
         }
@@ -98,7 +104,8 @@ public class CouponActivityRepositoryImpl implements CouponActivityRepository {
 
     @Override
     public List<CouponActivity> findByScopeType(Integer scopeType) {
-        return couponActivityMapper.selectByScopeType(scopeType).stream().map(this::convertToModel).toList();
+        List<CouponActivityPO> list = couponActivityMapper.selectByScopeType(scopeType);
+        return list.stream().map(this::convertToModel).toList();
     }
 
 

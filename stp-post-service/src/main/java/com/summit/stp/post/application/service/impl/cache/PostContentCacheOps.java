@@ -171,7 +171,7 @@ public class PostContentCacheOps {
             @Override
             public Object execute(@NonNull RedisOperations operations) {
                 for (PostsPO po : poList) {
-                    Long pid = po.getId();
+                    Long pid = po.getPublicId();
                     long likeCount = po.getLikeCount() != null ? po.getLikeCount() : 0L;
                     long collectCount = po.getCollectCount() != null ? po.getCollectCount() : 0L;
                     List<Long> tagIds = tagIdsMap.getOrDefault(pid, Collections.emptyList());

@@ -45,7 +45,7 @@
         c.user_id as publisherId,
         c.extra as extra
         from comments c
-        left join posts p on p.id = c.post_id
+        left join posts p on p.public_id = c.post_id
         <where>
             c.post_id = #{postId}
             <if test="lastCommentIdCursor != null and lastHotScoreCursor != null">
@@ -78,7 +78,7 @@
         c.reply_count as replyCount,
         c.extra as extra
         from comments c
-        left join posts p on p.id = c.post_id
+        left join posts p on p.public_id = c.post_id
         <where>
             c.post_id = #{postId}
             <if test="cursor != null">

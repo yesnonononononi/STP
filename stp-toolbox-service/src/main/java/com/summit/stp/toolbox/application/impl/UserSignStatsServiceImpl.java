@@ -1,5 +1,6 @@
 package com.summit.stp.toolbox.application.impl;
 
+import com.summit.stp.common.util.DistributedLockUtil;
 import com.summit.stp.toolbox.api.dto.SignInInfoVO;
 import com.summit.stp.toolbox.application.DailySignInCacheProvider;
 import com.summit.stp.toolbox.application.UserSignLogService;
@@ -13,9 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -29,6 +28,8 @@ public class UserSignStatsServiceImpl implements UserSignStatsService {
     private final UserSignLogService userSignLogService;
     private final DailySignInCacheProvider dailySignInCacheProvider;
     private final UserSignLogRepositoryImpl userSignLogRepositoryImpl;
+    private final DistributedLockUtil distributedLockUtil;
+    private final TransactionTemplate transactionTemplate;
 
     @Override
     public UserSignStats getStatsByUserId(Long userId) {
@@ -43,88 +44,101 @@ public class UserSignStatsServiceImpl implements UserSignStatsService {
     @Override
     public SignInInfoVO getSignInInfoVO(Long userId, Integer month) {
         validateMonth(month);
-        int totalDays, monthCheckedCount;
-        boolean todayChecked = false;
-        Integer consecutiveDays;
-        List<Integer> dates;
         try {
-            dates = dailySignInCacheProvider.getDates(userId, month);
-            if (dates.isEmpty()) {
-                List<UserSignLog> byUserId = userSignLogRepositoryImpl.findByUserId(userId, month);
-                dates = mapDate(byUserId, month);
-                dailySignInCacheProvider.cacheBit(dates, userId, month);
-            }
-            return dailySignInCacheProvider.getSignInfo(userId, dates);
+            List<Integer> dates = getOrBuildCacheDates(userId, month);
+            SignInInfoVO signInfo = dailySignInCacheProvider.getSignInfo(userId, dates);
+            return calibrateCacheIfNeeded(signInfo, userId, month);
         } catch (Exception e) {
-            log.error("【获取用户签到信息-fallback】cache获取用户签到信息失败: userId={}, month={}", userId, month, e);
-            List<UserSignLog> log = userSignLogService.getSignLogsByUserId(userId, month);
-            UserSignStats signStat = userSignStatsRepository.findByUserId(userId);
-            if (signStat == null) {
-                signStat = userSignStatsRepository.initSignStat(userId, 0, 0, 0, null);
-            }
-            totalDays = signStat.getTotalDays();
-            dates = mapDate(log, month);
-            consecutiveDays = signStat.getCurrentContinuousDays();
-            monthCheckedCount = dates.stream().filter(date -> date == 1).toList().size();
-            todayChecked = LocalDate.now().equals(signStat.getLastSignDate());
-            if (!todayChecked) {
-                boolean yesterdayChecked = false;
-                LocalDate lastSignDate = signStat.getLastSignDate();
-                if (lastSignDate != null && lastSignDate.plusDays(1).equals(LocalDate.now())) {
-                    yesterdayChecked = true;
-                }
-                if (!yesterdayChecked) {
-                    consecutiveDays = 0;
-                }
-            }
-            return SignInInfoVO.builder()
-                    .checkedDays(totalDays)
-                    .consecutiveDays(consecutiveDays)
-                    .todayChecked(todayChecked)
-                    .monthCheckedCount(monthCheckedCount)
-                    .checkedDates(dates)
-                    .build();
+            log.error("【ToolBox-签到】cache获取用户签到信息失败，执行退级查询: userId={}, month={}", userId, month, e);
+            return getSignInInfoFallback(userId, month);
         }
+    }
 
+    private List<Integer> getOrBuildCacheDates(Long userId, Integer month) {
+        List<Integer> dates = dailySignInCacheProvider.getDates(userId, month);
+        if (dates.isEmpty()) {
+            List<UserSignLog> byUserId = userSignLogRepositoryImpl.findByUserId(userId, month);
+            dates = mapDate(byUserId, month);
+            dailySignInCacheProvider.cacheBit(dates, userId, month);
+        }
+        return dates;
+    }
+
+    private SignInInfoVO calibrateCacheIfNeeded(SignInInfoVO signInfo, Long userId, Integer month) {
+        if (!signInfo.getTodayChecked() && month.equals(LocalDate.now().getMonthValue())) {
+            UserSignStats signStat = userSignStatsRepository.findByUserId(userId);
+            if (signStat != null && LocalDate.now().equals(signStat.getLastSignDate())) {
+                log.warn("【ToolBox】检测到签到缓存不一致，触发缓存自动校准: userId={}", userId);
+                List<UserSignLog> byUserId = userSignLogRepositoryImpl.findByUserId(userId, month);
+                List<Integer> dates = mapDate(byUserId, month);
+                dailySignInCacheProvider.cacheBit(dates, userId, month);
+                return dailySignInCacheProvider.getSignInfo(userId, dates);
+            }
+        }
+        return signInfo;
+    }
+
+    private SignInInfoVO getSignInInfoFallback(Long userId, Integer month) {
+        List<UserSignLog> logList = userSignLogService.getSignLogsByUserId(userId, month);
+        UserSignStats signStat = userSignStatsRepository.findByUserId(userId);
+        if (signStat == null) {
+            signStat = userSignStatsRepository.initSignStat(userId, 0, 0, 0, null);
+        }
+        int totalDays = signStat.getTotalDays();
+        List<Integer> dates = mapDate(logList, month);
+        Integer consecutiveDays = signStat.getCurrentContinuousDays();
+        int monthCheckedCount = dates.stream().filter(date -> date == 1).toList().size();
+        boolean todayChecked = LocalDate.now().equals(signStat.getLastSignDate());
+        if (!todayChecked) {
+            boolean yesterdayChecked = false;
+            LocalDate lastSignDate = signStat.getLastSignDate();
+            if (lastSignDate != null && lastSignDate.plusDays(1).equals(LocalDate.now())) {
+                yesterdayChecked = true;
+            }
+            if (!yesterdayChecked) {
+                consecutiveDays = 0;
+            }
+        }
+        return SignInInfoVO.builder()
+                .checkedDays(totalDays)
+                .consecutiveDays(consecutiveDays)
+                .todayChecked(todayChecked)
+                .monthCheckedCount(monthCheckedCount)
+                .checkedDates(dates)
+                .build();
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void doSignIn(Long userId) {
-        try {
-            UserSignStats signStats = userSignStatsRepository.findByUserId(userId);
-            checkDuplicateSignIn(signStats);
-            if (signStats == null) {
-                signStats = userSignStatsRepository.initSignStat(userId, 1, 1, 1, LocalDate.now());
-                userSignLogService.createSignLog(UserSignLog.builder().signDate(LocalDate.now()).signSource(1).userId(userId).build());
-            }else {
-                signStats.sign();
-                userSignStatsRepository.save(signStats);
-                userSignLogService.createSignLog(UserSignLog.builder().signDate(LocalDate.now()).signSource(1).userId(userId).continuousDaysSnapshot(signStats.getCurrentContinuousDays()).build());
-            }
-            final UserSignStats finalSignStats = signStats;
-            if (TransactionSynchronizationManager.isActualTransactionActive()) {
-                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        try {
-                            dailySignInCacheProvider.doSignIn(userId, finalSignStats);
-                        } catch (Exception e) {
-                            log.error("【用户签到】事务提交后更新用户签到缓存失败: userId={}", userId, e);
-                        }
-                    }
-                });
-            } else {
+        distributedLockUtil.executeWithLock("lock:signin:" + userId, () -> {
+            transactionTemplate.execute(status -> {
                 try {
-                    dailySignInCacheProvider.doSignIn(userId, finalSignStats);
+                    UserSignStats signStats = userSignStatsRepository.findByUserId(userId);
+                    if (signStats == null) {
+                        userSignLogService.createSignLog(UserSignLog.builder().signDate(LocalDate.now()).signSource(1).userId(userId).build());
+                    } else {
+                        checkDuplicateSignIn(signStats);
+                        signStats.sign();
+                        userSignStatsRepository.save(signStats);
+                        userSignLogService.createSignLog(UserSignLog.builder().signDate(LocalDate.now()).signSource(1).userId(userId).continuousDaysSnapshot(signStats.getCurrentContinuousDays()).build());
+                    }
+                    return true;
+                } catch (DuplicateKeyException e) {
+                    status.setRollbackOnly();
+                    throw new SignInDuplicateException();
                 } catch (Exception e) {
-                    log.error("【用户签到】更新用户签到缓存失败 跳过更新: userId={}", userId, e);
+                    status.setRollbackOnly();
+                    throw e;
                 }
+            });
+            try {
+                UserSignStats currentStats = userSignStatsRepository.findByUserId(userId);
+                dailySignInCacheProvider.doSignIn(userId, currentStats);
+            } catch (Exception e) {
+                log.error("【ToolBox-签到】更新用户签到缓存失败: userId={}", userId, e);
             }
             log.info("【ToolBox】用户[{}]执行签到打卡成功", userId);
-        } catch (DuplicateKeyException e) {
-            throw new SignInDuplicateException();
-        }
+        });
     }
 
 

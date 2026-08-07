@@ -22,16 +22,25 @@ public class PostTagRelRepositoryImpl implements PostTagRelRepository {
             return;
         }
         PostTagRelPO po = toPO(rel);
-        if (po.getId() == null || po.getId() == 0) {
+        if (po.getPublicId() == null || po.getPublicId() == 0) {
             postTagRelMapper.insert(po);
         } else {
-            postTagRelMapper.updateById(po);
+            PostTagRelPO existing = postTagRelMapper.selectOne(new LambdaQueryWrapper<PostTagRelPO>()
+                    .eq(PostTagRelPO::getPublicId, po.getPublicId()));
+            if (existing == null) {
+                postTagRelMapper.insert(po);
+            } else {
+                po.setId(existing.getId());
+                po.setPublicId(existing.getPublicId());
+                postTagRelMapper.updateById(po);
+            }
         }
     }
 
     @Override
     public void delete(Long id) {
-        postTagRelMapper.deleteById(id);
+        postTagRelMapper.delete(new LambdaQueryWrapper<PostTagRelPO>()
+                .eq(PostTagRelPO::getPublicId, id));
     }
 
     @Override
@@ -80,7 +89,7 @@ public class PostTagRelRepositoryImpl implements PostTagRelRepository {
             return null;
         }
         return PostTag.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .postId(po.getPostId())
                 .tagId(po.getTagId())
                 .createTime(po.getCreateTime())
@@ -92,7 +101,7 @@ public class PostTagRelRepositoryImpl implements PostTagRelRepository {
             return null;
         }
         return PostTagRelPO.builder()
-                .id(domain.getId())
+                .publicId(domain.getId())
                 .postId(domain.getPostId() != null ? domain.getPostId() : 0L)
                 .tagId(domain.getTagId() != null ? domain.getTagId() : 0L)
                 .createTime(domain.getCreateTime())

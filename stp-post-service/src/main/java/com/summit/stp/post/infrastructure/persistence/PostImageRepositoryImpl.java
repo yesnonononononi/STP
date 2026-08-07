@@ -20,7 +20,8 @@ public class PostImageRepositoryImpl implements PostImageRepository {
 
     @Override
     public PostImageVO findById(Long id) {
-        PostImagePO postImagePO = postImageMapper.selectById(id);
+        PostImagePO postImagePO = postImageMapper.selectOne(new LambdaQueryWrapper<PostImagePO>()
+                .eq(PostImagePO::getPublicId, id));
         return postImagePO == null ? null :  convertToVO(postImagePO);
     }
 
@@ -35,16 +36,26 @@ public class PostImageRepositoryImpl implements PostImageRepository {
 
     @Override
     public void save(PostImage postImage) {
+        PostImagePO po = convertToPO(postImage);
         if (postImage.getId() == null || postImage.getId() == 0) {
-            postImageMapper.insert(convertToPO(postImage));
+            postImageMapper.insert(po);
         } else {
-            postImageMapper.updateById(convertToPO(postImage));
+            PostImagePO existing = postImageMapper.selectOne(new LambdaQueryWrapper<PostImagePO>()
+                    .eq(PostImagePO::getPublicId, postImage.getId()));
+            if (existing == null) {
+                postImageMapper.insert(po);
+            } else {
+                po.setId(existing.getId());
+                po.setPublicId(existing.getPublicId());
+                postImageMapper.updateById(po);
+            }
         }
     }
 
     @Override
     public void delete(Long id) {
-        postImageMapper.deleteById(id);
+        postImageMapper.delete(new LambdaQueryWrapper<PostImagePO>()
+                .eq(PostImagePO::getPublicId, id));
     }
 
     @Override
@@ -79,7 +90,7 @@ public class PostImageRepositoryImpl implements PostImageRepository {
 
     public PostImagePO convertToPO(PostImage postImage) {
         return PostImagePO.builder()
-                .id(postImage.getId())
+                .publicId(postImage.getId())
                 .postId(postImage.getPostId())
                 .imageUrl(postImage.getImageUrl())
                 .width(postImage.getWidth())
@@ -96,7 +107,7 @@ public class PostImageRepositoryImpl implements PostImageRepository {
 
     public PostImageVO convertToVO(PostImagePO po) {
         return PostImageVO.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .postId(po.getPostId())
                 .imageUrl(po.getImageUrl())
                 .width(po.getWidth())

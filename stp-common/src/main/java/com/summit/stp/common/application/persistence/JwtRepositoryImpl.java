@@ -1,17 +1,13 @@
 package com.summit.stp.common.application.persistence;
-
 import com.summit.stp.common.application.domain.model.UserSession;
 import com.summit.stp.common.constants.UserAuthConstants;
 import com.summit.stp.common.application.domain.repository.JwtRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
-
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;

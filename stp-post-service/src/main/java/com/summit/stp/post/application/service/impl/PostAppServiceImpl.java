@@ -376,10 +376,10 @@ public class PostAppServiceImpl implements PostAppService {
         } else {
             long id = IdUtil.getSnowflakeNextId();
             if (isLike) {
-                postLikeRepository.save(PostLikePO.builder().id(id).postId(postId).userId(userId).build());
+                postLikeRepository.save(PostLikePO.builder().publicId(id).postId(postId).userId(userId).build());
                 updateLikeCountDelta(postId, 1);
             } else {
-                postCollectRepository.save(PostCollectPO.builder().id(id).postId(postId).userId(userId).build());
+                postCollectRepository.save(PostCollectPO.builder().publicId(id).postId(postId).userId(userId).build());
             }
             postMessageSender.sendPostInteraction(PostInteractionEvent.builder()
                     .postId(postId)
@@ -395,7 +395,7 @@ public class PostAppServiceImpl implements PostAppService {
      */
     private void updateLikeCountDelta(Long postId, long delta) {
         LambdaUpdateWrapper<PostsPO> wrapper = new LambdaUpdateWrapper<>();
-        wrapper.eq(PostsPO::getId, postId)
+        wrapper.eq(PostsPO::getPublicId, postId)
                 .setSql("like_count = like_count + " + delta);
         postsMapper.update(null, wrapper);
     }

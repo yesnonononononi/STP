@@ -1,5 +1,6 @@
 package com.summit.stp.common.application.api.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CouponQueryVO implements Serializable {
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
     private String name;
     private BigDecimal discount;
@@ -37,6 +39,7 @@ public class CouponQueryVO implements Serializable {
     /**
      * 优惠券关联的订单ID
      */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long relatedOrderId;
     /**
      * 优惠券关联的订单商品

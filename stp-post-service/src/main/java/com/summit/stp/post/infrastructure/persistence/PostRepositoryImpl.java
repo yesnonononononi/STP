@@ -39,11 +39,12 @@ public class PostRepositoryImpl implements PostRepository {
     public Post save(Post post) {
         PostsPO po = convertToPo(post);
         Long postId = post.getId();
-        boolean isInsert = postId == null || postId == 0 || postsMapper.selectById(postId) == null;
-        if (isInsert) {
+        PostsPO existing = (postId == null || postId == 0) ? null : postsMapper.selectOne(
+                new LambdaQueryWrapper<PostsPO>().eq(PostsPO::getPublicId, postId));
+        if (existing == null) {
             postsMapper.insert(po);
             return Post.builder()
-                    .id(po.getId())
+                    .id(po.getPublicId())
                     .creatorId(post.getCreatorId())
                     .title(post.getTitle())
                     .type(post.getType())
@@ -57,6 +58,8 @@ public class PostRepositoryImpl implements PostRepository {
                     .viewCount(po.getViewCount())
                     .build();
         } else {
+            po.setId(existing.getId());
+            po.setPublicId(existing.getPublicId());
             postsMapper.updateById(po);
         }
         if(PostType.IMAGE.getCode() == post.getType().getCode()){
@@ -107,7 +110,15 @@ public class PostRepositoryImpl implements PostRepository {
 
     @Override
     public void update(Post post) {
-      postsMapper.updateById(convertToPo(post));
+        PostsPO existing = postsMapper.selectOne(new LambdaQueryWrapper<PostsPO>()
+                .eq(PostsPO::getPublicId, post.getId()));
+        if (existing == null) {
+            return;
+        }
+        PostsPO po = convertToPo(post);
+        po.setId(existing.getId());
+        po.setPublicId(existing.getPublicId());
+        postsMapper.updateById(po);
     }
 
     @Override
@@ -117,7 +128,8 @@ public class PostRepositoryImpl implements PostRepository {
 
     @Override
     public Post findById(Long id) {
-        PostsPO po = postsMapper.selectById(id);
+        PostsPO po = postsMapper.selectOne(new LambdaQueryWrapper<PostsPO>()
+                .eq(PostsPO::getPublicId, id));
         return po == null ? null : convertToDomain(po);
     }
 
@@ -141,12 +153,15 @@ public class PostRepositoryImpl implements PostRepository {
 
     @Override
     public void updateBatchById(List<Post> list) {
-        postsMapper.updateById(list.stream().map(this::convertToPo).toList());
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        list.forEach(this::update);
     }
 
     public Post convertToDomain(PostsPO po) {
         return Post.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .creatorId(po.getCreatorId())
                 .title(po.getTitle())
                 .type(PostType.fromCode(po.getType()))
@@ -165,7 +180,7 @@ public class PostRepositoryImpl implements PostRepository {
     }
     public PostsPO convertToPo(Post post) {
         return PostsPO.builder()
-                .id(post.getId())
+                .publicId(post.getId())
                 .creatorId(post.getCreatorId() == null ? 0L : post.getCreatorId())
                 .title(post.getTitle())
                 .type(post.getType() == null ? 0 : post.getType().getCode())

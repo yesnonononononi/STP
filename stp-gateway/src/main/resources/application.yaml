@@ -7,15 +7,18 @@ spring:
   config:
     import:
       - optional:nacos:jdbc.yaml
-      - optional:nacos:auth-jwt.yaml
+      - optional:nacos:sentinel.yaml
       - optional:nacos:redis.yaml
       - optional:nacos:queue.yaml
+      - optional:nacos:shared-common.yaml
       - optional:nacos:minio.yaml
+      - optional:file:.env[.properties]
+      - optional:nacos:shared-seata.yaml?group=SEATA_GROUP
   cloud:
     nacos:
       config:
         group: DEFAULT_GROUP
-      server-addr: ${NACOS_HOST:localhost}:${NACOS_PORT:8848}
+      server-addr: ${HOST}:8848
 
 logging:
   level:

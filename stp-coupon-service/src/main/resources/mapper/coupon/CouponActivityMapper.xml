@@ -3,12 +3,12 @@
 <mapper namespace="com.summit.stp.coupon.infrastructure.persistence.mapper.CouponActivityMapper">
     <update id="batchUpdate">
         update coupon_activity
-        set stock =  case id
+        set stock =  case public_id
             <foreach item="stock" collection="entrySet()" index="id">
                 when #{id} then stock = #{stock}
             </foreach>
 
-        end where id in
+        end where public_id in
         <foreach item="key" collection="keySet()" separator="," close=")" open="(">
             #{key}
         </foreach>

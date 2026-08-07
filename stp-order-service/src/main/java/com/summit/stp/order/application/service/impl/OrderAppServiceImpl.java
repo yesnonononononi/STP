@@ -18,14 +18,13 @@ import com.summit.stp.order.api.dto.OrderCreateRequest;
 import com.summit.stp.order.application.service.OrderAppService;
 import com.summit.stp.order.application.service.OrderReconciliationAppService;
 import com.summit.stp.order.application.service.OrderTimeoutProvider;
-import com.summit.stp.order.application.service.ProductProvider;
-import com.summit.stp.order.application.vo.ProductVO;
 import com.summit.stp.order.domain.model.Order;
 import com.summit.stp.order.domain.model.OrderStatus;
 import com.summit.stp.order.domain.repository.OrderRepository;
 import com.summit.stp.order.infrastructure.constants.OrderConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.seata.spring.annotation.GlobalTransactional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,7 +47,6 @@ public class OrderAppServiceImpl implements OrderAppService {
     private final PayFeignClient payFeignClient;
     private final MemberFeignClient memberFeignClient;
     private final OrderTimeoutProvider orderTimeoutProvider;
-    private final ProductProvider productProvider;
     private final EventPublishProvider eventPublishProvider;
     private final OrderReconciliationAppService orderReconciliationAppService;
 
@@ -62,7 +60,7 @@ public class OrderAppServiceImpl implements OrderAppService {
         MemberVO memberVO = memberFeignClient.queryMemberById(order.getPackageId()).getData();
 
         // 查询订单所使用的优惠券信息 (RPC)
-        CouponQueryVO couponQueryVO = order.getCouponId() == null ? null 
+        CouponQueryVO couponQueryVO = order.getCouponId() == null ? null
                 : couponFeignClient.queryById(order.getCouponId()).getData();
 
         return mapToQueryResponse(order, memberVO, couponQueryVO);
@@ -70,7 +68,14 @@ public class OrderAppServiceImpl implements OrderAppService {
 
     @Override
     public void deleteById(Long orderId) {
-        orderRepository.deleteById(orderId);
+        Long uid = UserHolder.getUser().getId();
+        Order orderById = orderRepository.findOrderById(orderId);
+        if (orderById.of(uid)) {
+            orderRepository.deleteById(orderId);
+        }
+        else {
+            throw new ParameterException("无权限删除");
+        }
     }
 
     @Override
@@ -78,11 +83,11 @@ public class OrderAppServiceImpl implements OrderAppService {
         List<Order> orders = orderRepository.queryHistoryOrders(page, pageSize);
         List<Long> list = orders.stream().map(Order::getPackageId).distinct().toList();
         List<Long> cList = orders.stream().map(Order::getCouponId).filter(Objects::nonNull).toList();
-        
+
         Map<Long, MemberVO> mapResult = memberFeignClient.queryMemberByIds(list).getData();
-        Map<Long, CouponQueryVO> mapCResult = cList.isEmpty() ? Collections.emptyMap() 
+        Map<Long, CouponQueryVO> mapCResult = cList.isEmpty() ? Collections.emptyMap()
                 : couponFeignClient.queryByIds(cList).getData();
-                
+
         return orders.stream()
                 .map(order -> mapToQueryResponse(
                         order,
@@ -121,123 +126,67 @@ public class OrderAppServiceImpl implements OrderAppService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @GlobalTransactional(rollbackFor = Exception.class)
     public Result<PayVO> createOrder(OrderCreateRequest orderCreateRequest) {
         // 强制购买数量为 1
         orderCreateRequest.setQuantity(1);
         UserSession user = UserHolder.getUser();
-        
+
         // 获取商品信息
-        ProductVO product;
-        try {
-            product = productProvider.getProductInfo(orderCreateRequest.getPackageId());
-        } catch (ParameterException e) {
-            return Result.error(e.getMessage());
-        } catch (Exception e) {
-            log.error("【订单】获取商品信息系统异常, packageId: {}", orderCreateRequest.getPackageId(), e);
-            throw e;
-        }
+        final MemberVO member = memberFeignClient.queryMemberById(orderCreateRequest.getPackageId()).getData();
+        final Long orderId = orderRepository.generateOrderId();
+        final Timestamp now = new Timestamp(System.currentTimeMillis());
+        final Timestamp timeoutTime = new Timestamp(now.getTime() + OrderConstants.Business.TIMEOUT_MILLIS);
+        final Long couponId = orderCreateRequest.getCouponId();
+        final BigDecimal memberDiscount = member.getDiscount() == null  ? null : new BigDecimal(member.getDiscount());
+        final BigDecimal price = member.getPrice();
+        final BigDecimal memberDiscountedPrice = Optional.ofNullable(memberDiscount)
+                .map(price::multiply)
+                .orElse(price);
 
-        Long orderId = orderRepository.generateOrderId();
-        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-        Timestamp timeoutTime = new Timestamp(timestamp.getTime() + OrderConstants.Business.TIMEOUT_MILLIS);
-        Long couponId = orderCreateRequest.getCouponId();
 
-        // 前置强校验：优惠券适用范围校验
+        //使用优惠券
         if (couponId != null) {
-            try {
-                MemberVO member = memberFeignClient.queryMemberById(orderCreateRequest.getPackageId()).getData();
-                if (member == null) {
-                    return Result.error("未找到会员套餐信息");
-                }
-                couponFeignClient.validateCouponApplicability(couponId, member.getTypeId(), member.getId());
-            } catch (ParameterException e) {
-                return Result.error(e.getMessage());
-            }
+                couponFeignClient.use(couponId, orderId,member.getTypeId(),member.getId());
         }
 
-        BigDecimal discountedPrice = product.getPrice();
-        if (product.getDiscount() != null) {
-            discountedPrice = discountedPrice.multiply(product.getDiscount());
-        }
-        BigDecimal amount;
-        if (couponId == null) {
-            amount = discountedPrice.multiply(BigDecimal.valueOf(orderCreateRequest.getQuantity())).setScale(2, RoundingMode.HALF_UP);
-        } else {
-            amount = couponFeignClient.calculateAmount(discountedPrice, orderCreateRequest.getQuantity(), couponId).getData();
-        }
+        //计算总共优惠券 + 套餐折扣减免的总金额
+        BigDecimal amount = Optional.ofNullable(couponId)
+                .map(id -> couponFeignClient.calculateAmount(memberDiscountedPrice, orderCreateRequest.getQuantity(), id).getData())
+                .orElseGet(() -> memberDiscountedPrice.multiply(BigDecimal.valueOf(orderCreateRequest.getQuantity())).setScale(2, RoundingMode.HALF_UP));
 
-        // Saga 手动事务补偿变量
-        boolean couponUsed = false;
         try {
-            // 1. 远程调用优惠券微服务扣减优惠券
-            if (couponId != null) {
-                couponFeignClient.use(couponId, orderId);
-                couponUsed = true;
-            }
 
-            // 2. 本地写数据库保存订单
             PayType payType = PayType.fromCode(orderCreateRequest.getPayType());
+            //计算需要支付的金额
+            BigDecimal discountAmount = price.multiply(BigDecimal.valueOf(orderCreateRequest.getQuantity())).subtract(amount);
 
-            //2.1计算优惠金额
-            BigDecimal unitPrice = product.getPrice();
-            BigDecimal discountAmount = unitPrice.multiply(BigDecimal.valueOf(orderCreateRequest.getQuantity())).subtract(amount);
+            //创建订单并保存
+            Order order = buildOrder(orderId, payType, amount, user, orderCreateRequest, price, discountAmount, now, timeoutTime);
+            orderRepository.save(order);
 
-            orderRepository.save(
-                    Order.builder()
-                            .id(orderId)
-                            .payType(payType)
-                            .amount(amount)
-                            .creatorId(user.getId())
-                            .packageId(orderCreateRequest.getPackageId())
-                            .quantity(orderCreateRequest.getQuantity())
-                            .couponId(orderCreateRequest.getCouponId())
-                            .unitPrice(unitPrice)
-                            .discountAmount(discountAmount)
-                            .createTime(timestamp)
-                            .timeoutTime(timeoutTime)
-                            .updateTime(timestamp)
-                            .status(OrderStatus.PENDING)
-                            .build()
-            );
-
-            // 3. 事务提交后注册订单超时，Redis 不可用不影响订单落库
+            // 事务提交后注册订单超时，Redis 不可用不影响订单落库
             orderTimeoutProvider.registerTimeout(timeoutTime, orderId);
 
-            // 4. 远程调用支付微服务发起支付
-            PayCommand payCommand = PayCommand.builder()
-                    .username(user.getUsername())
-                    .amount(amount)
-                    .orderId(orderId)
-                    .payType(payType)
-                    .memberName(product.getName())
-                    .timestamp(timestamp)
-                    .build();
+            //远程调用支付微服务发起支付
+            PayCommand payCommand = buildPayCommand(user, order, member.getName());
+
             log.info("【订单】发起支付 RPC 调用，参数: {}", payCommand);
             Result<PayVO> payResult = payFeignClient.pay(payCommand);
             log.info("【订单】支付 RPC 调用返回，结果: {}", payResult);
+
             PayVO pay = payResult != null ? payResult.getData() : null;
 
             return Result.success(pay);
 
         } catch (Exception e) {
             log.error("【订单】订单创建失败，进行补偿回滚，订单ID: {}", orderId, e);
-            // 失败时反向补偿操作回滚优惠券
-            if (couponUsed) {
-                try {
-                    couponFeignClient.refund(couponId);
-                    log.info("【订单】Saga 手动补偿成功：退回优惠券ID: {}", couponId);
-                } catch (Exception ex) {
-                    log.error("【订单】Saga 手动补偿异常：退回优惠券失败，优惠券ID: {}", couponId, ex);
-                }
-            }
-            throw e; // 抛出异常，触发本地数据库订单状态的回滚
+            throw e;
         }
     }
 
     @Override
-    @Transactional(
-            propagation = Propagation.REQUIRES_NEW,
+    @GlobalTransactional(
             rollbackFor = Exception.class
     )
     public void cancelOrderTimeout(List<Order> orders) {
@@ -289,7 +238,7 @@ public class OrderAppServiceImpl implements OrderAppService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @GlobalTransactional(rollbackFor = Exception.class)
     public void cancelOrder(Long orderId) {
         Order order = orderRepository.findOrderById(orderId);
         if (order == null) {
@@ -335,6 +284,36 @@ public class OrderAppServiceImpl implements OrderAppService {
                 .memberName(memberVO == null ? "未查询到套餐信息" : memberVO.getName())
                 .payableAmount(payableAmount)
                 .payTime(order.getPayTime())
+                .build();
+    }
+
+
+    private Order buildOrder(Long id, PayType payType, BigDecimal amount, UserSession user, OrderCreateRequest orderCreateRequest, BigDecimal unitPrice, BigDecimal discountAmount, Timestamp timestamp, Timestamp timeoutTime) {
+        return Order.builder()
+            .id(id)
+            .payType(payType)
+            .amount(amount)
+            .creatorId(user.getId())
+            .packageId(orderCreateRequest.getPackageId())
+            .quantity(orderCreateRequest.getQuantity())
+            .couponId(orderCreateRequest.getCouponId())
+            .unitPrice(unitPrice)
+            .discountAmount(discountAmount)
+            .createTime(timestamp)
+            .timeoutTime(timeoutTime)
+            .updateTime(timestamp)
+            .status(OrderStatus.PENDING)
+            .build();
+    }
+
+    private PayCommand buildPayCommand(UserSession user,Order order,String memberName){
+        return PayCommand.builder()
+                .username(user.getUsername())
+                .amount(order.getAmount())
+                .orderId(order.getId())
+                .payType(order.getPayType())
+                .memberName(memberName)
+                .timestamp(order.getCreateTime())
                 .build();
     }
 }

@@ -40,7 +40,8 @@ public class OrderRepositoryImpl implements OrderRepository {
         if (order.getStatus() == OrderStatus.PENDING) {
             orderMapper.insert(po);
         } else {
-            orderMapper.updateById(po);
+            orderMapper.update(po, new LambdaUpdateWrapper<OrderPO>()
+                    .eq(OrderPO::getPublicId, order.getId()));
         }
     }
 
@@ -63,7 +64,8 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     @Override
     public Order findOrderById(Long orderId) {
-        OrderPO po = orderMapper.selectById(orderId);
+        OrderPO po = orderMapper.selectOne(new LambdaQueryWrapper<OrderPO>()
+                .eq(OrderPO::getPublicId, orderId));
         if (po == null) {
             return null;
         }
@@ -74,7 +76,8 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     @Override
     public void deleteById(Long orderId) {
-        orderMapper.deleteById(orderId);
+        orderMapper.delete(new LambdaQueryWrapper<OrderPO>()
+                .eq(OrderPO::getPublicId, orderId));
     }
 
     @Override
@@ -83,7 +86,7 @@ public class OrderRepositoryImpl implements OrderRepository {
         List<OrderPO> orderPOS = orderMapper.selectList(wrapper);
         return orderPOS.stream().collect(Collectors.toMap(OrderPO::getCouponId,po->
             OrderQueryVO.builder()
-                    .orderId(po.getId())
+                    .orderId(po.getPublicId())
                     .memberId(po.getPackageId())
                     .build()
         ));
@@ -95,7 +98,8 @@ public class OrderRepositoryImpl implements OrderRepository {
         if (orderIds == null || orderIds.isEmpty()) {
             return List.of();
         }
-        return orderMapper.selectByIds(orderIds).stream()
+        return orderMapper.selectList(new LambdaQueryWrapper<OrderPO>()
+                        .in(OrderPO::getPublicId, orderIds)).stream()
                 .map(this::toDomain)
                 .toList();
     }
@@ -128,14 +132,14 @@ public class OrderRepositoryImpl implements OrderRepository {
         update.setStatus(OrderStatus.CANCELLED.getCode());
         update.setUpdateTime(new Timestamp(System.currentTimeMillis()));
         LambdaUpdateWrapper<OrderPO> wrapper = new LambdaUpdateWrapper<OrderPO>()
-                .in(OrderPO::getId, orderIds)
+                .in(OrderPO::getPublicId, orderIds)
                 .eq(OrderPO::getStatus, OrderStatus.PENDING.getCode());
         orderMapper.update(update, wrapper);
     }
 
     private Order toDomain(OrderPO po) {
         return Order.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .payType(po.getPayType() != null ? PayType.fromCode(po.getPayType()) : null)
                 .updateTime(po.getUpdateTime())
                 .to(po.getToName())
@@ -156,7 +160,7 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     private OrderPO toPO(Order order) {
         return OrderPO.builder()
-                .id(order.getId())
+                .publicId(order.getId())
                 .payType(order.getPayType() != null ? order.getPayType().getCode() : null)
                 .updateTime(order.getUpdateTime())
                 .toName(order.getTo())

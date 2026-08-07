@@ -25,6 +25,7 @@ public class MemberAppServiceImpl implements MemberAppService {
     @Override
     public Result<MemberVO> queryMemberById(Long id) {
         Member memberById = memberRepository.findMemberById(id);
+        if(memberById == null)return Result.error("会员套餐不存在");
         MemberVO memberVO = VO_CONVERTER.toVO(memberById);
         return Result.success(memberVO);
     }
@@ -64,6 +65,23 @@ public class MemberAppServiceImpl implements MemberAppService {
                 .description(memberType.getDescription())
                 .build();
         return Result.success(vo);
+    }
+
+    @Override
+    public Result<Map<Long, MemberTypeVO>> queryMemberTypeByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Result.success(new HashMap<>());
+        }
+        Map<Long, MemberTypeVO> map = new HashMap<>();
+        ids.stream().distinct()
+                .map(MemberType::getById)
+                .filter(java.util.Objects::nonNull)
+                .forEach(type -> map.put(type.getTypeId(), MemberTypeVO.builder()
+                        .id(type.getTypeId())
+                        .name(type.getTypeName())
+                        .description(type.getDescription())
+                        .build()));
+        return Result.success(map);
     }
 
     @Override

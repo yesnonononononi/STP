@@ -1,6 +1,7 @@
 package com.summit.stp.coupon.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.coupon.domain.model.Coupon;
 import com.summit.stp.coupon.domain.model.CouponStatus;
@@ -12,7 +13,9 @@ import com.summit.stp.coupon.infrastructure.persistence.po.UserCouponPO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Repository
@@ -23,7 +26,8 @@ public class UserCouponRepositoryImpl implements UserCouponRepository {
 
     @Override
     public UserCoupon findUserCouponById(Long id) {
-        UserCouponPO po = userCouponMapper.selectById(id);
+        UserCouponPO po = userCouponMapper.selectOne(new LambdaQueryWrapper<UserCouponPO>()
+                .eq(UserCouponPO::getPublicId, id));
         if (po == null) {
             return null;
         }
@@ -33,7 +37,7 @@ public class UserCouponRepositoryImpl implements UserCouponRepository {
     @Override
     public void save(UserCoupon userCoupon) {
         UserCouponPO po = new UserCouponPO();
-        po.setId(userCoupon.getId());
+        po.setPublicId(userCoupon.getId());
         po.setUserId(userCoupon.getUserId());
         po.setCouponId(userCoupon.getCouponTemplateId());
         po.setStatus(userCoupon.getStatus().getCode());
@@ -43,11 +47,11 @@ public class UserCouponRepositoryImpl implements UserCouponRepository {
         po.setEndTime(userCoupon.getEndTime());
         po.setOrderId(userCoupon.getOrderId());
 
-        if (po.getId() == null) {
-            po.setId(cn.hutool.core.util.IdUtil.getSnowflakeNextId());
+        if (po.getPublicId() == null) {
             userCouponMapper.insert(po);
         } else {
-            userCouponMapper.updateById(po);
+            userCouponMapper.update(po, new LambdaUpdateWrapper<UserCouponPO>()
+                    .eq(UserCouponPO::getPublicId, po.getPublicId()));
         }
     }
 
@@ -99,6 +103,19 @@ public class UserCouponRepositoryImpl implements UserCouponRepository {
         ));
     }
 
+    @Override
+    public Map<Long, Integer> countByUserIdAndCouponIds(Long userId, Collection<Long> couponIds) {
+        if (userId == null || couponIds == null || couponIds.isEmpty()) {
+            return Map.of();
+        }
+        return userCouponMapper.selectList(new LambdaQueryWrapper<UserCouponPO>()
+                        .select(UserCouponPO::getCouponId)
+                        .eq(UserCouponPO::getUserId, userId)
+                        .in(UserCouponPO::getCouponId, couponIds))
+                .stream()
+                .collect(Collectors.groupingBy(UserCouponPO::getCouponId, Collectors.summingInt(ignored -> 1)));
+    }
+
     /**
      * 获取领域模型对象
      * @param po
@@ -106,7 +123,7 @@ public class UserCouponRepositoryImpl implements UserCouponRepository {
      */
     private UserCoupon getUserCoupon(UserCouponPO po) {
         UserCoupon userCoupon = UserCoupon.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .userId(po.getUserId())
                 .couponTemplateId(po.getCouponId())
                 .status(CouponStatus.fromCode(po.getStatus()))

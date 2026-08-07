@@ -1,5 +1,6 @@
 package com.summit.stp.post.application.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.summit.stp.common.application.api.vo.UserSimpleVO;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -20,10 +21,12 @@ import java.util.List;
 @ApiModel(value = "PostVO", description = "帖子公开展示详细信息")
 public class PostVO {
     @ApiModelProperty("帖子ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     @ApiModelProperty("发布者用户ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     @JsonSerialize(using = ToStringSerializer.class)
     private long creatorId;
 

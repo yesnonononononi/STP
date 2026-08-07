@@ -22,9 +22,11 @@ public class MessageVO {
     private Long id;
 
     @ApiModelProperty("发送者id")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long userId;
 
     @ApiModelProperty("接收者id")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long receiverId;
 
     @ApiModelProperty("发送时间")
@@ -48,6 +50,7 @@ public class MessageVO {
     @ApiModelProperty("消息状态 (1-未读, 2-已读, 3-撤回)")
     private Integer status;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long sessionId;
 
     @ApiModelProperty("扩展字段")

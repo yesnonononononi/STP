@@ -23,8 +23,9 @@ public class CouponInternalController {
     }
 
     @PostMapping("/use")
-    public Result<Void> use(@RequestParam("id") Long id, @RequestParam("orderId") Long orderId) {
-        couponAppService.use(id, orderId);
+    public Result<Void> use(@RequestParam("id") Long id, @RequestParam("orderId") Long orderId,
+                            @RequestParam("typeId") Long typeId, @RequestParam("packageId") Long packageId) {
+        couponAppService.use(id, orderId,typeId,packageId);
         return Result.success();
     }
 
@@ -42,14 +43,6 @@ public class CouponInternalController {
         return Result.success(couponAppService.calculateAmount(price, quantity, couponId));
     }
 
-    @PostMapping("/validate")
-    public Result<Void> validateCouponApplicability(
-            @RequestParam("couponId") Long couponId,
-            @RequestParam("typeId") Long typeId,
-            @RequestParam("packageId") Long packageId) {
-        couponAppService.validateCouponApplicability(couponId, typeId, packageId);
-        return Result.success();
-    }
 
     @PostMapping("/batch")
     public Result<Map<Long, CouponQueryVO>> queryByIds(@RequestBody List<Long> cList) {

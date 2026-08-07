@@ -1,5 +1,6 @@
 package com.summit.stp.message.infrastructure.persistence;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.summit.stp.message.domain.model.Session;
 import com.summit.stp.message.domain.repository.SessionRepository;
 import com.summit.stp.message.infrastructure.persistence.mapper.SessionMapper;
@@ -21,7 +22,7 @@ public class SessionRepositoryImpl implements SessionRepository {
 
     public SessionPO toPO(Session session) {
         return SessionPO.builder()
-                .id(session.getId())
+                .publicId(session.getId())
                 .type(session.getType().getValue())
                 .lastMessageId(session.getLastMessageId())
                 .lastMessageContent(session.getLastMessageContent())
@@ -34,7 +35,7 @@ public class SessionRepositoryImpl implements SessionRepository {
 
     public Session toDomain(SessionPO po) {
         return Session.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .type(Session.Type.fromValue(po.getType()))
                 .lastMessageId(po.getLastMessageId())
                 .lastMessageContent(po.getLastMessageContent())
@@ -47,19 +48,51 @@ public class SessionRepositoryImpl implements SessionRepository {
 
     @Override
     public Session findById(Long sessionId) {
-        SessionPO po = sessionMapper.selectById(sessionId);
+        SessionPO po = findPOByPublicId(sessionId);
         return po == null ? null : toDomain(po);
     }
 
     @Override
     public void save(Session session) {
-        sessionMapper.insertOrUpdate(toPO(session));
+        SessionPO po = toPO(session);
+        SessionPO existing = findPOByPublicId(session.getId());
+        if (existing == null) {
+            sessionMapper.insert(po);
+            return;
+        }
+        sessionMapper.updateById(withInternalId(po, existing.getId()));
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public Map<Long, Session> findByIds(List<Long> list) {
         if(list.isEmpty())return Collections.EMPTY_MAP;
-        return sessionMapper.selectByIds(list).stream().map(this::toDomain).collect(Collectors.toMap(Session::getId, s -> s));
+        return sessionMapper.selectList(new LambdaQueryWrapper<SessionPO>()
+                        .in(SessionPO::getPublicId, list))
+                .stream()
+                .map(this::toDomain)
+                .collect(Collectors.toMap(Session::getId, s -> s));
+    }
+
+    private SessionPO findPOByPublicId(Long publicId) {
+        if (publicId == null) {
+            return null;
+        }
+        return sessionMapper.selectOne(new LambdaQueryWrapper<SessionPO>()
+                .eq(SessionPO::getPublicId, publicId));
+    }
+
+    private SessionPO withInternalId(SessionPO po, Long internalId) {
+        return SessionPO.builder()
+                .id(internalId)
+                .publicId(po.getPublicId())
+                .type(po.getType())
+                .lastMessageId(po.getLastMessageId())
+                .lastMessageContent(po.getLastMessageContent())
+                .lastSenderId(po.getLastSenderId())
+                .lastTime(po.getLastTime())
+                .createTime(po.getCreateTime())
+                .updateTime(po.getUpdateTime())
+                .build();
     }
 }

@@ -45,7 +45,7 @@ public class PostImageAppServiceImpl implements PostImageAppService {
 
     public PostImage convertToDomain(PostImagePO po) {
         return PostImage.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .postId(po.getPostId())
                 .imageUrl(po.getImageUrl())
                 .width(po.getWidth())

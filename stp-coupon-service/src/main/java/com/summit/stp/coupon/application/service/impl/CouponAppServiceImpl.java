@@ -19,11 +19,11 @@ import com.summit.stp.coupon.application.vo.CouponActivityQueryVO;
 import com.summit.stp.coupon.domain.exception.NoSuchCouponException;
 import com.summit.stp.coupon.domain.model.*;
 import com.summit.stp.coupon.domain.repository.CouponActivityRepository;
+import com.summit.stp.coupon.domain.repository.CouponUseScopeRepository;
 import com.summit.stp.coupon.domain.repository.CouponRepository;
 import com.summit.stp.coupon.domain.repository.UserCouponRepository;
 import com.summit.stp.coupon.domain.service.CouponCacheProvider;
 import com.summit.stp.coupon.infrastructure.constants.CouponConstants;
-import com.summit.stp.coupon.infrastructure.persistence.CouponUseScopeRepositoryImpl;
 import io.netty.util.internal.StringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +51,7 @@ public class CouponAppServiceImpl implements CouponAppService {
     private final DistributedLockUtil distributedLockUtil;
     private final TransactionTemplate transactionTemplate;
     private final CouponCacheProvider couponCacheProvider;
-    private final CouponUseScopeRepositoryImpl couponUseScopeRepositoryImpl;
+    private final CouponUseScopeRepository couponUseScopeRepository;
 
 
     @Override
@@ -73,7 +73,7 @@ public class CouponAppServiceImpl implements CouponAppService {
     }
 
     @Override
-    public Page<CouponQueryVO> queryHistory(long page, long pageSize,CouponStatus status) {
+    public Page<CouponQueryVO> queryHistory(long page, long pageSize, CouponStatus status) {
         Long currentUserId = UserHolder.getUser().getId();
         Page<UserCoupon> userCouponPage = userCouponRepository.queryHistoryByUser(currentUserId, page, pageSize, status);
         List<UserCoupon> records = userCouponPage.getRecords();
@@ -117,38 +117,24 @@ public class CouponAppServiceImpl implements CouponAppService {
     }
 
     @Override
-    public void use(Long id, Long orderId) {
-        if (id == null) {
-            return;
-        }
-        UserCoupon userCoupon = userCouponRepository.findUserCouponById(id);
-        if (userCoupon == null) {
-            throw new ParameterException("未找到对应的优惠券记录，ID: " + id);
-        }
-
-        // 校验所属权
-        Long currentUserId = UserHolder.getUser().getId();
-        if (!userCoupon.getUserId().equals(currentUserId)) {
-            throw new ParameterException("该优惠券不属于当前登录用户！");
-        }
-        if (userCoupon.isAvailable()) {
-            distributedLockUtil.executeWithLock(CouponConstants.Cache.USE_LOCK + id,()->{  // user_coupon:id 锁粒度最优
-                transactionTemplate.executeWithoutResult(txStatus -> {
-                    UserCoupon userCouponById = userCouponRepository.findUserCouponById(id);
-                    if(userCouponById.isAvailable()) {
-                        userCouponById.use(orderId);
-                        userCouponRepository.save(userCouponById);
-                    }else{
-                        throw new BusinessException("优惠券已使用！");
-                    }
-                });
+    @Transactional(rollbackFor = Exception.class)
+    public void use(Long id, Long orderId, Long typeId, Long packageId) {
+        this.validateCouponApplicability(id, typeId, packageId);
+        distributedLockUtil.executeWithLock(CouponConstants.Cache.USE_LOCK + id, () -> {  // user_coupon:id 锁粒度最优
+            transactionTemplate.executeWithoutResult(txStatus -> {
+                UserCoupon userCouponById = userCouponRepository.findUserCouponById(id);
+                if (userCouponById.isAvailable()) {
+                    userCouponById.use(orderId);
+                    userCouponRepository.save(userCouponById);
+                } else {
+                    throw new BusinessException("优惠券已使用！");
+                }
             });
-        }else{
-            throw new BusinessException("优惠券已使用！");
-        }
+        });
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void refund(Long id) {
         if (id == null) {
             return;
@@ -159,10 +145,10 @@ public class CouponAppServiceImpl implements CouponAppService {
         }
 
         if (userCoupon.getStatus() == CouponStatus.USE) {
-            distributedLockUtil.executeWithLock(CouponConstants.Cache.REFUND_LOCK + id,()->{  // user_coupon:id 锁粒度最优
+            distributedLockUtil.executeWithLock(CouponConstants.Cache.REFUND_LOCK + id, () -> {  // user_coupon:id 锁粒度最优
                 transactionTemplate.executeWithoutResult(txStatus -> {
                     UserCoupon userCouponById = userCouponRepository.findUserCouponById(id);
-                    if(userCouponById.getStatus() == CouponStatus.USE) {
+                    if (userCouponById.getStatus() == CouponStatus.USE) {
                         userCouponById.refund();
                         userCouponRepository.save(userCouponById);
                     }
@@ -173,6 +159,7 @@ public class CouponAppServiceImpl implements CouponAppService {
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public BigDecimal calculateAmount(BigDecimal price, Integer quantity, Long couponId) {
         //总价
         BigDecimal totalAmount = price.multiply(new BigDecimal(quantity)).setScale(2, RoundingMode.HALF_UP);
@@ -203,8 +190,8 @@ public class CouponAppServiceImpl implements CouponAppService {
         return finalAmount.compareTo(minAmount) < 0 ? minAmount : finalAmount;
     }
 
-    @Override
-    public void validateCouponApplicability(Long couponId, Long typeId, Long packageId) {
+
+    private void validateCouponApplicability(Long couponId, Long typeId, Long packageId) {
         if (couponId == null) {
             return;
         }
@@ -242,9 +229,9 @@ public class CouponAppServiceImpl implements CouponAppService {
                 .map(uc -> {
                     Coupon template = uc.getTemplate();
                     String reason;
-                    if( !uc.isAvailable()){
+                    if (!uc.isAvailable()) {
                         reason = "优惠券已经过期";
-                    }else {
+                    } else {
                         reason = template == null ? "未找到优惠券信息" : template.isApplicable(typeId, packageId);
                     }
                     return convert(uc, reason);
@@ -281,98 +268,123 @@ public class CouponAppServiceImpl implements CouponAppService {
     }
 
     @Override
-    public List<CouponActivityQueryVO> queryAllActivitiesByScopeType(Integer scopeType){
-        Coupon.CouponScopeType type = Coupon.CouponScopeType.fromCode(scopeType);
-        if(type == null){
+    public List<CouponActivityQueryVO> queryAllActivitiesByScopeType(Integer scopeType) {
+        Coupon.CouponScopeType requestedScope = Coupon.CouponScopeType.fromCode(scopeType);
+        if (requestedScope == null) {
             throw new BusinessException("无效的活动类型");
         }
-        return couponActivityRepository.findByScopeType(scopeType).stream()
-                .filter(activity -> activity.isAvailable(LocalDateTime.now()))
-                .map(activity -> {
-                    String description = "";
 
-                    Coupon template = couponRepository.findCouponById(activity.getCouponId());
+        LocalDateTime now = LocalDateTime.now();
+        List<CouponActivity> activities = couponActivityRepository.findByScopeType(scopeType).stream()
+                .filter(activity -> activity.isAvailable(now))
+                .toList();
+        if (activities.isEmpty()) {
+            return List.of();
+        }
 
-                    Long currentUserId = null;
-                    try {
-                        if (UserHolder.getUser() != null) {
-                            currentUserId = UserHolder.getUser().getId();
-                        }
-                    } catch (Exception e) {
-                        // 忽略未登录
-                    }
-                    Integer count = 0;
-                    if (currentUserId != null) {
-                        count = userCouponRepository.countByUserIdAndCouponId(currentUserId, activity.getCouponId());
-                    }
+        List<Long> couponIds = activities.stream()
+                .map(CouponActivity::getCouponId)
+                .distinct()
+                .toList();
+        Map<Long, Coupon> templates = couponRepository.findByIds(couponIds).stream()
+                .collect(Collectors.toMap(Coupon::getId, coupon -> coupon));
 
-                    if(template ==null)throw new NoSuchCouponException("未找到优惠券信息");
+        Map<Long, CouponUseScope> scopes = requestedScope == Coupon.CouponScopeType.ALL_SCOPE
+                ? Map.of()
+                : couponUseScopeRepository.findByCouponIds(couponIds);
+        var currentUser = UserHolder.getUser();
+        Long currentUserId = currentUser == null ? null : currentUser.getId();
+        boolean hasReceiveLimits = activities.stream().anyMatch(activity -> activity.getLimitQuantity() != null);
+        Map<Long, Integer> receivedCounts = currentUserId == null || !hasReceiveLimits
+                ? Map.of()
+                : userCouponRepository.countByUserIdAndCouponIds(currentUserId, couponIds);
 
-                    CouponUseScope byCouponId = couponUseScopeRepositoryImpl.findByCouponId(template.getId());
+        List<Long> relationIds = scopes.values().stream()
+                .map(CouponUseScope::getRelationId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, MemberTypeVO> memberTypes = requestedScope == Coupon.CouponScopeType.SCOPE_OF_PRODUCT_TYPE
+                ? queryMemberTypes(relationIds)
+                : Map.of();
+        Map<Long, MemberVO> members = requestedScope == Coupon.CouponScopeType.SCOPE_OF_PRODUCT
+                ? queryMembers(relationIds)
+                : Map.of();
 
-                    if(template.getScopeType().getCode().equals(Coupon.CouponScopeType.SCOPE_OF_PRODUCT_TYPE.getCode())){
+        return activities.stream()
+                .map(activity -> toActivityVO(activity, templates, scopes, receivedCounts, memberTypes, members))
+                .toList();
+    }
 
-                        MemberTypeVO memberType = memberFeignClient.queryMemberTypeById(byCouponId.getRelationId()).getData();
+    private Map<Long, MemberTypeVO> queryMemberTypes(List<Long> ids) {
+        return ids.isEmpty() ? Map.of() : emptyIfNull(memberFeignClient.queryMemberTypeByIds(ids).getData());
+    }
 
-                        if (memberType != null) {
+    private Map<Long, MemberVO> queryMembers(List<Long> ids) {
+        return ids.isEmpty() ? Map.of() : emptyIfNull(memberFeignClient.queryMemberByIds(ids).getData());
+    }
 
-                            description = memberType.getName();
+    private CouponActivityQueryVO toActivityVO(CouponActivity activity,
+                                                Map<Long, Coupon> templates,
+                                                Map<Long, CouponUseScope> scopes,
+                                                Map<Long, Integer> receivedCounts,
+                                                Map<Long, MemberTypeVO> memberTypes,
+                                                Map<Long, MemberVO> members) {
+        Coupon template = templates.get(activity.getCouponId());
+        if (template == null) {
+            throw new NoSuchCouponException("未找到优惠券信息");
+        }
 
-                        }
-                    }
-                    else if(template.getScopeType().getCode().equals(Coupon.CouponScopeType.SCOPE_OF_PRODUCT.getCode())){
+        CouponUseScope scope = scopes.get(activity.getCouponId());
+        Integer limitQuantity = activity.getLimitQuantity();
+        int receivedCount = receivedCounts.getOrDefault(activity.getCouponId(), 0);
+        return CouponActivityQueryVO.builder()
+                .id(activity.getId())
+                .couponId(activity.getCouponId())
+                .name(activity.getName())
+                .activityStartTime(activity.getActivityStartTime())
+                .activityEndTime(activity.getActivityEndTime())
+                .status(activity.getStatus())
+                .couponName(template.getName())
+                .discount(template.getDiscount())
+                .validDays(template.getValidDays())
+                .validHours(template.getValidHours())
+                .scopeDescription(resolveScopeDescription(template, scope, memberTypes, members))
+                .limitQuantity(limitQuantity)
+                .amount(template.getAmount())
+                .timeType(template.getTimeType() == null ? null : template.getTimeType().getCode())
+                .isAvailable(limitQuantity == null || receivedCount < limitQuantity)
+                .couponType(template.getAmount() != null ? 1 : 0)
+                .scopeType(template.getScopeType() == null
+                        ? Coupon.CouponScopeType.ALL_SCOPE.getCode()
+                        : template.getScopeType().getCode())
+                .description(template.getDescription())
+                .type(activity.getType() == null ? null : activity.getType().getCode())
+                .build();
+    }
 
-                        MemberVO memberById = memberFeignClient.queryMemberById(byCouponId.getRelationId()).getData();
+    private String resolveScopeDescription(Coupon template,
+                                            CouponUseScope scope,
+                                            Map<Long, MemberTypeVO> memberTypes,
+                                            Map<Long, MemberVO> members) {
+        if (scope == null || scope.getRelationId() == null || template.getScopeType() == null) {
+            return "";
+        }
+        return switch (template.getScopeType()) {
+            case SCOPE_OF_PRODUCT_TYPE -> {
+                MemberTypeVO memberType = memberTypes.get(scope.getRelationId());
+                yield memberType == null ? "" : memberType.getName();
+            }
+            case SCOPE_OF_PRODUCT -> {
+                MemberVO member = members.get(scope.getRelationId());
+                yield member == null ? "" : member.getName();
+            }
+            default -> "";
+        };
+    }
 
-                        if (memberById != null) {
-
-                            description = memberById.getName();
-
-                        }
-                    }
-                    return CouponActivityQueryVO.builder()
-
-                            .id(activity.getId())
-
-                            .couponId(activity.getCouponId())
-
-                            .name(activity.getName())
-
-                            .activityStartTime(activity.getActivityStartTime())
-
-                            .activityEndTime(activity.getActivityEndTime())
-
-                            .status(activity.getStatus())
-
-                            .couponName(template.getName())
-
-                            .discount(template.getDiscount())
-
-                            .validDays(template.getValidDays())
-
-                            .validHours(template.getValidHours())
-
-                            .scopeDescription(description)
-
-                            .limitQuantity(activity.getLimitQuantity())
-
-                            .amount(template.getAmount())
-
-                            .timeType(template.getTimeType().getCode())
-
-                            .isAvailable(count < activity.getLimitQuantity())
-
-                            .couponType(template.getAmount() != null ? 1 : 0)
-
-                            .scopeType(template.getScopeType() != null ? template.getScopeType().getCode() : Coupon.CouponScopeType.ALL_SCOPE.getCode())
-
-                            .description(template.getDescription())
-
-                            .type(activity.getType().getCode())
-
-                            .build();
-                })
-                .collect(Collectors.toList());
+    private <K, V> Map<K, V> emptyIfNull(Map<K, V> values) {
+        return values == null ? Map.of() : values;
     }
 
     @Override
@@ -385,7 +397,7 @@ public class CouponAppServiceImpl implements CouponAppService {
             throw new BusinessException("该优惠券活动不存在！");
         }
         LocalDateTime now = LocalDateTime.now();
-        if(!activity.isAvailable(now)) {
+        if (!activity.isAvailable(now)) {
             throw new BusinessException("当前活动未开始或者已经结束");
         }
         Coupon coupon = couponRepository.findCouponById(activity.getCouponId());
@@ -406,25 +418,25 @@ public class CouponAppServiceImpl implements CouponAppService {
                 .createTime(new Timestamp(System.currentTimeMillis()))
                 .endTime(Timestamp.valueOf(endTime))
                 .build();
-        couponCacheProvider.cacheUserLimit(currentUserId,couponId,activity.getDuration(now));
-        boolean isOk = couponCacheProvider.deductStock(couponId, (long) activity.getLimitQuantity(),activityId);
+        couponCacheProvider.cacheUserLimit(currentUserId, couponId, activity.getDuration(now));
+        boolean isOk = couponCacheProvider.deductStock(couponId, (long) activity.getLimitQuantity(), activityId);
         if (!isOk) {
             throw new BusinessException("优惠券库存不足！");
         }
-        transactionTemplate.executeWithoutResult((status)->{  //将缓存操作移动出去,减少事务持有时间
+        transactionTemplate.executeWithoutResult((status) -> {  //将缓存操作移动出去,减少事务持有时间
             try {
                 userCouponRepository.save(userCoupon);
                 log.info("优惠券:{} 领取成功 用户id:{}！", couponId, currentUserId);
-            }catch (Exception e){
-                couponCacheProvider.increaseStock(couponId,currentUserId,activityId);
-                log.error("优惠券:{} 领取失败 用户id:{}！", couponId, currentUserId,e);
+            } catch (Exception e) {
+                couponCacheProvider.increaseStock(couponId, currentUserId, activityId);
+                log.error("优惠券:{} 领取失败 用户id:{}！", couponId, currentUserId, e);
                 throw e;
             }
         });
 
     }
 
-    private   LocalDateTime getEndTime(LocalDateTime now, Coupon coupon, CouponActivity activity) {
+    private LocalDateTime getEndTime(LocalDateTime now, Coupon coupon, CouponActivity activity) {
         LocalDateTime endTime = now;
 
         if (coupon.getTimeType() == Coupon.CouponDateType.FIXED_TIME_PERIOD) {
@@ -441,11 +453,10 @@ public class CouponAppServiceImpl implements CouponAppService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveActivity(CouponActivityDTO dto) {
-        if(UserHolder.getUser().getAdmin() == 0)throw new UnPermissionException("无权限操作");
+        if (UserHolder.getUser().getAdmin() == 0) throw new UnPermissionException("无权限操作");
         Long couponId = dto.getCouponId();
-        long snowflakeNextId = IdUtil.getSnowflakeNextId();
         CouponActivity activity = CouponActivity.builder()
-                .id(snowflakeNextId)
+                .id(IdUtil.getSnowflakeNextId())
                 .couponId(couponId)
                 .name(dto.getName())
                 .type(CouponActivity.Type.fromCode(dto.getType()))
@@ -483,7 +494,7 @@ public class CouponAppServiceImpl implements CouponAppService {
 
     @Override
     public Map<Long, CouponQueryVO> queryByIds(List<Long> cList) {
-        if(cList.isEmpty())return Map.of();
+        if (cList.isEmpty()) return Map.of();
         List<Coupon> byIds = couponRepository.findByIds(cList);
         return byIds.stream().collect(Collectors.toMap(Coupon::getId, this::toVO));
     }

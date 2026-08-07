@@ -1,5 +1,6 @@
 package com.summit.stp.post.application.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -18,10 +19,12 @@ import java.sql.Timestamp;
 @ApiModel(value = "PostImageVO", description = "帖子图片展示数据")
 public class PostImageVO {
     @ApiModelProperty("图片关联自增主键ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     @ApiModelProperty("所属帖子ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long postId;
 

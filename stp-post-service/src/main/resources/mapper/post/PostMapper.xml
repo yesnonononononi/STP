@@ -33,7 +33,7 @@
 
 
     <select id="queryByPostIds" resultMap="BaseResultMap">
-        select ps.id as id,
+        select ps.public_id as id,
         ps.creator_id as creator_id,
         ps.title as title,
         ps.type as type,
@@ -51,7 +51,7 @@
         <where>
             ps.status = #{status}
             <if test="posts != null and posts.size() > 0">
-                and ps.id in
+                and ps.public_id in
                 <foreach item="item" collection="posts" separator="," open="(" close=")">
                     #{item}
                 </foreach>
@@ -65,7 +65,7 @@
         </where>
     </select>
     <select id="queryByPage" resultMap="BaseResultMap">
-        select ps.id as id,
+        select ps.public_id as id,
         ps.creator_id as creator_id,
         ps.title as title,
         ps.type as type,
@@ -81,7 +81,7 @@
         from posts ps
         <where>
             <if test="cursorId != null">
-                and ps.id <![CDATA[<]]> #{cursorId}
+                and ps.public_id <![CDATA[<]]> #{cursorId}
             </if>
             <if test="creatorId != null">
                 and ps.creator_id = #{creatorId}
@@ -110,33 +110,33 @@
                 </otherwise>
             </choose>
         </where>
-        order by ps.is_top desc, ps.id desc
+        order by ps.is_top desc, ps.public_id desc
         limit #{limit}
     </select>
 
     <select id="getHotPostsByTag" resultType="java.lang.Long">
-        select p.id from posts p join post_tag_rel ptr on ptr.post_id = p.id and ptr.tag_id = #{tagId}
+        select p.public_id from posts p join post_tag_rel ptr on ptr.post_id = p.public_id and ptr.tag_id = #{tagId}
         <where>
             <if test="cursor != null">
-                p.id
+                p.public_id
                 &lt;
                 #{cursor}
             </if>
             and p.status = 1
-            order by p.hot_score desc,p.id desc
+            order by p.hot_score desc,p.public_id desc
             limit #{limit}
         </where>
     </select>
     <select id="getPostsByTag" resultType="java.lang.Long">
-        select p.id from posts p join post_tag_rel ptr on ptr.post_id = p.id and ptr.tag_id = #{tagId}
+        select p.public_id from posts p join post_tag_rel ptr on ptr.post_id = p.public_id and ptr.tag_id = #{tagId}
         <where>
             <if test="cursor != null">
-                p.id
+                p.public_id
                 &lt;
                 #{cursor}
             </if>
             and p.status = 1
-            order by p.id desc
+            order by p.public_id desc
             limit #{limit}
         </where>
     </select>

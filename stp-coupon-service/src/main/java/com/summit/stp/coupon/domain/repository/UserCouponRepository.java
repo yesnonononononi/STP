@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.coupon.domain.model.CouponStatus;
 import com.summit.stp.coupon.domain.model.UserCoupon;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public interface UserCouponRepository {
     /**
@@ -28,4 +30,6 @@ public interface UserCouponRepository {
     Integer countUnUsedByCouponId(Long couponId);
 
     Integer countByUserIdAndCouponId(Long userId, Long couponId);
+
+    Map<Long, Integer> countByUserIdAndCouponIds(Long userId, Collection<Long> couponIds);
 }

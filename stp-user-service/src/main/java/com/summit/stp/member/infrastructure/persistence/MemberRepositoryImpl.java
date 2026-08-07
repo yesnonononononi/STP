@@ -2,6 +2,7 @@ package com.summit.stp.member.infrastructure.persistence;
 
 import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.summit.stp.common.application.domain.exception.NoSuchMemberException;
 import com.summit.stp.common.application.api.vo.MemberVO;
 import com.summit.stp.member.domain.model.Member;
@@ -28,7 +29,8 @@ public class MemberRepositoryImpl implements MemberRepository {
     @Override
     public Member findMemberById(Long id) {
         MemberPackagePO memberPO = memberCache.get(id, () -> {
-            MemberPackagePO temp = memberMapper.selectById(id);
+            MemberPackagePO temp = memberMapper.selectOne(new LambdaQueryWrapper<MemberPackagePO>()
+                    .eq(MemberPackagePO::getPublicId, id));
             if (temp == null) {
                 throw new NoSuchMemberException();
             }
@@ -55,13 +57,17 @@ public class MemberRepositoryImpl implements MemberRepository {
 
     @Override
     public Map<Long, MemberVO> findMemberByIds(List<Long> packageIds) {
-        List<MemberPackagePO> members = memberMapper.selectByIds(packageIds);
-        return members.stream().collect(Collectors.toMap(MemberPackagePO::getId, po->MemberVO.builder().name(po.getName()).build()));
+        List<MemberPackagePO> members = memberMapper.selectList(new LambdaQueryWrapper<MemberPackagePO>()
+                .in(MemberPackagePO::getPublicId, packageIds));
+        return members.stream().collect(Collectors.toMap(MemberPackagePO::getPublicId, po -> MemberVO.builder()
+                .id(po.getPublicId())
+                .name(po.getName())
+                .build()));
     }
 
     private Member convertToDomain(MemberPackagePO po, @Nullable MemberType type) {
         return Member.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .name(po.getName())
                 .price(po.getPrice())
                 .duration(po.getDuration())

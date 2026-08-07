@@ -70,6 +70,9 @@ public class SessionServiceImpl implements SessionService {
     public Void save(CreateSessionCommand command) {
         Long uid = UserHolder.getUser().getId();
         Long targetId = command.getTargetId();
+        if (uid != null && uid.equals(targetId)) {
+            throw new ParameterException("不能和自己建立会话");
+        }
         Long sessionId = Session.calcSessionId(targetId, uid);
         Instant now = Instant.now();
         try {
