@@ -20,7 +20,8 @@ public class CommentImageRepositoryImpl implements CommentImageRepository {
 
     @Override
     public CommentImagePO findById(Long id) {
-        return commentImageMapper.selectById(id);
+        return commentImageMapper.selectOne(new LambdaQueryWrapper<CommentImagePO>()
+                .eq(CommentImagePO::getPublicId, id));
     }
 
     @Override
@@ -34,16 +35,21 @@ public class CommentImageRepositoryImpl implements CommentImageRepository {
 
     @Override
     public void save(CommentImagePO commentImage) {
-        if (commentImage.getId() == null || commentImage.getId() == 0) {
+        CommentImagePO existing = commentImage.getPublicId() == null ? null : commentImageMapper.selectOne(
+                new LambdaQueryWrapper<CommentImagePO>().eq(CommentImagePO::getPublicId, commentImage.getPublicId()));
+        if (existing == null) {
             commentImageMapper.insert(commentImage);
-        } else {
-            commentImageMapper.updateById(commentImage);
+            return;
         }
+        commentImage.setId(existing.getId());
+        commentImage.setPublicId(existing.getPublicId());
+        commentImageMapper.updateById(commentImage);
     }
 
     @Override
     public void delete(Long id) {
-        commentImageMapper.deleteById(id);
+        commentImageMapper.delete(new LambdaQueryWrapper<CommentImagePO>()
+                .eq(CommentImagePO::getPublicId, id));
     }
 
     @Override

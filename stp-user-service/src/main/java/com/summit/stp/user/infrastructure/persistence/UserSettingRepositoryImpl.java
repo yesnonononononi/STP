@@ -22,6 +22,9 @@ public class UserSettingRepositoryImpl implements UserSettingRepository {
                 .eq(UserSettingPO::getUserId, po.getUserId()));
         if (existing != null) {
             po.setId(existing.getId());
+            if (po.getPublicId() == null) {
+                po.setPublicId(existing.getPublicId());
+            }
             int i = userSettingMapper.updateById(po);
             if (i == 0) {
                 log.warn("【用户配置模块】用户ID:{} 动作：更新用户偏好配置失败", userSetting.getUserId());
@@ -43,7 +46,7 @@ public class UserSettingRepositoryImpl implements UserSettingRepository {
 
     private UserSettingPO toPO(UserSetting userSetting) {
         UserSettingPO po = new UserSettingPO();
-        po.setId(userSetting.getId());
+        po.setPublicId(userSetting.getId());
         po.setUserId(userSetting.getUserId());
         po.setShowDelPost(userSetting.getShowDelPost());
         po.setCustomizationRecommend(userSetting.getCustomizationRecommend());
@@ -54,7 +57,7 @@ public class UserSettingRepositoryImpl implements UserSettingRepository {
 
     private UserSetting fromPO(UserSettingPO po) {
         return UserSetting.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .userId(po.getUserId())
                 .showDelPost(po.getShowDelPost())
                 .customizationRecommend(po.getCustomizationRecommend())

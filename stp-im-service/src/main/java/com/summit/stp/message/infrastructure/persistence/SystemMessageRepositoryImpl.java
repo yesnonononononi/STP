@@ -19,7 +19,7 @@ public class SystemMessageRepositoryImpl implements SystemMessageRepository {
     }
     public SystemMessagePO toPO(SystemMessage systemMessage){
         return SystemMessagePO.builder()
-                .id(systemMessage.getId())
+                .publicId(systemMessage.getId())
                 .fromUserId(systemMessage.getFromUserId())
                 .content(systemMessage.getContent())
                 .status(systemMessage.getStatus())
@@ -32,7 +32,7 @@ public class SystemMessageRepositoryImpl implements SystemMessageRepository {
     }
     public SystemMessage toDomain(SystemMessagePO po){
         return SystemMessage.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .fromUserId(po.getFromUserId())
                 .content(po.getContent())
                 .associateUser(po.getAssociateUser())

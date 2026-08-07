@@ -84,7 +84,7 @@
                         <span v-if="curCoupon"
                             class="bg-rose-50 border border-rose-100 text-rose-600 font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-xs">
                             <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
-                            -¥{{ discount }} ({{ curCoupon.name }})
+                            -¥{{ discount }} ({{ curCoupon.name }}{{ curCoupon.discount ? ` · ${Number(curCoupon.discount) * 10}折` : '' }})
                         </span>
                         <span v-else-if="canUseCoupon.length > 0"
                             class="bg-amber-50 border border-amber-100 text-amber-750 font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1 animate-pulse">
@@ -230,7 +230,7 @@
                 </div>
 
                 <!-- Cards list -->
-                <div class="relative flex items-center h-28 rounded-2xl overflow-hidden shadow-sm transition-all duration-200 hover:scale-[1.01]"
+                <div class="relative flex items-center h-24 rounded-2xl overflow-hidden shadow-sm transition-all duration-200 hover:scale-[1.01]"
                     :class="coupon.isAvailable
                         ? 'bg-linear-to-r from-amber-400 via-amber-550 to-orange-500 text-white cursor-pointer hover:shadow-md hover:shadow-amber-100/50'
                         : 'bg-slate-50 border border-slate-200/80 text-slate-400'"
@@ -247,16 +247,39 @@
                     <div class="w-[30%] flex flex-col items-center justify-center border-r border-dashed border-white/30 h-full relative"
                         :class="!coupon.isAvailable ? 'border-slate-200' : ''">
                         <div class="flex items-baseline gap-0.5">
-                            <span class="text-xs font-semibold">¥</span>
-                            <span class="text-3xl font-black tracking-tight">{{ coupon.amount || 0 }}</span>
+                            <template v-if="coupon.amount">
+                                <span class="text-xs font-semibold">¥</span>
+                                <span class="text-3xl font-black tracking-tight">{{ coupon.amount }}</span>
+                            </template>
+                            <template v-else-if="coupon.discount">
+                                <span class="text-3xl font-black tracking-tight">{{ Number(coupon.discount) * 10 }}</span>
+                                <span class="text-xs font-semibold ml-0.5">折</span>
+                            </template>
+                            <template v-else>
+                                <span class="text-xl font-bold">免费</span>
+                            </template>
                         </div>
                     </div>
 
                     <!-- Coupon info section (Right) -->
                     <div class="w-[70%] flex items-center justify-between p-4 h-full">
                         <div class="flex flex-col gap-1 justify-center text-xs grow pr-2">
-                            <span class="font-bold text-sm leading-tight"
-                                :class="coupon.isAvailable ? 'text-white' : 'text-slate-650'">{{ coupon.name }}</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-bold text-sm leading-tight"
+                                    :class="coupon.isAvailable ? 'text-white' : 'text-slate-650'">{{ coupon.name }}</span>
+                                <Tooltip :content="coupon.description" placement="bottom" theme="glass" v-if="coupon.description">
+                                    <svg t="1781775325917"
+                                        class="w-4 h-4 cursor-pointer transition-colors duration-200"
+                                        :class="coupon.isAvailable ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-indigo-650'"
+                                        viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                                        <path
+                                            d="M511.333 127.333c51.868 0 102.15 10.144 149.451 30.15 45.719 19.337 86.792 47.034 122.078 82.321 35.287 35.286 62.983 76.359 82.321 122.078 20.006 47.3 30.15 97.583 30.15 149.451s-10.144 102.15-30.15 149.451c-19.337 45.719-47.034 86.792-82.321 122.078-35.286 35.287-76.359 62.983-122.078 82.321-47.3 20.006-97.583 30.15-149.451 30.15s-102.15-10.144-149.451-30.15c-45.719-19.337-86.792-47.034-122.078-82.321-35.287-35.286-62.983-76.359-82.321-122.078-20.006-47.3-30.15-97.583-30.15-149.451s10.144-102.15 30.15-149.451c19.337-45.719 47.034-86.792 82.321-122.078 35.286-35.287 76.359-62.983 122.078-82.321 47.301-20.006 97.583-30.15 149.451-30.15m0-64c-247.424 0-448 200.576-448 448s200.576 448 448 448 448-200.576 448-448-200.576-448-448-448z"
+                                            fill="currentColor"></path>
+                                        <path d="M543.334 576h-64.001l-31.246-320.047h128.025z" fill="currentColor"></path>
+                                        <path d="M512.099 702.965m-40 0a40 40 0 1 0 80 0 40 40 0 1 0-80 0Z" fill="currentColor"></path>
+                                    </svg>
+                                </Tooltip>
+                            </div>
                             <span class="font-semibold text-[10px]"
                                 :class="coupon.isAvailable ? 'text-amber-150/90' : 'text-slate-400'">{{
                                     substractTime(coupon.endTime || '') }} 后过期</span>
@@ -290,6 +313,7 @@ import {Payer} from '../composables/payer';
 import {CircleCheck, CircleCheckFilled} from '@element-plus/icons-vue';
 import {CouponAPI, type CouponVO} from '@/services/coupon/coupon';
 import {TimeUtils} from '@/utils/time';
+import Tooltip from '@/presentation/components/Tooltip.vue';
 import {MemberAPI, type MemberConfig} from '@/services/member';
 import type {payForm} from '../types/pay';
 import {PayFormBuilder} from '../utils/PayFormBuilder';
@@ -369,7 +393,7 @@ async function toPay() {
     if (!commodityInfo.value) return;
     try {
         const form: payForm = {
-            packageId: Number(commodityId),
+            packageId: commodityId,
             payType: payType.value,
             quantity: quantity ? Number(quantity) : 1,
             uname: user?.nick || '',

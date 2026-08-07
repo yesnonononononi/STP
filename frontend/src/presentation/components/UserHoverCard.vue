@@ -135,6 +135,10 @@ async function handleFollow() {
   }
   const userId = displayUser.value.id;
   if (!userId) return;
+  if (String(userId) === String(me.id)) {
+    log.error("不能关注自己");
+    return;
+  }
   try {
     const followerId = Number(me.id);
     const followeeId = Number(userId);
@@ -191,6 +195,11 @@ function handleMessage() {
   if (!authStore.token) {
     log.warning("请先登录后操作");
     authStore.showLoginDialog();
+    return;
+  }
+  const userId = displayUser.value.id;
+  if (userId && String(userId) === String(me?.id)) {
+    log.error("不能给自己发送私信");
     return;
   }
   showMessageInput.value = true;

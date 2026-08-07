@@ -167,13 +167,15 @@ public class DailySignInCacheProviderImpl implements DailySignInCacheProvider {
         LocalDate now = LocalDate.now();
         LocalDate targetMonth = LocalDate.of(now.getYear(), month, 1);
         int length = targetMonth.lengthOfMonth();
+        String key = buildKey(now.getYear(), month, userId);
         redisTemplate.executePipelined(new SessionCallback<>() {
             @Override
             public Object execute(RedisOperations operations) throws DataAccessException {
                 ValueOperations valueOperations = operations.opsForValue();
                 for (int i = 0; i < length; i++) {
-                    valueOperations.setBit(buildKey(now.getYear(), month, userId), i, i < list.size() && (list.get(i) == 1));
+                    valueOperations.setBit(key, i, i < list.size() && (list.get(i) == 1));
                 }
+                operations.expire(key, ToolboxConstants.Business.TTL, TimeUnit.DAYS);
                 return null;
             }
         });

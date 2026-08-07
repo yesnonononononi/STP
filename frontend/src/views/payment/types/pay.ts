@@ -6,7 +6,7 @@ export interface pay {
 
 export interface payForm {
   uname: string
-  packageId: number
+  packageId: string
   couponId: number | null
   quantity: number
   payType: number

@@ -300,14 +300,6 @@
               </span>
             </div>
 
-            <!-- HR直投 (高级CSS动效徽章) -->
-            <div
-              class="hr-direct-badge group flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-[11px] px-3.5 py-1.5 rounded-full cursor-pointer shadow-md select-none transition-all duration-300 transform hover:scale-105">
-              <span class="flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
-                HR 直投
-              </span>
-            </div>
           </div>
         </div>
 

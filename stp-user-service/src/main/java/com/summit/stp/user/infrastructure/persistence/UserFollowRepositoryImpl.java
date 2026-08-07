@@ -15,7 +15,8 @@ public class UserFollowRepositoryImpl implements UserFollowRepository {
 
     @Override
     public UserFollowPO findById(Long id) {
-        return userFollowMapper.selectById(id);
+        return userFollowMapper.selectOne(new LambdaQueryWrapper<UserFollowPO>()
+                .eq(UserFollowPO::getPublicId, id));
     }
 
     @Override
@@ -42,16 +43,31 @@ public class UserFollowRepositoryImpl implements UserFollowRepository {
 
     @Override
     public void save(UserFollowPO userFollow) {
-        if (userFollow.getId() == null || userFollow.getId() == 0) {
+        UserFollowPO existing = findExisting(userFollow);
+        if (existing == null) {
             userFollowMapper.insert(userFollow);
-        } else {
-            userFollowMapper.updateById(userFollow);
+            return;
         }
+        userFollow.setId(existing.getId());
+        userFollow.setPublicId(existing.getPublicId());
+        userFollowMapper.updateById(userFollow);
+    }
+
+    private UserFollowPO findExisting(UserFollowPO userFollow) {
+        if (userFollow.getPublicId() != null) {
+            return userFollowMapper.selectOne(new LambdaQueryWrapper<UserFollowPO>()
+                    .eq(UserFollowPO::getPublicId, userFollow.getPublicId()));
+        }
+        if (userFollow.getId() != null && userFollow.getId() != 0) {
+            return userFollow;
+        }
+        return null;
     }
 
     @Override
     public void delete(Long id) {
-        userFollowMapper.deleteById(id);
+        userFollowMapper.delete(new LambdaQueryWrapper<UserFollowPO>()
+                .eq(UserFollowPO::getPublicId, id));
     }
 
     @Override

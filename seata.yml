@@ -1,0 +1,61 @@
+server:
+  port: 7091
+
+spring:
+  application:
+    name: seata-server
+
+logging:
+  file:
+    path: /seata-server/logs
+console:
+  enable: true
+  user:
+    username: ${SEATA_CONSOLE_USERNAME:admin}
+    password: ${SEATA_CONSOLE_PASSWORD:admin}
+  jwt:
+    secret: ${SEATA_CONSOLE_JWT_SECRET:6Bf1z0hEQLdj4nS374Sh5PLYySqg6pkSBsYwzxOFrOg=}
+    expire: ${SEATA_CONSOLE_JWT_EXPIRE:86400}
+seata:
+  security:
+    secretKey: ${SEATA_SECRET_KEY:SeataSecretKey0c382ef121d778043159209298fd40bf3850a017}
+    tokenValidity: ${SEATA_TOKEN_VALIDITY:1800000}
+    tokenValidityInMilliseconds: ${SEATA_TOKEN_VALIDITY_IN_MILLI_SECONDS:1800000}
+  registry:
+    type: nacos
+    nacos:
+      server-addr: nacos:8848
+      username: ${NACOS_USER_NAME:nacos}
+      password: ${NACOS_USER_PASSWORD:nacos}
+      group: SEATA_GROUP
+
+
+  config:
+    type: nacos
+    nacos:
+      server-addr: nacos:8848
+      data-id: seata.yaml
+      username: ${NACOS_USER_NAME:nacos}
+      password: ${NACOS_USER_PASSWORD:nacos}
+      group: SEATA_GROUP
+
+  store:
+    mode: db
+    session:
+      mode: db
+    lock:
+      mode: db
+    db:
+      datasource: druid
+      dbType: mysql
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://mysql:3306/seata?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      username: ${MYSQL_USER:root}
+      password: ${MYSQL_PASSWORD:root}
+      min-conn: 10
+      max-conn: 100
+      global-table: global_table
+      branch-table: branch_table
+      lock-table: lock_table
+      distributed-lock-table: distributed_lock
+      query-limit: 1000

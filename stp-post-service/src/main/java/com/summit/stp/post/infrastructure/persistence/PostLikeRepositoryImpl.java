@@ -19,11 +19,25 @@ public class PostLikeRepositoryImpl implements PostLikeRepository {
 
     @Override
     public void save(PostLikePO postLike) {
-        if (postLike.getId() == null || postLike.getId() == 0) {
+        PostLikePO existing = findExisting(postLike);
+        if (existing == null) {
             postLikeMapper.insert(postLike);
-        } else {
-            postLikeMapper.updateById(postLike);
+            return;
         }
+        postLike.setId(existing.getId());
+        postLike.setPublicId(existing.getPublicId());
+        postLikeMapper.updateById(postLike);
+    }
+
+    private PostLikePO findExisting(PostLikePO postLike) {
+        if (postLike.getPublicId() != null) {
+            return postLikeMapper.selectOne(new LambdaQueryWrapper<PostLikePO>()
+                    .eq(PostLikePO::getPublicId, postLike.getPublicId()));
+        }
+        if (postLike.getId() != null && postLike.getId() != 0) {
+            return postLike;
+        }
+        return null;
     }
 
     @Override

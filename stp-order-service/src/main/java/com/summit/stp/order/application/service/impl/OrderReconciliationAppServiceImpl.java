@@ -1,5 +1,6 @@
 package com.summit.stp.order.application.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.summit.stp.common.application.domain.event.PaySuccessEvent;
 import com.summit.stp.common.application.service.queue.QueueSender;
 import com.summit.stp.common.constants.MqConstants;
@@ -38,7 +39,8 @@ public class OrderReconciliationAppServiceImpl implements OrderReconciliationApp
     public Result<String> reconcileOrder(Long orderId) {
         log.info("【订单对账】开始对账订单: {}", orderId);
         
-        OrderPO orderPO = orderMapper.selectById(orderId);
+        OrderPO orderPO = orderMapper.selectOne(new LambdaQueryWrapper<OrderPO>()
+                .eq(OrderPO::getPublicId, orderId));
         if (orderPO == null) {
             return Result.error("对账失败，订单不存在: " + orderId);
         }

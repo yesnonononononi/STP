@@ -8,6 +8,6 @@ import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface TagMapper extends BaseMapper<TagPO> {
-    @Update("UPDATE tag SET use_count = use_count + #{delta} WHERE id = #{id}")
+    @Update("UPDATE tag SET use_count = use_count + #{delta} WHERE public_id = #{id}")
     int incrUseCount(@Param("id") Long id, @Param("delta") Integer delta);
 }

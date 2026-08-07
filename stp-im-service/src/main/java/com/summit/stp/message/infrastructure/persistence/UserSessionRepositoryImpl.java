@@ -19,7 +19,7 @@ public class UserSessionRepositoryImpl implements UserSessionRepository {
 
     public UserSessionPO toPO(UserSession userSession) {
         return UserSessionPO.builder()
-                .id(userSession.getId())
+                .publicId(userSession.getId())
                 .userId(userSession.getUserId())
                 .sessionId(userSession.getSessionId())
                 .isTop(userSession.getIsTop())
@@ -37,7 +37,7 @@ public class UserSessionRepositoryImpl implements UserSessionRepository {
 
     public UserSession toDomain(UserSessionPO po) {
         return UserSession.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .userId(po.getUserId())
                 .sessionId(po.getSessionId())
                 .isTop(po.getIsTop())
@@ -81,11 +81,42 @@ public class UserSessionRepositoryImpl implements UserSessionRepository {
 
     @Override
     public void save(UserSession userSession) {
-        userSessionMapper.insertOrUpdate(toPO(userSession));
+        UserSessionPO po = toPO(userSession);
+        UserSessionPO existing = findPOByUserIdAndSessionId(userSession.getUserId(), userSession.getSessionId());
+        if (existing == null) {
+            userSessionMapper.insert(po);
+            return;
+        }
+        userSessionMapper.updateById(withInternalIdAndPublicId(po, existing.getId(), existing.getPublicId()));
     }
 
     @Override
     public void batchUpdate(List<UserSession> list) {
-        userSessionMapper.updateById(list.stream().map(this::toPO).toList());
+        list.forEach(this::save);
+    }
+
+    private UserSessionPO findPOByUserIdAndSessionId(Long userId, Long sessionId) {
+        return userSessionMapper.selectOne(new LambdaQueryWrapper<UserSessionPO>()
+                .eq(UserSessionPO::getUserId, userId)
+                .eq(UserSessionPO::getSessionId, sessionId));
+    }
+
+    private UserSessionPO withInternalIdAndPublicId(UserSessionPO po, Long internalId, Long publicId) {
+        return UserSessionPO.builder()
+                .id(internalId)
+                .publicId(publicId != null ? publicId : po.getPublicId())
+                .userId(po.getUserId())
+                .targetId(po.getTargetId())
+                .sessionId(po.getSessionId())
+                .isTop(po.getIsTop())
+                .isMute(po.getIsMute())
+                .draft(po.getDraft())
+                .unreadCount(po.getUnreadCount())
+                .isHidden(po.getIsHidden())
+                .targetNickName(po.getTargetNickName())
+                .targetAvatar(po.getTargetAvatar())
+                .createTime(po.getCreateTime())
+                .updateTime(po.getUpdateTime())
+                .build();
     }
 }

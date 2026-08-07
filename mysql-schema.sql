@@ -1,3 +1,8 @@
+
+
+create database if not exists `nacos` default character set utf8mb4;
+
+use `nacos`;
 /*
  * Copyright 1999-2018 Alibaba Group Holding Ltd.
  *
@@ -13,10 +18,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-create database if not exists `nacos` default character set utf8mb4;
-
-use `nacos`;
 
 /******************************************/
 /*   表名称 = config_info                  */
@@ -180,3 +181,4 @@ CREATE TABLE `permissions` (
                                `action` varchar(8) NOT NULL COMMENT 'action',
                                UNIQUE INDEX `uk_role_permission` (`role`,`resource`,`action`) USING BTREE
 );
+

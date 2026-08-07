@@ -47,7 +47,7 @@ public class UserSignLogRepositoryImpl implements UserSignLogRepository {
             return null;
         }
         UserSignLogPO po = new UserSignLogPO();
-        po.setId(model.getId());
+        po.setPublicId(model.getId());
         po.setUserId(model.getUserId());
         po.setSignDate(model.getSignDate());
         po.setSignTime(model.getSignTime());
@@ -63,7 +63,7 @@ public class UserSignLogRepositoryImpl implements UserSignLogRepository {
             return null;
         }
         return UserSignLog.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .userId(po.getUserId())
                 .signDate(po.getSignDate())
                 .signTime(po.getSignTime())

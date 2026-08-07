@@ -1,5 +1,6 @@
 package com.summit.stp.rank_board.application.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.summit.stp.post.application.vo.TagVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,6 +14,7 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @Data
 public class TopicRankVO {
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
     private String name;
     private Timestamp week_start_date;

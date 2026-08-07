@@ -68,4 +68,8 @@ public class Order {
         this.status = OrderStatus.CANCELLED;
         this.updateTime = new Timestamp(System.currentTimeMillis());
     }
+
+    public boolean of(Long uid) {
+        return this.creatorId.equals(uid);
+    }
 }

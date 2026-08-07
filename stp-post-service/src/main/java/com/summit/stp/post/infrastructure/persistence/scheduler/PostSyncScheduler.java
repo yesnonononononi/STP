@@ -1,5 +1,6 @@
 package com.summit.stp.post.infrastructure.persistence.scheduler;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.summit.stp.common.application.domain.event.UserLikedChangeEvent;
 import com.summit.stp.common.application.service.queue.QueueSender;
@@ -182,9 +183,10 @@ public class PostSyncScheduler {
         Map<Long, Long> replyCounts = postCacheProvider.getReplyCounts(postIdList);
 
         // 批量查询帖子（用于获取创建时间、创建者 ID）
-        List<PostsPO> postsList = postsMapper.selectByIds(postIdList);
+        List<PostsPO> postsList = postsMapper.selectList(new LambdaQueryWrapper<PostsPO>()
+                .in(PostsPO::getPublicId, postIdList));
         Map<Long, PostsPO> postPoMap = postsList == null ? Collections.emptyMap() :
-                postsList.stream().collect(Collectors.toMap(PostsPO::getId, Function.identity()));
+                postsList.stream().collect(Collectors.toMap(PostsPO::getPublicId, Function.identity()));
 
         Map<Long, Double> scoresMap = new HashMap<>();
 
@@ -211,7 +213,7 @@ public class PostSyncScheduler {
                 }
 
                 LambdaUpdateWrapper<PostsPO> wrapper = new LambdaUpdateWrapper<>();
-                wrapper.eq(PostsPO::getId, postId)
+                wrapper.eq(PostsPO::getPublicId, postId)
                         .set(PostsPO::getLikeCount, likeCount)
                         .set(PostsPO::getCollectCount, collectCount)
                         .set(PostsPO::getViewCount, viewCount)

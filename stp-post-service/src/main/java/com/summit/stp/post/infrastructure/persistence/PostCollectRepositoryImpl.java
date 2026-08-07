@@ -20,11 +20,25 @@ public class PostCollectRepositoryImpl implements PostCollectRepository {
 
     @Override
     public void save(PostCollectPO postCollect) {
-        if (postCollect.getId() == null || postCollect.getId() == 0) {
+        PostCollectPO existing = findExisting(postCollect);
+        if (existing == null) {
             postCollectMapper.insert(postCollect);
-        } else {
-            postCollectMapper.updateById(postCollect);
+            return;
         }
+        postCollect.setId(existing.getId());
+        postCollect.setPublicId(existing.getPublicId());
+        postCollectMapper.updateById(postCollect);
+    }
+
+    private PostCollectPO findExisting(PostCollectPO postCollect) {
+        if (postCollect.getPublicId() != null) {
+            return postCollectMapper.selectOne(new LambdaQueryWrapper<PostCollectPO>()
+                    .eq(PostCollectPO::getPublicId, postCollect.getPublicId()));
+        }
+        if (postCollect.getId() != null && postCollect.getId() != 0) {
+            return postCollect;
+        }
+        return null;
     }
 
     @Override

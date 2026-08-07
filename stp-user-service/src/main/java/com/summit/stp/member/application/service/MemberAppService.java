@@ -17,5 +17,7 @@ public interface MemberAppService {
 
     Result<MemberTypeVO> queryMemberTypeById(Long id);
 
+    Result<Map<Long, MemberTypeVO>> queryMemberTypeByIds(List<Long> ids);
+
     Result<Map<Long, MemberVO>> queryMemberByIds(List<Long> ids);
 }

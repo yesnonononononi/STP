@@ -81,10 +81,9 @@
                     </div>
                 </div>
                 <div class="tag flex flex-wrap items-center gap-2.5 mx-4 px-4 pb-2 select-none">
-                    <div class="w-auto text-[11px] font-bold h-7 px-3.5 rounded-full flex items-center justify-center bg-gradient-to-br backdrop-blur-xs border hover:scale-[1.04] transition-all duration-300 cursor-default shadow-xs"
+                    <div class="w-auto text-[11px] font-semibold h-7 px-3.5 rounded-full flex items-center justify-center bg-gradient-to-br backdrop-blur-xs border hover:scale-[1.03] transition-all duration-300 cursor-default shadow-xs"
                         :class="getTagClass(index)"
                         v-for="(item, index) in userTag" :key="index">
-                        <span class="opacity-55 mr-0.5 font-black">#</span>
                         <span>{{ item.name }}</span>
                     </div>
                 </div>
@@ -494,10 +493,10 @@ const state = reactive({
 
 function getTagClass(index: number) {
     const styles = [
-        'from-blue-50/80 to-indigo-100/60 text-blue-600 border-blue-200/40 hover:from-blue-100/80 hover:to-indigo-200/60 hover:text-blue-700 shadow-blue-500/5',
-        'from-purple-50/80 to-fuchsia-100/60 text-purple-600 border-purple-200/40 hover:from-purple-100/80 hover:to-fuchsia-200/60 hover:text-purple-700 shadow-purple-500/5',
-        'from-pink-50/80 to-rose-100/60 text-rose-600 border-rose-200/40 hover:from-pink-100/80 hover:to-rose-200/60 hover:text-rose-700 shadow-rose-500/5',
-        'from-emerald-50/80 to-teal-100/60 text-emerald-600 border-emerald-200/40 hover:from-emerald-100/80 hover:to-teal-200/60 hover:text-emerald-700 shadow-emerald-500/5'
+        'from-slate-50/90 to-slate-100/70 text-slate-600 border-slate-200/40 hover:from-slate-100/90 hover:to-slate-200/70 hover:text-slate-700 shadow-slate-500/5',
+        'from-blue-50/90 to-sky-100/70 text-blue-600 border-blue-200/40 hover:from-blue-100/90 hover:to-sky-200/70 hover:text-blue-700 shadow-blue-500/5',
+        'from-indigo-50/90 to-indigo-100/70 text-indigo-600 border-indigo-200/40 hover:from-indigo-100/90 hover:to-indigo-200/70 hover:text-indigo-700 shadow-indigo-500/5',
+        'from-zinc-50/90 to-zinc-100/70 text-zinc-600 border-zinc-200/40 hover:from-zinc-100/90 hover:to-zinc-200/70 hover:text-zinc-700 shadow-zinc-500/5'
     ];
     return styles[index % styles.length];
 }
@@ -801,6 +800,10 @@ async function handleFollow() {
         return;
     }
     if (!userInfo.value?.id) return;
+    if (String(userInfo.value.id) === String(currentUser.value.id)) {
+        log.error("不能关注自己");
+        return;
+    }
     try {
         const followerId = currentUser.value.id;
         const followeeId = userInfo.value.id;
@@ -827,6 +830,10 @@ function handleMessage() {
     if (!authStore.token) {
         log.warning("请先登录后操作");
         authStore.showLoginDialog();
+        return;
+    }
+    if (userInfo.value?.id && String(userInfo.value.id) === String(currentUser.value?.id)) {
+        log.error("不能给自己发送私信");
         return;
     }
     showMessageInput.value = true;

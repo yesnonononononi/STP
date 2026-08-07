@@ -1,7 +1,7 @@
 services:
   redis:
     container_name: stp-redis
-    image: redis:7.2
+    image: redis:8
     ports:
       - "6379:6379"
     volumes:
@@ -24,6 +24,7 @@ services:
       - mysql-data:/var/lib/mysql
       - ./mysql-schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
       - ./init.sql:/docker-entrypoint-initdb.d/2-data.sql
+      - ./seata.sql:/docker-entrypoint-initdb.d/3-seata.sql
     restart: always
     env_file:
       - .env
@@ -113,6 +114,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  seata:
+    container_name: stp-seata
+    image: seataio/seata-server:2.0.0-slim
+    restart: always
+    ports:
+      - "8091:8091"
+      - "7091:7091"
+    environment:
+      SEATA_PORT: 8091
+      SEATA_MODE: db
+    depends_on:
+      mysql:
+          condition: service_healthy
+    volumes:
+      - ./seata.yml:/seata-server/resources/application.yml
 
   auth-service:
     container_name: stp-auth-service

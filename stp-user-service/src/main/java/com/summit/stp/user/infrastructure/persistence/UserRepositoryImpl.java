@@ -35,6 +35,9 @@ public class UserRepositoryImpl implements UserRepository {
                 .eq(UserPO::getUname, po.getUname()));
         if (existing != null) {
             po.setId(existing.getId());
+            if (po.getPublicId() == null) {
+                po.setPublicId(existing.getPublicId());
+            }
             int i = userMapper.updateById(po);
             if(i == 0){
                 log.warn("更新用户失败:{}",user.getNick());
@@ -42,8 +45,8 @@ public class UserRepositoryImpl implements UserRepository {
         } else {
             userMapper.insert(po);
         }
-        // 保存用户统计信息
-        saveUserStat(po.getId(), user);
+        // 保存用户统计信息，user_stat.user_id 使用用户业务ID
+        saveUserStat(po.getPublicId(), user);
     }
 
     @Override
@@ -63,7 +66,8 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public User findUserById(Long id) {
-        UserPO userPO = userMapper.selectById(id);
+        UserPO userPO = userMapper.selectOne(new LambdaQueryWrapper<UserPO>()
+                .eq(UserPO::getPublicId, id));
         if (userPO == null) {
             return null;
         }
@@ -72,17 +76,27 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public void updateProfile(User user) {
-        userMapper.updateById(toPO(user));
+        UserPO existing = userMapper.selectOne(new LambdaQueryWrapper<UserPO>()
+                .eq(UserPO::getPublicId, user.getId()));
+        if (existing == null) {
+            log.warn("更新用户资料失败，用户不存在:{}", user.getId());
+            return;
+        }
+        UserPO po = toPO(user);
+        po.setId(existing.getId());
+        po.setPublicId(existing.getPublicId());
+        userMapper.updateById(po);
         saveUserStat(user.getId(), user);
     }
 
     @Override
     public Map<Long, User> findUserByIds(Collection<Long> userIds) {
         if(userIds.isEmpty())return Map.of();
-        List<UserPO> userPOS = userMapper.selectByIds(userIds);
+        List<UserPO> userPOS = userMapper.selectList(new LambdaQueryWrapper<UserPO>()
+                .in(UserPO::getPublicId, userIds));
         List<UserStatPO> statPOS = userStatMapper.selectList(new LambdaQueryWrapper<UserStatPO>().in(UserStatPO::getUserId, userIds));
         Map<Long, UserStatPO> map = statPOS.stream().collect(Collectors.toMap(UserStatPO::getUserId, po -> po));
-        return userPOS.stream().map(po -> fromPO(po, map.get(po.getId()))).collect(Collectors.toMap(User::getId, user -> user));
+        return userPOS.stream().map(po -> fromPO(po, map.get(po.getPublicId()))).collect(Collectors.toMap(User::getId, user -> user));
     }
 
     private void saveUserStat(Long userId, User user) {
@@ -105,7 +119,7 @@ public class UserRepositoryImpl implements UserRepository {
     private UserPO toPO(User user) {
         UserPO po = new UserPO();
         po.setNick(user.getNick());
-        po.setId(user.getId());
+        po.setPublicId(user.getId());
         po.setUname(user.getUsername().getValue());
         po.setPassword(user.getPassword().getEncryptedValue());
         po.setPhone(user.getPhoneNumber() != null ? user.getPhoneNumber().getValue() : null);
@@ -123,8 +137,8 @@ public class UserRepositoryImpl implements UserRepository {
         Long fans, topic, liked;
         if(statPO  == null) {
             UserStatPO stat = null;
-            if (po.getId() != null) {
-                stat = userStatMapper.selectById(po.getId());
+            if (po.getPublicId() != null) {
+                stat = userStatMapper.selectById(po.getPublicId());
             }
             fans = (stat != null && stat.getFans() != null) ? stat.getFans() : 0L;
             topic = (stat != null && stat.getTopic() != null) ? stat.getTopic() : 0L;
@@ -148,7 +162,7 @@ public class UserRepositoryImpl implements UserRepository {
                 .avatar(po.getAvatar())
                 .ip(po.getIp())
                 .bgImage(po.getBgImage())
-                .id(po.getId())
+                .id(po.getPublicId())
                 .gender(po.getGender())
                 .age(po.getAge())
                 .build();

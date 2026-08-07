@@ -7,6 +7,8 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import java.io.File;
+
 @SpringBootApplication
 @EnableScheduling
 @EnableDiscoveryClient
@@ -17,6 +19,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 })
 public class StpUserApplication {
     public static void main(String[] args) {
+        System.out.println("user.dir: " + System.getProperty("user.dir"));
+        System.out.println("env file exists: " + new File(".env").exists());
         SpringApplication.run(StpUserApplication.class, args);
     }
 }

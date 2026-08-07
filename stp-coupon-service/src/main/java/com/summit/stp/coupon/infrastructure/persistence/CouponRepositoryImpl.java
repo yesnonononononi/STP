@@ -2,6 +2,7 @@ package com.summit.stp.coupon.infrastructure.persistence;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.summit.stp.coupon.domain.model.Coupon;
 import com.summit.stp.coupon.domain.repository.CouponRepository;
 import com.summit.stp.coupon.infrastructure.persistence.mapper.CouponMapper;
@@ -22,7 +23,7 @@ public class CouponRepositoryImpl implements CouponRepository {
 
     @Override
     public Coupon findCouponById(Long couponId) {
-        CouponPO couponPO = couponMapper.selectById(couponId);
+        CouponPO couponPO = couponMapper.selectOne(new LambdaQueryWrapper<CouponPO>().eq(CouponPO::getPublicId, couponId));
         if (couponPO == null) {
             return null;
         }
@@ -34,7 +35,7 @@ public class CouponRepositoryImpl implements CouponRepository {
         ).stream().map(CouponUseScopePO::getRelationId).collect(Collectors.toList());
 
         return Coupon.builder()
-                .id(couponPO.getId())
+                .id(couponPO.getPublicId())
                 .name(couponPO.getName())
                 .amount(couponPO.getAmount())
                 .discount(couponPO.getDiscount())
@@ -52,19 +53,23 @@ public class CouponRepositoryImpl implements CouponRepository {
     public void update(Coupon template) {
         CouponPO build = CouponPO.builder().build();
         BeanUtil.copyProperties(template, build);
-        couponMapper.updateById(build);
+        build.setId(null);
+        build.setPublicId(template.getId());
+        couponMapper.update(build, new LambdaUpdateWrapper<CouponPO>()
+                .eq(CouponPO::getPublicId, template.getId()));
     }
 
     @Override
     public  List<Coupon> findByIds(List<Long> cList) {
         if(cList.isEmpty())return List.of();
-        List<CouponPO> couponPOS = couponMapper.selectByIds(cList);
+        List<CouponPO> couponPOS = couponMapper.selectList(new LambdaQueryWrapper<CouponPO>()
+                .in(CouponPO::getPublicId, cList));
         return couponPOS.stream().map(this::toModel).toList();
     }
     private Coupon toModel(CouponPO couponPO) {
         // 获取可用范围实体ID列表
         return Coupon.builder()
-                .id(couponPO.getId())
+                .id(couponPO.getPublicId())
                 .name(couponPO.getName())
                 .amount(couponPO.getAmount())
                 .discount(couponPO.getDiscount())

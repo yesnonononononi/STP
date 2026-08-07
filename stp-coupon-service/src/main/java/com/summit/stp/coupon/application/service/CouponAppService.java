@@ -44,7 +44,7 @@ public interface CouponAppService {
      * @param id 优惠券id
      * @param orderId 关联订单id
      */
-    void use(Long id, Long orderId);
+    void use(Long id, Long orderId, Long typeId, Long packageId);
 
     /**
      * 优惠券退回
@@ -62,14 +62,6 @@ public interface CouponAppService {
      */
     BigDecimal calculateAmount(BigDecimal price, Integer quantity,Long couponId);
 
-    /**
-     * 下单前置强校验：验证优惠券是否适用于指定商品分类和商品套餐单品
-     * 
-     * @param couponId 优惠券ID
-     * @param typeId 商品套餐分类ID
-     * @param packageId 具体商品套餐单品ID
-     */
-    void validateCouponApplicability(Long couponId, Long typeId, Long packageId);
 
     /**
      * 查询当前用户的所有优惠券，并根据指定的商品分类和单品标识在当前订单下是否可用

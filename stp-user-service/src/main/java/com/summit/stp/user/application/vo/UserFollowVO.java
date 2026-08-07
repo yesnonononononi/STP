@@ -1,5 +1,6 @@
 package com.summit.stp.user.application.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -16,12 +17,15 @@ import java.sql.Timestamp;
 @ApiModel(value = "UserFollowVO", description = "用户关注详情展示数据")
 public class UserFollowVO {
     @ApiModelProperty("主键ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     @ApiModelProperty("关注者用户ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long followerId;
 
     @ApiModelProperty("被关注者用户ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long followeeId;
 
     @ApiModelProperty("状态：1-正常关注，2-已取消，3-互相关注")

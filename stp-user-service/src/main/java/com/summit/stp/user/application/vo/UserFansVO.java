@@ -1,5 +1,6 @@
 package com.summit.stp.user.application.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -16,10 +17,12 @@ import tools.jackson.databind.ser.std.ToStringSerializer;
 @ApiModel(value = "UserFansVO", description = "用户粉丝展示数据")
 public class UserFansVO {
     @ApiModelProperty("关注关系记录ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     @ApiModelProperty("粉丝用户ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long userId;
 

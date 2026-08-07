@@ -1,5 +1,6 @@
 package com.summit.stp.order.application.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,6 +15,7 @@ public class ProductVO {
     /**
      * 商品/套餐ID
      */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     /**

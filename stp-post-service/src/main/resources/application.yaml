@@ -9,23 +9,27 @@ spring:
       - optional:nacos:jdbc.yaml
       - optional:nacos:redis.yaml
       - optional:nacos:queue.yaml
+      - optional:file:.env[.properties]
       - optional:nacos:minio.yaml
+      - optional:nacos:sentinel.yaml
+      - optional:nacos:shared-seata.yaml?group=SEATA_GROUP
+      - optional:nacos:shared-common.yaml
   cloud:
     nacos:
       config:
         import-check:
           enabled: false
-        username: ${NACOS_USER_NAME:nacos}
-        password: ${NACOS_USER_PASSWORD:nacos}
+        username: ${NACOS_USER_NAME}
+        password: ${NACOS_USER_PASSWORD}
         refresh-enabled: true
         file-extension: yaml
-      server-addr: ${NACOS_HOST:localhost}:${NACOS_PORT:8848}
+      server-addr: ${HOST}:8848
 
   # 文件上传限制：multipart 请求限制需要高于业务层的图片/视频限制
   servlet:
     multipart:
-      max-file-size: ${MAX_FILE_SIZE:50MB}
-      max-request-size: ${MAX_REQUEST_SIZE:60MB}
+      max-file-size: ${MAX_FILE_SIZE}
+      max-request-size: ${MAX_REQUEST_SIZE}
 
 
 stp:

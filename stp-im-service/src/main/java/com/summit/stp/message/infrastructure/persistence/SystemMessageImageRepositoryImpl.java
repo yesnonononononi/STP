@@ -19,7 +19,7 @@ public class SystemMessageImageRepositoryImpl implements SystemMessageImageRepos
 
     public SystemMessageImagePO toPO(SystemMessageImage systemMessageImage){
         return SystemMessageImagePO.builder()
-                .id(systemMessageImage.getId())
+                .publicId(systemMessageImage.getId())
                 .messageId(systemMessageImage.getMessageId())
                 .image(systemMessageImage.getImage())
                 .status(systemMessageImage.getStatus())
@@ -29,7 +29,7 @@ public class SystemMessageImageRepositoryImpl implements SystemMessageImageRepos
     }
     public SystemMessageImage toDomain(SystemMessageImagePO systemMessageImagePO){
         return SystemMessageImage.builder()
-                .id(systemMessageImagePO.getId())
+                .id(systemMessageImagePO.getPublicId())
                 .messageId(systemMessageImagePO.getMessageId())
                 .image(systemMessageImagePO.getImage())
                 .status(systemMessageImagePO.getStatus())
@@ -41,10 +41,10 @@ public class SystemMessageImageRepositoryImpl implements SystemMessageImageRepos
 
     @Override
     public Map<Long, List<SystemMessageImage>> findByIds(List<Long> list) {
-        LambdaQueryWrapper<SystemMessageImagePO> queryWrapper = new LambdaQueryWrapper<SystemMessageImagePO>().in(SystemMessageImagePO::getId, list);
+        LambdaQueryWrapper<SystemMessageImagePO> queryWrapper = new LambdaQueryWrapper<SystemMessageImagePO>().in(SystemMessageImagePO::getMessageId, list);
         return systemMessageImageMapper.selectList(queryWrapper)
                 .stream()
                 .map(this::toDomain)
-                .collect(Collectors.toMap(SystemMessageImage::getMessageId, List::of));
+                .collect(Collectors.groupingBy(SystemMessageImage::getMessageId));
     }
 }

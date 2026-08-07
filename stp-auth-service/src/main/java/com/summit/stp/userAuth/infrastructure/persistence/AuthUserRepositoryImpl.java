@@ -41,7 +41,7 @@ public class AuthUserRepositoryImpl implements AuthUserRepository {
         }
 
         AuthUser user = AuthUser.builder()
-                .id(userPO.getId())
+                .id(userPO.getPublicId())
                 .username(Username.of(userPO.getUname()))
                 .password(Password.fromHash(userPO.getPassword()))
                 .phoneNumber(PhoneNumber.of(userPO.getPhone()))

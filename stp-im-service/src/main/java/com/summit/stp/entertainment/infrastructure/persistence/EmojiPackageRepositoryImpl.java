@@ -28,7 +28,7 @@ public class EmojiPackageRepositoryImpl implements EmojiPackageRepository {
 
     private EmojiPackage toDomain(EmojiPackagePO po) {
         return EmojiPackage.builder()
-                .id(po.getId())
+                .id(po.getPublicId())
                 .name(po.getName())
                 .description(po.getDescription())
                 .coverImage(po.getCoverImage())

@@ -1,5 +1,6 @@
 package com.summit.stp.comment.application.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -16,9 +17,11 @@ import java.sql.Timestamp;
 @ApiModel(value = "CommentImageVO", description = "评论图片展示数据")
 public class CommentImageVO {
     @ApiModelProperty("自增主键ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     @ApiModelProperty("所属评论ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long commentId;
 
     @ApiModelProperty("图片名称")

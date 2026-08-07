@@ -146,7 +146,7 @@ public class RankRepositoryImpl implements RankRepository {
 
     private RankBoard toDomain(CreatorRankPO entry) {
         return RankBoard.builder()
-                .id(entry.getId())
+                .id(entry.getPublicId())
                 .name("创作者周榜")
                 .entityId(entry.getUserId())
                 .score(entry.getScore() == null ? 0D : entry.getScore().doubleValue())
@@ -160,7 +160,7 @@ public class RankRepositoryImpl implements RankRepository {
 
     private RankBoard toDomain(PostRankPO entry) {
         return RankBoard.builder()
-                .id(entry.getId())
+                .id(entry.getPublicId())
                 .name("热点榜")
                 .entityId(entry.getPostId())
                 .score(entry.getScore() == null ? 0D : entry.getScore().doubleValue())
@@ -174,7 +174,7 @@ public class RankRepositoryImpl implements RankRepository {
 
     private RankBoard toDomain(TopicRankPO entry) {
         return RankBoard.builder()
-                .id(entry.getId())
+                .id(entry.getPublicId())
                 .name("话题榜")
                 .entityId(entry.getTagId())
                 .score(entry.getScore() == null ? 0D : entry.getScore().doubleValue())

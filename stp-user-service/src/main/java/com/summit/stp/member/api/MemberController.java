@@ -51,4 +51,10 @@ public class MemberController {
     public Result<MemberTypeVO> queryMemberTypeById(@PathVariable Long id) {
         return memberAppService.queryMemberTypeById(id);
     }
+
+    @PostMapping("/type/get/batch")
+    @ApiOperation(value = "批量查询会员类型")
+    public Result<Map<Long, MemberTypeVO>> queryMemberTypeByIds(@RequestBody List<Long> ids) {
+        return memberAppService.queryMemberTypeByIds(ids);
+    }
 }

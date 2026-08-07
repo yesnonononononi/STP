@@ -1,5 +1,6 @@
 package com.summit.stp.common.application.api.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -17,6 +18,7 @@ import lombok.NoArgsConstructor;
 @ApiModel(value = "MemberTypeVO", description = "会员类型数据承载对象")
 public class MemberTypeVO {
     @ApiModelProperty(value = "类型ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     @ApiModelProperty(value = "类型名称")

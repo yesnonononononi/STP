@@ -47,12 +47,14 @@ public class OrderQueryVO implements Serializable {
     private String memberName;
 
     @ApiModelProperty(value = "会员套餐ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long memberId;
 
     @ApiModelProperty(value = "优惠券名称")
     private String couponName;
 
     @ApiModelProperty(value = "优惠券ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long couponId;
 
     @ApiModelProperty(value = "支付完成时间")
