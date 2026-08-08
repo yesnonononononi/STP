@@ -5,7 +5,7 @@ export enum scopeType {
 }
 
 export enum CouponStatus {
-  USED = 0,
-  UNUSED = 1,
+  UNUSED = 0,
+  USED = 1,
   EXPIRED = 2,
 }

@@ -16,6 +16,6 @@ public class UpdatePostCommand {
     private String content;
     private List<ImageInfo> mediaUrls;
     private Integer status;
-    private List<String> tagIds;
+    private List<Long> tagIds;
     private Integer isTop;
 }

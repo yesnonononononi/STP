@@ -90,12 +90,19 @@ export interface CouponActivityVO {
   activityStartTime: string
   activityEndTime: string
   status: number
+  limitQuantity?: number
   couponName: string
   discount: number | null
   amount: number | null
   couponType: number // 0折扣, 1金额
   scopeType: number
   description: string
+  timeType?: number
+  validDays?: number
+  validHours?: number
+  scopeDescription?: string
+  available?: boolean
+  isAvailable?: boolean
   image?: string
   type: number
   createTime?: string

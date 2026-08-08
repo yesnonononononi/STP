@@ -1,7 +1,7 @@
 package com.summit.stp.rank_board.application.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.summit.stp.post.application.vo.TagVO;
+import com.summit.stp.tag.application.vo.TagVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

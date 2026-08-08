@@ -1,6 +1,7 @@
 package com.summit.stp.post.application.service;
 
 import com.summit.stp.post.application.vo.PostVO;
+import com.summit.stp.tag.application.vo.TagVO;
 
 import java.util.List;
 import java.util.Map;
@@ -139,22 +140,22 @@ public interface PostCacheProvider {
     /**
      * 批量获取帖子本体内容缓存（仅返回命中的）
      */
-    java.util.Map<Long, PostVO> batchGetPostContents(java.util.List<Long> postIds);
+    Map<Long, PostVO> batchGetPostContents(List<Long> postIds);
 
     /**
      * 批量获取帖子的 tagIds 字段（从 detail Hash 读取，逗号分隔字符串，缺失的 postId 不在返回 Map 中）
      */
-    java.util.Map<Long, String> batchGetTagIds(java.util.List<Long> postIds);
+    Map<Long, String> batchGetTagIds(List<Long> postIds);
 
     /**
      * 批量获取标签详情缓存（仅返回命中的）
      */
-    java.util.Map<Long, com.summit.stp.post.application.vo.TagVO> batchGetTagDetails(java.util.List<Long> tagIds);
+    Map<Long, TagVO> batchGetTagDetails(List<Long> tagIds);
 
     /**
      * 批量保存标签详情缓存
      */
-    void batchSaveTagDetails(java.util.List<com.summit.stp.post.application.vo.TagVO> tags);
+    void batchSaveTagDetails(List<TagVO> tags);
 
     /**
      * 删除单个标签详情缓存

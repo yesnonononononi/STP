@@ -40,4 +40,6 @@ public interface PostRepository {
     List<PostVO> queryByPage(Long cursor, Long creatorId, Long userId, Integer status, Integer limit);
 
     List<Long> getPostsByTag(Long tagId, String cursor, Integer limit);
+
+    List<Long> getHotPostsByTag(Long tagId, String cursor, Integer limit);
 }

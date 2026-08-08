@@ -4,11 +4,8 @@ import com.summit.stp.common.application.api.vo.UserSimpleVO;
 import com.summit.stp.common.feign.UserFeignClient;
 import com.summit.stp.common.result.Result;
 import com.summit.stp.post.application.vo.PostVO;
-import com.summit.stp.post.application.vo.TagVO;
 import com.summit.stp.post.domain.model.Post;
-import com.summit.stp.post.domain.model.Tag;
 import com.summit.stp.post.domain.repository.PostRepository;
-import com.summit.stp.post.domain.repository.TagRepository;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
 import com.summit.stp.rank_board.application.service.RankCacheProvider;
 import com.summit.stp.rank_board.application.service.RankService;
@@ -18,6 +15,9 @@ import com.summit.stp.rank_board.application.vo.TopicRankVO;
 import com.summit.stp.rank_board.domain.model.BoardType;
 import com.summit.stp.rank_board.domain.model.RankBoard;
 import com.summit.stp.rank_board.domain.repository.RankRepository;
+import com.summit.stp.tag.application.vo.TagVO;
+import com.summit.stp.tag.domain.model.Tag;
+import com.summit.stp.tag.domain.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -229,7 +229,7 @@ public class RankServiceImpl implements RankService {
     private TopicRankVO toTopicVO(RankBoard rankBoard, @Nullable Tag entity) {
         return TopicRankVO.builder()
                 .id(rankBoard.getId())
-                .entityId(entity != null ? entity.getUuid() : null)
+                .entityId(entity != null && entity.getId() != null ? entity.getId().toString() : null)
                 .rank(rankBoard.getRank())
                 .entityInfo(entity != null ? convertToVO(entity) : null)
                 .name(rankBoard.getName())
@@ -246,7 +246,7 @@ public class RankServiceImpl implements RankService {
             return null;
         }
         return TagVO.builder()
-                .id(tag.getUuid())
+                .id(tag.getId() != null ? tag.getId().toString() : null)
                 .tagName(tag.getTagName())
                 .sort(tag.getSort())
                 .useCount(tag.getUseCount())

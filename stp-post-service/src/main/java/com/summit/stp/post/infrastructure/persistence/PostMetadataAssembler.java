@@ -2,7 +2,7 @@ package com.summit.stp.post.infrastructure.persistence;
 
 import com.summit.stp.post.application.vo.PostImageVO;
 import com.summit.stp.post.application.vo.PostVO;
-import com.summit.stp.post.application.vo.TagVO;
+import com.summit.stp.tag.application.vo.TagVO;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;

@@ -227,7 +227,10 @@ async function reconcileOrder(orderId: string | number) {
         loading.value = true;
         const res = await OrderAPI.reconcileOrder(orderId);
         if (res.code === 1) {
-            log.success(res.data || '对账完成，订单状态已同步');
+            const target = orderList.value.find(o => String(o.orderId) === String(orderId));
+            if (target && target.status !== OrderStatus.PAID) {
+                target.status = OrderStatus.PAID;
+            }
             await loadOrders();
         }
     } catch (e) {

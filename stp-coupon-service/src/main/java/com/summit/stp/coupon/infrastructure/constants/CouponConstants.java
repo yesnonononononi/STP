@@ -12,5 +12,6 @@ public interface CouponConstants {
         String USER_LIMITED_HASH = ACTIVITY + "user:limited:";
         String SCHEDULED_REFRESH_COUPON_STOCK = PREFIX + "scheduler";
         String PREWARM_LOCK = PREFIX + "prewarm:";
+        String USER_LIMITED_LOCK = PREFIX + "user:limit:lock:";
     }
 }

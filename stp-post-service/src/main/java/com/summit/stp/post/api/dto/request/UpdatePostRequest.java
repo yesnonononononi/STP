@@ -28,7 +28,7 @@ public class UpdatePostRequest {
     private Integer status;
 
     @ApiModelProperty(value = "更新后的标签ID列表")
-    private List<String> tagIds;
+    private List<Long> tagIds;
 
     @ApiModelProperty(value = "是否置顶: 0否, 1是")
     private Integer isTop;

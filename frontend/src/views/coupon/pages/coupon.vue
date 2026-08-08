@@ -17,10 +17,10 @@
                     </div>
                     <!-- 一级 Tab 栏 -->
                     <div
-                        class="tab text-lg font-semibold flex items-center  w-full shadow-xs gap-6 rounded-lg px-4 pb-2 mt-2">
+                        class="tab text-lg font-semibold flex items-center w-full shadow-xs gap-6 rounded-lg px-4 pb-2 mt-2">
                         <span v-for="tab in tabList" :key="tab.id"
                             class="cursor-pointer transition-all duration-300 pb-1 border-b-2" @click="curTab = tab"
-                            :class="(curTab?.id || true) === tab.id ? 'text-blue-600 border-blue-600 font-bold scale-[1.03]' : 'text-gray-400 border-transparent'">
+                            :class="curTab?.id === tab.id ? 'text-blue-600 border-blue-600 font-bold scale-[1.03]' : 'text-gray-400 border-transparent'">
                             {{ tab.name }}
                         </span>
                     </div>
@@ -28,26 +28,34 @@
             </div>
 
             <!-- 列表内容展示区 -->
-            <div class="foot relative flex-1 overflow-y-auto bg-gray-50 p-2">
-                <MyCouponTab v-if="curTab?.id === tabList[1]?.id" ref="myCouponTabRef" :loading="loading"
-                    @use="handleUse" />
-                <div v-if="curTab?.id === tabList[0]?.id" class="relative w-full  z-10  ">
-                    <div class="w-1/2 m-auto flex items-center justify-center gap-6 sticky top-0 z-10">
-                        <div class=" text-sm rounded-full p-1 shrink-0 transition-colors duration-200 ease-in-out "
+            <div class="foot relative flex-1 flex flex-col overflow-hidden bg-gray-50">
+                <!-- 1. 我的优惠券 Tab -->
+                <MyCouponTab v-if="curTab?.id === tabList[1]?.id" ref="myCouponTabRef" @use="handleUse" />
+
+                <!-- 2. 优惠券活动中心 Tab -->
+                <div v-else-if="curTab?.id === tabList[0]?.id" class="flex flex-col h-full">
+                    <!-- 使用范围二级 Tab 栏 -->
+                    <div class="w-full flex items-center justify-center gap-4 py-2 border-b border-gray-100/80 bg-gray-50/90 backdrop-blur-xs shrink-0 z-10">
+                        <div class="text-xs px-3 py-1 rounded-full shrink-0 transition-all duration-200 ease-in-out select-none cursor-pointer"
                             v-for="item in couponTabList"
-                            :class="curCouponTab?.id == item?.id ? 'bg-blue-600 text-white shadow-md select-none' : 'text-gray-400 cursor-pointer hover:bg-gray-100 '"
+                            :class="curCouponTab?.id == item?.id ? 'bg-blue-600 text-white shadow-sm font-medium' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'"
                             @click="curCouponTab = item" :key="item.id">
                             {{ item.name }}
                         </div>
                     </div>
-                    <CouponItem v-for="activity in activitiesList" :key="activity.id" :item="activity" :me="false"
-                        @receive="handleReceive" />
+
+                    <!-- 优惠券活动列表滚动区 -->
+                    <div class="relative flex-1 overflow-y-auto p-2 flex flex-col gap-2">
+                        <template v-if="activitiesList.length > 0">
+                            <CouponItem v-for="activity in activitiesList" :key="activity.id" :item="activity" :me="false"
+                                @receive="handleReceive" />
+                        </template>
+                        <div v-else-if="!loading" class="flex flex-col items-center justify-center py-20 text-gray-400 text-sm gap-2">
+                            <span>暂无符合筛选条件的优惠券</span>
+                        </div>
+                        <Loading v-model="loading" bgColor="bg-gray-50/70 backdrop-blur-xs" />
+                    </div>
                 </div>
-                <div v-if="curTab?.id === tabList[0]?.id && activitiesList.length == 0 && !loading"
-                    class="absolute inset-0 flex items-center justify-center text-gray-400 text-lg ">
-                    暂无符合筛选条件的优惠券
-                </div>
-                <Loading v-model="loading" />
             </div>
         </div>
     </div>
@@ -83,7 +91,7 @@ const couponTabList = [
         name: '指定商品',
         id: scopeType.SPECIFY_COMMODITY
     }
-]
+];
 const curTab = ref(tabList[0]);
 const curCouponTab = ref(couponTabList[0]);
 const activitiesList = ref<(CouponActivityVO & { isSeckill?: boolean })[]>([]);
@@ -91,11 +99,14 @@ const myCouponTabRef = ref<any>(null);
 
 // 监听主 Tab 变动
 watch(curTab, (newTab) => {
-    loadCouponData(curCouponTab.value?.id || 1);
+    if (newTab?.id === tabList[0]?.id) {
+        loadCouponData(curCouponTab.value?.id || 1);
+    }
 });
-watch(curCouponTab, (newTab) => {
-    loadCouponData(curCouponTab.value?.id || 1)
-})
+watch(curCouponTab, (newSubTab) => {
+    loadCouponData(newSubTab?.id || 1);
+});
+
 async function loadCouponData(scopeType?: number) {
     try {
         if (loading.value) return;
@@ -106,11 +117,9 @@ async function loadCouponData(scopeType?: number) {
     }
 }
 
-
-
 async function handleReceive(activityId: string | number) {
     await CouponAPI.receiveCoupon(activityId);
-    await loadCouponData();
+    await loadCouponData(curCouponTab.value?.id || 1);
 }
 
 function handleUse(coupon: CouponVO) {
@@ -118,6 +127,6 @@ function handleUse(coupon: CouponVO) {
 }
 
 onMounted(async () => {
-    await loadCouponData();
+    await loadCouponData(curCouponTab.value?.id || 1);
 });
 </script>

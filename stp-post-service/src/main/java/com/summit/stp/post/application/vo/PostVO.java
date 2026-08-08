@@ -2,6 +2,7 @@ package com.summit.stp.post.application.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.summit.stp.common.application.api.vo.UserSimpleVO;
+import com.summit.stp.tag.application.vo.TagVO;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
