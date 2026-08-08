@@ -13,6 +13,7 @@ import com.summit.stp.post.infrastructure.persistence.mapper.PostImageMapper;
 import com.summit.stp.post.infrastructure.persistence.mapper.PostsMapper;
 import com.summit.stp.post.infrastructure.persistence.po.PostImagePO;
 import com.summit.stp.post.infrastructure.persistence.po.PostsPO;
+import com.summit.stp.tag.infrastructure.persistence.PostTagRelRepositoryImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -209,6 +210,7 @@ public class PostRepositoryImpl implements PostRepository {
         return postsMapper.getPostsByTag(tagId, cursor, limit);
     }
 
+    @Override
     public List<Long> getHotPostsByTag(Long tagId, String cursor, Integer limit) {
        return postsMapper.getHotPostsByTag(tagId, cursor, limit);
     }

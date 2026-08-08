@@ -10,12 +10,14 @@ import com.summit.stp.post.application.service.PostCacheProvider;
 import com.summit.stp.post.application.service.PostQueryService;
 import com.summit.stp.post.application.vo.PostImageVO;
 import com.summit.stp.post.application.vo.PostVO;
-import com.summit.stp.post.application.vo.TagVO;
 import com.summit.stp.post.domain.model.PostStatus;
-import com.summit.stp.post.domain.model.PostTag;
-import com.summit.stp.post.domain.model.Tag;
 import com.summit.stp.post.domain.repository.*;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
+import com.summit.stp.tag.application.vo.TagVO;
+import com.summit.stp.tag.domain.model.PostTag;
+import com.summit.stp.tag.domain.model.Tag;
+import com.summit.stp.tag.domain.repository.PostTagRelRepository;
+import com.summit.stp.tag.domain.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -433,7 +435,7 @@ public class PostQueryServiceImpl implements PostQueryService {
                 List<TagVO> dbTags = new ArrayList<>();
                 for (Tag tag : tags) {
                     TagVO vo = TagVO.builder()
-                            .id(tag.getUuid())
+                            .id(tag.getId() == null ? null : tag.getId().toString())
                             .tagName(tag.getTagName())
                             .sort(tag.getSort())
                             .useCount(tag.getUseCount())

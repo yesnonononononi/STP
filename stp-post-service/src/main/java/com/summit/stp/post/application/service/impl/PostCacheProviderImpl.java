@@ -6,12 +6,15 @@ import com.summit.stp.common.util.DistributedLockUtil;
 import com.summit.stp.post.application.service.PostCacheProvider;
 import com.summit.stp.post.application.service.impl.cache.*;
 import com.summit.stp.post.application.vo.PostVO;
-import com.summit.stp.post.application.vo.TagVO;
 import com.summit.stp.post.domain.repository.PostCollectRepository;
 import com.summit.stp.post.domain.repository.PostLikeRepository;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
 import com.summit.stp.post.infrastructure.persistence.mapper.PostsMapper;
 import com.summit.stp.post.infrastructure.persistence.po.PostsPO;
+import com.summit.stp.tag.application.service.impl.cache.TagDetailCacheOps;
+import com.summit.stp.tag.application.vo.TagVO;
+import com.summit.stp.tag.domain.model.PostTag;
+import com.summit.stp.tag.domain.repository.PostTagRelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisOperations;
@@ -21,6 +24,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 帖子缓存服务实现类（门面委托），将 6 类缓存职责委托给独立的 CacheOps 组件。
@@ -38,7 +42,7 @@ public class PostCacheProviderImpl implements PostCacheProvider {
     private final TagDetailCacheOps tagDetailCacheOps;
     private final PostLikeRepository postLikeRepository;
     private final PostCollectRepository postCollectRepository;
-    private final com.summit.stp.post.domain.repository.PostTagRelRepository postTagRelRepository;
+    private final PostTagRelRepository postTagRelRepository;
     private final PostsMapper postsMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final DistributedLockUtil distributedLockUtil;
@@ -169,7 +173,7 @@ public class PostCacheProviderImpl implements PostCacheProvider {
                 long likeCount = po.getLikeCount() != null ? po.getLikeCount() : 0L;
                 long collectCount = po.getCollectCount() != null ? po.getCollectCount() : 0L;
                 List<Long> tagIds = postTagRelRepository.findByPostId(postId).stream()
-                        .map(com.summit.stp.post.domain.model.PostTag::getTagId).toList();
+                        .map(PostTag::getTagId).toList();
                 contentCacheOps.loadSinglePostHash(postId, po, likeCount, collectCount, tagIds);
                 interactionCacheOps.loadInteractionSet(postId, InteractionType.LIKE, likedUserIds);
                 interactionCacheOps.loadInteractionSet(postId, InteractionType.COLLECT, collectedUserIds);
@@ -219,11 +223,11 @@ public class PostCacheProviderImpl implements PostCacheProvider {
                 List<PostsPO> pos = postsMapper.selectList(new LambdaQueryWrapper<PostsPO>()
                         .in(PostsPO::getPublicId, missingPostIds));
                 if (pos != null && !pos.isEmpty()) {
-                    List<com.summit.stp.post.domain.model.PostTag> tagRels = postTagRelRepository.findByPostIds(missingPostIds);
+                    List<PostTag> tagRels = postTagRelRepository.findByPostIds(missingPostIds);
                     Map<Long, List<Long>> tagIdsMap = tagRels == null ? Collections.emptyMap() :
-                            tagRels.stream().collect(java.util.stream.Collectors.groupingBy(
-                                    com.summit.stp.post.domain.model.PostTag::getPostId,
-                                    java.util.stream.Collectors.mapping(com.summit.stp.post.domain.model.PostTag::getTagId, java.util.stream.Collectors.toList())
+                            tagRels.stream().collect(Collectors.groupingBy(
+                                    PostTag::getPostId,
+                                    Collectors.mapping(PostTag::getTagId, Collectors.toList())
                             ));
                     contentCacheOps.batchLoadMissingPostHash(missingPostIds, pos, tagIdsMap);
                 }

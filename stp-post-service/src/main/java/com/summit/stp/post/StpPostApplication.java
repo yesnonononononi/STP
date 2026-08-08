@@ -12,9 +12,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableDiscoveryClient
 @EnableScheduling
 @EnableFeignClients(basePackages = "com.summit.stp.common.feign")
-@ComponentScan(basePackages = {"com.summit.stp.post", "com.summit.stp.rank_board", "com.summit.stp.common"})
+@ComponentScan(basePackages = {"com.summit.stp.post", "com.summit.stp.tag", "com.summit.stp.rank_board", "com.summit.stp.common"})
 @MapperScan(basePackages = {
     "com.summit.stp.post.infrastructure.persistence.mapper",
+    "com.summit.stp.tag.infrastructure.persistence.mapper",
     "com.summit.stp.rank_board.infrastructure.persistence.mapper"
 })
 public class StpPostApplication {

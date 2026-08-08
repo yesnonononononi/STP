@@ -18,7 +18,9 @@
           }}
         </div>
       </div>
-      <div class="flex-end align-top text-xl text-white cursor-pointer hover:text-red-300 hover:rotate-90 transition-all duration-300 p-1" @click="Close()">
+      <div
+        class="flex-end align-top text-xl text-white cursor-pointer hover:text-red-300 hover:rotate-90 transition-all duration-300 p-1"
+        @click="Close()">
         <el-icon>
           <CloseIcon />
         </el-icon>
@@ -30,25 +32,22 @@
         class="tab-btn relative px-6 h-11 flex items-center justify-center cursor-pointer transition-all duration-300"
         :class="[
           curTab === item.id ? 'z-20' : 'z-10',
-          index === 1 ? 'ml-[-12px]' : ''
-        ]"
-        @click="
+          index === 1 ? '-ml-3' : ''
+        ]" @click="
           loadMemberInfo(item.id);
-          curTab = item.id
-        ">
+        curTab = item.id
+          ">
         <!-- Tab背景层 -->
-        <div class="absolute inset-0 transition-all duration-300"
-          :class="[
-            index === 0 ? 'rounded-t-xl' : 'rounded-t-xl skew-x-[-15deg] origin-bottom-left',
-            curTab === item.id
-              ? (index === 0 ? 'bg-[#F7F9FC]' : 'bg-[#FFFDF4]')
-              : (index === 0 ? 'bg-gradient-to-b from-[#1e293b] to-[#0f172a]' : 'bg-gradient-to-b from-[#2e2416] to-[#14100a] border-t border-[#d97706]/20')
-          ]"></div>
+        <div class="absolute inset-0 transition-all duration-300" :class="[
+          index === 0 ? 'rounded-t-xl' : 'rounded-t-xl skew-x-[-15deg] origin-bottom-left',
+          curTab === item.id
+            ? (index === 0 ? 'bg-[#F7F9FC]' : 'bg-[#FFFDF4]')
+            : (index === 0 ? 'bg-linear-to-b from-[#1e293b] to-[#0f172a]' : 'bg-linear-to-b from-[#2e2416] to-[#14100a] border-t border-[#d97706]/20')
+        ]"></div>
         <!-- Tab内容层 -->
-        <div class="relative z-10 flex items-baseline gap-2"
-          :class="curTab === item.id
-            ? (index === 0 ? 'text-[#1e293b] font-bold' : 'text-amber-800 font-bold')
-            : 'text-white/80'">
+        <div class="relative z-10 flex items-baseline gap-2" :class="curTab === item.id
+          ? (index === 0 ? 'text-[#1e293b] font-bold' : 'text-amber-800 font-bold')
+          : 'text-white/80'">
           <span class="text-base font-bold">{{ item.name }}</span>
           <span class="text-[10px] opacity-70 truncate max-w-28">{{ item.description }}</span>
         </div>
@@ -73,18 +72,32 @@
             <div
               class="text-center my-2 z-10 font-bold flex items-baseline justify-center bg-clip-text text-transparent bg-linear-to-r from-orange-600 to-amber-700">
               <span class="text-xs font-semibold mr-0.5">￥</span>
-              <span class="text-3xl font-extrabold tracking-tight">{{ item.price }}</span>
+              <span class="text-3xl font-extrabold tracking-tight">{{ calcPrice(item)
+              }}</span>
+            </div>
+            <div class="flex gap-2 items-center">
+              <div v-if="item.discount < 1" class="text-gray-400 line-through">￥{{ item.price }}</div>
+              <div
+                class="text-sm bg-clip-text text-transparent bg-linear-to-br from-amber-300 via-yellow-400 to-amber-400">
+                {{
+                  item.discount * 10 }}折优惠</div>
             </div>
 
+
             <div class="desc-container text-center my-1 z-10">
-              <span class="text-xs transition-opacity duration-300 text-stone-500'">
-                每天仅{{ item.duration ? (Number(item.price) / item.duration).toFixed(2) : '0.00' }}元
+              <span class="text-xs transition-opacity duration-300 text-stone-500 tracking-wider">
+                平均每天约{{ calcAveragePriceForDays(item) }}元
               </span>
             </div>
           </div>
           <div v-if="items && items.length == 0" class="flex items-center justify-center w-full">
             <div class="flex flex-col items-center gap-2  ">
-              <svg t="1786091018186" class="icon size-24" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5828" ><path d="M843.776 402.432c9.216 16.384-12.288-30.72-48.128-30.72H227.328c-21.504 0-35.84 9.216-48.128 28.672-11.264 18.432-116.736 179.2-116.736 211.968V829.44c0 33.792 28.672 62.464 62.464 62.464h774.144c33.792 0 62.464-26.624 62.464-62.464V612.352c0-30.72-117.76-209.92-117.76-209.92s-16.384-30.72 0 0zM641.024 598.016c-14.336 0-26.624 7.168-28.672 21.504v5.12c0 55.296-45.056 100.352-100.352 100.352s-100.352-45.056-100.352-100.352v-7.168c-7.168-19.456-28.672-19.456-28.672-19.456H117.76l91.136-164.864s16.384-28.672 40.96-28.672h535.552c19.456 0 21.504 7.168 35.84 28.672L911.36 598.016H641.024zM318.464 285.696l-69.632-66.56c-7.168-5.12-7.168-16.384 0-23.552 7.168-7.168 19.456-7.168 26.624 0l69.632 64.512c7.168 7.168 7.168 19.456 0 26.624-7.168 3.072-19.456 6.144-26.624-1.024m188.416-28.672c-2.048-2.048-5.12-7.168-5.12-12.288l-2.048-93.184c0-9.216 7.168-19.456 16.384-19.456 9.216-2.048 19.456 5.12 19.456 14.336l2.048 93.184c0 7.168-5.12 14.336-12.288 16.384-6.144 5.12-13.312 5.12-18.432 1.024m177.152 23.552c-2.048-2.048-5.12-7.168-5.12-12.288s2.048-9.216 5.12-12.288l64.512-69.632c7.168-7.168 19.456-7.168 26.624 0s7.168 19.456 0 26.624l-64.512 69.632c-2.048 2.048-7.168 5.12-12.288 5.12-7.168-2.048-12.288-2.048-14.336-7.168" fill="#999999" p-id="5829"></path></svg>
+              <svg t="1786091018186" class="icon size-24" viewBox="0 0 1024 1024" version="1.1"
+                xmlns="http://www.w3.org/2000/svg" p-id="5828">
+                <path
+                  d="M843.776 402.432c9.216 16.384-12.288-30.72-48.128-30.72H227.328c-21.504 0-35.84 9.216-48.128 28.672-11.264 18.432-116.736 179.2-116.736 211.968V829.44c0 33.792 28.672 62.464 62.464 62.464h774.144c33.792 0 62.464-26.624 62.464-62.464V612.352c0-30.72-117.76-209.92-117.76-209.92s-16.384-30.72 0 0zM641.024 598.016c-14.336 0-26.624 7.168-28.672 21.504v5.12c0 55.296-45.056 100.352-100.352 100.352s-100.352-45.056-100.352-100.352v-7.168c-7.168-19.456-28.672-19.456-28.672-19.456H117.76l91.136-164.864s16.384-28.672 40.96-28.672h535.552c19.456 0 21.504 7.168 35.84 28.672L911.36 598.016H641.024zM318.464 285.696l-69.632-66.56c-7.168-5.12-7.168-16.384 0-23.552 7.168-7.168 19.456-7.168 26.624 0l69.632 64.512c7.168 7.168 7.168 19.456 0 26.624-7.168 3.072-19.456 6.144-26.624-1.024m188.416-28.672c-2.048-2.048-5.12-7.168-5.12-12.288l-2.048-93.184c0-9.216 7.168-19.456 16.384-19.456 9.216-2.048 19.456 5.12 19.456 14.336l2.048 93.184c0 7.168-5.12 14.336-12.288 16.384-6.144 5.12-13.312 5.12-18.432 1.024m177.152 23.552c-2.048-2.048-5.12-7.168-5.12-12.288s2.048-9.216 5.12-12.288l64.512-69.632c7.168-7.168 19.456-7.168 26.624 0s7.168 19.456 0 26.624l-64.512 69.632c-2.048 2.048-7.168 5.12-12.288 5.12-7.168-2.048-12.288-2.048-14.336-7.168"
+                  fill="#999999" p-id="5829"></path>
+              </svg>
               <span class="text-md text-gray-500">暂无会员套餐</span>
             </div>
           </div>
@@ -114,10 +127,10 @@
   </div>
 </template>
 <script lang="ts" setup>
-import {Close as CloseIcon, Loading,} from '@element-plus/icons-vue'
-import {computed, onMounted, ref} from 'vue'
-import {MemberAPI, type MemberConfig} from '@/services/member'
-import {useUserInfoStore} from '@/stores/userInfo'
+import { Close as CloseIcon, Loading, } from '@element-plus/icons-vue'
+import { computed, onMounted, ref } from 'vue'
+import { MemberAPI, type MemberConfig } from '@/services/member'
+import { useUserInfoStore } from '@/stores/userInfo'
 import router from '@/router'
 
 defineProps<{
@@ -162,6 +175,15 @@ onMounted(async () => {
     loading.value = false
   }
 })
+function calcPrice(item: MemberConfig) {
+  return (Number(item.price) * item.discount).toFixed(2)
+}
+
+
+function calcAveragePriceForDays(item: MemberConfig) {
+  let price = calcPrice(item);
+  return item.duration ? (Number(price) / item.duration).toFixed(2) : '0.00'
+}
 
 function Close() {
   emit('close')

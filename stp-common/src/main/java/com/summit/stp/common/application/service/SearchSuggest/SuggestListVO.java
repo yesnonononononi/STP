@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SuggestListVO {
-    private String id;
+    private Long id;
     private String keyword;
     private Object extra;
 }

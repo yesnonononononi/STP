@@ -25,7 +25,7 @@ public class CreatePostRequest {
     private Integer status;
 
     @ApiModelProperty(value = "帖子关联的标签ID列表")
-    private List<String> tagIds;
+    private List<Long> tagIds;
 
     @ApiModelProperty(value = "是否置顶: 0否, 1是")
     private Integer isTop;

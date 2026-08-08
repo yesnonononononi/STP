@@ -17,16 +17,19 @@ import com.summit.stp.post.application.command.UpdatePostCommand;
 import com.summit.stp.post.application.service.*;
 import com.summit.stp.post.application.service.impl.cache.InteractionType;
 import com.summit.stp.post.application.vo.PostVO;
-import com.summit.stp.post.domain.model.Post;
-import com.summit.stp.post.domain.model.PostImage;
-import com.summit.stp.post.domain.model.PostStatus;
-import com.summit.stp.post.domain.model.PostType;
+import com.summit.stp.post.domain.model.*;
 import com.summit.stp.post.domain.repository.*;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
 import com.summit.stp.post.infrastructure.persistence.mapper.PostsMapper;
 import com.summit.stp.post.infrastructure.persistence.po.PostCollectPO;
 import com.summit.stp.post.infrastructure.persistence.po.PostLikePO;
 import com.summit.stp.post.infrastructure.persistence.po.PostsPO;
+import com.summit.stp.tag.application.service.PostTagRelAppService;
+import com.summit.stp.tag.application.service.TagCacheProvider;
+import com.summit.stp.tag.domain.model.PostTag;
+import com.summit.stp.tag.domain.model.Tag;
+import com.summit.stp.tag.domain.repository.PostTagRelRepository;
+import com.summit.stp.tag.domain.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -55,7 +58,7 @@ public class PostAppServiceImpl implements PostAppService {
     private final PostsMapper postsMapper;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final TagRepository tagRepository;
-    private final com.summit.stp.post.domain.repository.PostTagRelRepository postTagRelRepository;
+    private final PostTagRelRepository postTagRelRepository;
     private final TagCacheProvider tagCacheProvider;
 
     @Override
@@ -78,7 +81,7 @@ public class PostAppServiceImpl implements PostAppService {
         savePostImages(post, command.getMediaUrls());
 
         // 3. 绑定帖子标签
-        List<Long> actualTagIds = getTagIdsByUuids(command.getTagIds());
+        List<Long> actualTagIds = tagRepository.findByIds(command.getTagIds()).stream().map(Tag::getId).toList();
         bindPostTags(postId, actualTagIds);
 
         // 4. 初始化帖子缓存
@@ -93,16 +96,7 @@ public class PostAppServiceImpl implements PostAppService {
     private Post buildNewPost(CreatePostCommand command) {
         PostStatus status = PostStatus.fromCode(command.getStatus());
         List<ImageInfo> mediaUrls = command.getMediaUrls();
-        String mediaUrlsStr = "";
-        if (mediaUrls != null) {
-            if (PostType.IMAGE.getCode() != command.getType() && PostType.TEXT.getCode() != command.getType()) {
-                mediaUrlsStr = mediaUrls.stream()
-                        .map(ImageInfo::getUrl)
-                        .filter(Objects::nonNull)
-                        .findFirst()
-                        .orElse("");
-            }
-        }
+        String mediaUrlsStr = resolvePostMediaMetaInfo(mediaUrls, command.getType());
         Timestamp now = new Timestamp(System.currentTimeMillis());
         Long userId = UserHolder.getUser().getId();
         Long postId = IdUtil.getSnowflakeNextId();
@@ -126,6 +120,32 @@ public class PostAppServiceImpl implements PostAppService {
                 .build();
     }
 
+
+    /**
+     * 解析帖子媒体元信息
+     * @param mediaUrls 媒体链接
+     * @param type 发布类型
+     * @return 非图片类型信息的url
+     */
+    private String resolvePostMediaMetaInfo(List<ImageInfo> mediaUrls, Integer type) {
+        String mediaUrlsStr = "";
+        if (mediaUrls != null) {
+            if (PostType.IMAGE.getCode() != type && PostType.TEXT.getCode() != type) {
+                mediaUrlsStr = mediaUrls.stream()
+                        .map(ImageInfo::getUrl)
+                        .filter(Objects::nonNull)
+                        .findFirst()
+                        .orElse("");
+            }
+        }
+        return mediaUrlsStr;
+    }
+
+    /**
+     * 批量保存帖子图片
+     * @param post 帖子实体
+     * @param mediaUrls 图片链接集
+     */
     private void savePostImages(Post post, List<ImageInfo> mediaUrls) {
         if (post.isImage() && mediaUrls != null && !mediaUrls.isEmpty()) {
             List<PostImage> urls = buildImages(post.getId(), mediaUrls);
@@ -133,12 +153,21 @@ public class PostAppServiceImpl implements PostAppService {
         }
     }
 
+    /**
+     * 绑定标签集到一个帖子
+     * @param postId 帖子id
+     * @param tagIds 标签ids
+     */
     private void bindPostTags(Long postId, List<Long> tagIds) {
         if (tagIds != null && !tagIds.isEmpty()) {
             postTagRelAppService.bindTag(postId, tagIds);
         }
     }
 
+    /**
+     * 初始化帖子实体缓存(post:detail)
+     * @param post 帖子实体
+     */
     private void initPostCache(Post post) {
         Long postId = post.getId();
         try {
@@ -152,6 +181,10 @@ public class PostAppServiceImpl implements PostAppService {
         }
     }
 
+    /**
+     * 发布帖子发布事件
+     * @param post 帖子实体
+     */
     private void publishPostEvent(Post post) {
         if (post.getStatus().equals(PostStatus.NORMAL)) {
             PostPublishEvent event = new PostPublishEvent();
@@ -186,16 +219,7 @@ public class PostAppServiceImpl implements PostAppService {
         validatePostForUpdate(command, post);
         List<ImageInfo> mediaUrls = command.getMediaUrls();
         Long postId = post.getId();
-        String mediaUrlsStr = "";
-        if (mediaUrls != null) {
-            if (PostType.IMAGE.getCode() != command.getType() && PostType.TEXT.getCode() != command.getType()) {
-                mediaUrlsStr = mediaUrls.stream()
-                        .map(ImageInfo::getUrl)
-                        .filter(Objects::nonNull)
-                        .findFirst()
-                        .orElse("");
-            }
-        }
+        String mediaUrlsStr = resolvePostMediaMetaInfo(mediaUrls, command.getType());
 
         // 局部更新
         post.updatePost(
@@ -217,18 +241,18 @@ public class PostAppServiceImpl implements PostAppService {
                         .build()
         );
         postRepository.save(post);
-        if (command.getTagIds() != null) {
+        List<Long> tagIds = command.getTagIds();
+        if (tagIds != null) {
             List<Long> oldTagIds = postTagRelRepository.findByPostId(postId).stream()
-                    .map(com.summit.stp.post.domain.model.PostTag::getTagId).toList();
+                    .map(PostTag::getTagId).toList();
             postTagRelAppService.clearPostTags(postId);
-            List<Long> newTagIds = List.of();
-            if (!command.getTagIds().isEmpty()) {
-                newTagIds = getTagIdsByUuids(command.getTagIds());
-                postTagRelAppService.bindTag(postId, newTagIds);
+
+            if (!tagIds.isEmpty()) {
+                postTagRelAppService.bindTag(postId, tagIds);
             }
-            List<Long> finalNewTagIds = newTagIds;
-            List<Long> removeTagIds = oldTagIds.stream().filter(id -> !finalNewTagIds.contains(id)).toList();
-            List<Long> addTagIds = newTagIds.stream().filter(id -> !oldTagIds.contains(id)).toList();
+
+            List<Long> removeTagIds = oldTagIds.stream().filter(id -> !tagIds.contains(id)).toList();
+            List<Long> addTagIds = tagIds.stream().filter(id -> !oldTagIds.contains(id)).toList();
             if (!removeTagIds.isEmpty()) {
                 tagCacheProvider.removePostFromTags(postId, removeTagIds);
             }
@@ -256,7 +280,7 @@ public class PostAppServiceImpl implements PostAppService {
             throw new BusinessException("无权删除他人帖子");
         }
         List<Long> tagIds = postTagRelRepository.findByPostId(id).stream()
-                .map(com.summit.stp.post.domain.model.PostTag::getTagId).toList();
+                .map(PostTag::getTagId).toList();
         post.delete();
         postRepository.update(post);
         try {
@@ -306,7 +330,11 @@ public class PostAppServiceImpl implements PostAppService {
     }
 
 
-
+    /**
+     * 帖子互动操作执行
+     * @param postId 帖子ID
+     * @param type 互动类型
+     */
     private void toggleInteraction(Long postId, InteractionType type) {
         Long userId = UserHolder.getUser().getId();
         String actionName = type == InteractionType.LIKE ? "点赞" : "收藏";
@@ -399,13 +427,8 @@ public class PostAppServiceImpl implements PostAppService {
                 .setSql("like_count = like_count + " + delta);
         postsMapper.update(null, wrapper);
     }
- 
-    private List<Long> getTagIdsByUuids(List<String> uuids) {
-        if (uuids == null || uuids.isEmpty()) {
-            return List.of();
-        }
-        return tagRepository.findIdsByUuids(uuids);
-    }
+
+
 
     // ======================== 其他操作 ========================
 

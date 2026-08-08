@@ -2,14 +2,14 @@ package com.summit.stp.rank_board.infrastructure.persistence.Scheduler;
 
 import com.summit.stp.common.util.DistributedLockUtil;
 import com.summit.stp.post.domain.model.Post;
-import com.summit.stp.post.domain.model.Tag;
 import com.summit.stp.post.domain.repository.PostRepository;
-import com.summit.stp.post.domain.repository.TagRepository;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
 import com.summit.stp.rank_board.application.service.RankCacheProvider;
 import com.summit.stp.rank_board.domain.model.BoardType;
 import com.summit.stp.rank_board.domain.model.RankBoard;
 import com.summit.stp.rank_board.domain.repository.RankRepository;
+import com.summit.stp.tag.domain.model.Tag;
+import com.summit.stp.tag.domain.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

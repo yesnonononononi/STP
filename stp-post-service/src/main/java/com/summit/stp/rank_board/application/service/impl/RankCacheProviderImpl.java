@@ -1,10 +1,10 @@
 package com.summit.stp.rank_board.application.service.impl;
 
 import com.summit.stp.post.domain.model.Post;
-import com.summit.stp.post.domain.model.Tag;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
 import com.summit.stp.rank_board.application.service.RankCacheProvider;
 import com.summit.stp.rank_board.domain.model.RankBoard;
+import com.summit.stp.tag.domain.model.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;

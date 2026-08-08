@@ -1,8 +1,8 @@
 package com.summit.stp.rank_board.application.service;
 
 import com.summit.stp.post.domain.model.Post;
-import com.summit.stp.post.domain.model.Tag;
 import com.summit.stp.rank_board.domain.model.RankBoard;
+import com.summit.stp.tag.domain.model.Tag;
 
 import java.util.List;
 import java.util.Map;

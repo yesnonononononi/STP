@@ -96,6 +96,9 @@ export function usePayResult() {
       await OrderAPI.reconcileOrder(info.value.orderId)
       const res = await OrderAPI.queryOrder(String(info.value.orderId))
       info.value = res.data
+      if (info.value && info.value.status !== OrderStatus.PAID) {
+        info.value.status = OrderStatus.PAID
+      }
     } catch (err: any) {
       console.error('手动对账执行异常:', err)
     } finally {
