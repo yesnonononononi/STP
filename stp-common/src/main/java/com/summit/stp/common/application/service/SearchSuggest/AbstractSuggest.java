@@ -14,7 +14,7 @@ public abstract class AbstractSuggest<T> implements SuggestService<T> {
     protected abstract BaseMapper<T> getBaseMapper();
 
     @Override
-    public SuggestVO getSuggestList(SuggestDto dto, SFunction<T, String> column, SFunction<T, Long> id, SFunction<T, Object> extra) {
+    public SuggestVO getSuggestList(SuggestDto dto, SFunction<T, String> column, SFunction<T, Long> id, SFunction<T, ?> extra) {
         try {
             Integer limit = dto.getLimit();
             String keyword = dto.getKeyword().trim();
