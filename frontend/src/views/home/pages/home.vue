@@ -19,8 +19,8 @@
           <span @click="toggleTab('home')" class="cursor-pointer hover:text-blue-200 text-xs md:text-base shrink-0"
             :class="curTab === 'home' ? 'text-blue-300 font-semibold' : ''">首页</span>
         </span>
-        <div class="hidden lg:block flex-3 search p-2 w-96 shrink">
-          <el-input v-model="keyword" placeholder="请输入内容" class="w-96" @keyup.enter="handleSearch">
+        <div class="hidden lg:block search p-2 w-60 shrink-0">
+          <el-input v-model="keyword" placeholder="请输入内容" class="w-full" @keyup.enter="handleSearch">
             <template #suffix>
               <svg t="1781494755543" class="icon size-4 cursor-pointer " viewBox="0 0 1024 1024" version="1.1"
                 @click="handleSearch" xmlns="http://www.w3.org/2000/svg" p-id="5766">
