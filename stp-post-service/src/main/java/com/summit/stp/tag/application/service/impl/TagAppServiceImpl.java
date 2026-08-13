@@ -6,7 +6,6 @@ import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.stp.common.application.service.SearchSuggest.SuggestVO;
 import com.summit.stp.common.result.CursorPageResult;
 import com.summit.stp.common.result.Result;
-import com.summit.stp.post.application.service.PostCacheProvider;
 import com.summit.stp.post.application.service.PostQueryService;
 import com.summit.stp.post.application.vo.PostVO;
 import com.summit.stp.post.domain.repository.PostRepository;
@@ -31,10 +30,10 @@ import java.util.stream.Collectors;
 public class TagAppServiceImpl implements TagAppService {
     private final TagRepository tagRepository;
     private final PostTagRelRepository postTagRelRepository;
-    private final PostCacheProvider postCacheProvider;
     private final TagCacheProvider tagCacheProvider;
     private final PostQueryService postQueryService;
     private final PostRepository postRepository;
+
 
     @Override
     public TagVO getTagById(Long id) {
@@ -77,7 +76,7 @@ public class TagAppServiceImpl implements TagAppService {
         tag.updateInfo(command.getTagName(), command.getSort(), command.getStatus());
         tagRepository.save(tag);
         try {
-            postCacheProvider.deleteTagDetail(tag.getId());
+            tagCacheProvider.deleteTagDetail(tag.getId());
         } catch (Exception e) {
             // 忽略缓存清除异常
         }
@@ -87,7 +86,7 @@ public class TagAppServiceImpl implements TagAppService {
     public void deleteTag(Long id) {
         tagRepository.delete(id);
         try {
-            postCacheProvider.deleteTagDetail(id);
+            tagCacheProvider.deleteTagDetail(id);
         } catch (Exception e) {
             // 忽略缓存清除异常
         }
@@ -98,7 +97,7 @@ public class TagAppServiceImpl implements TagAppService {
         Long tagId = parseTagId(uuid);
         tagRepository.delete(tagId);
         try {
-            postCacheProvider.deleteTagDetail(tagId);
+            tagCacheProvider.deleteTagDetail(tagId);
         } catch (Exception e) {
             // 忽略缓存清除异常
         }

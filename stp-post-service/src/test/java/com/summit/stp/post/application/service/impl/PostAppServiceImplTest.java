@@ -1,7 +1,7 @@
 package com.summit.stp.post.application.service.impl;
 
 import com.summit.stp.common.ThreadContext.UserHolder;
-import com.summit.stp.common.application.domain.event.PostPublishEvent;
+import com.summit.stp.common.application.domain.event.PostChangeEvent;
 import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.stp.common.application.domain.model.UserSession;
 import com.summit.stp.common.application.service.TextSafe.TextSafeServiceProvider;
@@ -104,9 +104,10 @@ class PostAppServiceImplTest {
         verify(postCacheProvider).loadCache(anyLong());
         verify(postCacheProvider).addToNewestZSet(anyLong());
 
-        ArgumentCaptor<PostPublishEvent> eventCaptor = ArgumentCaptor.forClass(PostPublishEvent.class);
-        verify(postMessageSender).sendPostPublish(eventCaptor.capture());
-        assertEquals(TEST_USER_ID, eventCaptor.getValue().getUserId());
+        ArgumentCaptor<PostChangeEvent<?>> eventCaptor = ArgumentCaptor.forClass(PostChangeEvent.class);
+        verify(postMessageSender).sendPostChangeEvent(eventCaptor.capture());
+        assertEquals(TEST_USER_ID, eventCaptor.getValue().getUid());
+
     }
 
     @Test

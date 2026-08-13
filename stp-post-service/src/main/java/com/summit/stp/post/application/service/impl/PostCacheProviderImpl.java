@@ -6,19 +6,22 @@ import com.summit.stp.common.util.DistributedLockUtil;
 import com.summit.stp.post.application.service.PostCacheProvider;
 import com.summit.stp.post.application.service.impl.cache.*;
 import com.summit.stp.post.application.vo.PostVO;
+import com.summit.stp.post.domain.model.Post;
 import com.summit.stp.post.domain.repository.PostCollectRepository;
 import com.summit.stp.post.domain.repository.PostLikeRepository;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
 import com.summit.stp.post.infrastructure.persistence.mapper.PostsMapper;
 import com.summit.stp.post.infrastructure.persistence.po.PostsPO;
-import com.summit.stp.tag.application.service.impl.cache.TagDetailCacheOps;
-import com.summit.stp.tag.application.vo.TagVO;
 import com.summit.stp.tag.domain.model.PostTag;
 import com.summit.stp.tag.domain.repository.PostTagRelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
@@ -27,8 +30,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 帖子缓存服务实现类（门面委托），将 6 类缓存职责委托给独立的 CacheOps 组件。
- * 保留对外接口不变，内部仅做编排和一行委托。
+ * 帖子缓存服务实现类
  */
 @Slf4j
 @Component
@@ -39,7 +41,6 @@ public class PostCacheProviderImpl implements PostCacheProvider {
     private final PostCounterCacheOps counterCacheOps;
     private final PostContentCacheOps contentCacheOps;
     private final PostQueryZSetCacheOps queryZSetCacheOps;
-    private final TagDetailCacheOps tagDetailCacheOps;
     private final PostLikeRepository postLikeRepository;
     private final PostCollectRepository postCollectRepository;
     private final PostTagRelRepository postTagRelRepository;
@@ -170,8 +171,9 @@ public class PostCacheProviderImpl implements PostCacheProvider {
                 if (po == null) return;
                 List<Long> likedUserIds = postLikeRepository.findUserIdsByPostId(postId);
                 List<Long> collectedUserIds = postCollectRepository.findUserIdsByPostId(postId);
-                long likeCount = po.getLikeCount() != null ? po.getLikeCount() : 0L;
-                long collectCount = po.getCollectCount() != null ? po.getCollectCount() : 0L;
+                long likeCount = Math.max((long) likedUserIds.size(), po.getLikeCount() != null ? po.getLikeCount() : 0L);
+                long collectCount = Math.max((long) collectedUserIds.size(), po.getCollectCount() != null ? po.getCollectCount() : 0L);
+
                 List<Long> tagIds = postTagRelRepository.findByPostId(postId).stream()
                         .map(PostTag::getTagId).toList();
                 contentCacheOps.loadSinglePostHash(postId, po, likeCount, collectCount, tagIds);
@@ -218,7 +220,11 @@ public class PostCacheProviderImpl implements PostCacheProvider {
                 if (collectExists == null || !collectExists) missingCollectPostIds.add(postId);
             }
 
-            // 2. 批量预热帖子主体 Hash
+            // 2. 批量预热点赞/收藏 Set
+            interactionCacheOps.batchLoadMissingSets(missingLikePostIds, InteractionType.LIKE, postLikeRepository::findUserIdsByPostIds);
+            interactionCacheOps.batchLoadMissingSets(missingCollectPostIds, InteractionType.COLLECT, postCollectRepository::findUserIdsByPostIds);
+
+            // 3. 批量预热帖子主体 Hash（合并精准互动计数）
             if (!missingPostIds.isEmpty()) {
                 List<PostsPO> pos = postsMapper.selectList(new LambdaQueryWrapper<PostsPO>()
                         .in(PostsPO::getPublicId, missingPostIds));
@@ -233,9 +239,6 @@ public class PostCacheProviderImpl implements PostCacheProvider {
                 }
             }
 
-            // 3. 批量预热点赞/收藏 Set
-            interactionCacheOps.batchLoadMissingSets(missingLikePostIds, InteractionType.LIKE, postLikeRepository::findUserIdsByPostIds);
-            interactionCacheOps.batchLoadMissingSets(missingCollectPostIds, InteractionType.COLLECT, postCollectRepository::findUserIdsByPostIds);
         } catch (Exception e) {
             log.warn("【帖子模块】批量预热缓存失败，postIds={}", postIds, e);
         }
@@ -252,6 +255,12 @@ public class PostCacheProviderImpl implements PostCacheProvider {
     public void addToHotZSet(Long postId, double score) {
         queryZSetCacheOps.addToHotZSet(postId, score);
     }
+
+    @Override
+    public void addToHotZSet(Map<Long, Double> scoresMap) {
+        queryZSetCacheOps.addToHotZSet(scoresMap);
+    }
+
 
     @Override
     public Set<Long> getPostIdsFromNewest(int offset, int limit) {
@@ -325,19 +334,105 @@ public class PostCacheProviderImpl implements PostCacheProvider {
         return contentCacheOps.batchGetTagIds(postIds);
     }
 
+    // ======================== 定时同步调度缓存支持 ========================
+
     @Override
-    public Map<Long, TagVO> batchGetTagDetails(List<Long> tagIds) {
-        return tagDetailCacheOps.batchGetTagDetails(tagIds);
+    public Set<String> scanChangedRunKeys() {
+        String pattern = PostConstants.Cache.CHANGED_RUN_PREFIX + "*";
+        Set<String> keys = new HashSet<>();
+        try {
+            redisTemplate.execute((RedisCallback<Void>) connection -> {
+                Cursor<byte[]> cursor = connection.keyCommands().scan(
+                        ScanOptions.scanOptions().match(pattern).count(1000).build()
+                );
+                while (cursor.hasNext()) {
+                    Object deserialized = redisTemplate.getKeySerializer().deserialize(cursor.next());
+                    if (deserialized instanceof String str) {
+                        keys.add(str);
+                    }
+                }
+                return null;
+            });
+        } catch (Exception e) {
+            log.error("【帖子】Scan Redis 执行失败, pattern={}", pattern, e);
+        }
+        return keys;
     }
 
     @Override
-    public void batchSaveTagDetails(List<TagVO> tags) {
-        tagDetailCacheOps.batchSaveTagDetails(tags);
+    public boolean hasChangedKey() {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(PostConstants.Cache.CHANGED));
     }
 
     @Override
-    public void deleteTagDetail(Long tagId) {
-        tagDetailCacheOps.deleteTagDetail(tagId);
+    public boolean renameChangedKey(String backupKey) {
+        try {
+            redisTemplate.rename(PostConstants.Cache.CHANGED, backupKey);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    @Override
+    public Set<Long> getBackupPostIds(String backupKey) {
+        Set<Object> members = redisTemplate.opsForSet().members(backupKey);
+        if (members == null || members.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return members.stream()
+                .filter(Objects::nonNull)
+                .map(this::toLong)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public void deleteBackupKey(String backupKey) {
+        redisTemplate.delete(backupKey);
+    }
+
+    @Override
+    public void removeBackupPostIds(String backupKey, List<Long> postIds) {
+        if (postIds != null && !postIds.isEmpty()) {
+            redisTemplate.opsForSet().remove(backupKey, postIds.toArray());
+        }
+    }
+
+    @Override
+    public void batchCachePostDetail(List<Post> posts) {
+        if (posts == null || posts.isEmpty()) return;
+        redisTemplate.executePipelined(new SessionCallback<Object>() {
+            @Override
+            public <K, V> Object execute(@NonNull RedisOperations<K, V> operations) throws DataAccessException {
+                posts.stream()
+                        .filter(Objects::nonNull)
+                        .forEach(post -> {
+                            String postKey = PostConstants.Cache.DETAIL_PREFIX + post.getId();
+                            if (Boolean.TRUE.equals(redisTemplate.hasKey(postKey))) {
+                                Map<String, Object> fields = new HashMap<>();
+                                fields.put(CacheFieldConstants.LIKE_COUNT, post.getLikeCount());
+                                fields.put(CacheFieldConstants.COLLECT_COUNT, post.getCollectCount());
+                                fields.put(CacheFieldConstants.VIEW_COUNT, post.getViewCount());
+                                fields.put(CacheFieldConstants.REPLY_COUNT, post.getReplyCount());
+                                fields.put(CacheFieldConstants.HOT_SCORE, post.getHotScore());
+                                redisTemplate.opsForHash().putAll(postKey, fields);
+                            }
+                        });
+                return null;
+            }
+        });
+    }
+
+    private Long toLong(Object obj) {
+        if (obj instanceof Long value) return value;
+        if (obj instanceof Integer value) return value.longValue();
+        if (obj instanceof String value) {
+            try {
+                return Long.parseLong(value);
+            } catch (NumberFormatException ignored) {}
+        }
+        return null;
     }
 
     @Override
@@ -372,3 +467,4 @@ public class PostCacheProviderImpl implements PostCacheProvider {
         redisTemplate.opsForSet().add(PostConstants.Cache.ACTIVE_POST_KEYS,postId);
     }
 }
+

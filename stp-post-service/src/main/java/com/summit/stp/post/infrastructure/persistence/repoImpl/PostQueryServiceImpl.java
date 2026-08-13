@@ -1,10 +1,13 @@
-package com.summit.stp.post.infrastructure.persistence;
+package com.summit.stp.post.infrastructure.persistence.repoImpl;
 
+import cn.hutool.core.util.StrUtil;
 import com.summit.stp.common.ThreadContext.UserHolder;
 import com.summit.stp.common.application.api.vo.UserSettingVO;
 import com.summit.stp.common.application.api.vo.UserSimpleVO;
 import com.summit.stp.common.constants.CacheFieldConstants;
 import com.summit.stp.common.feign.UserFeignClient;
+import com.summit.stp.elasticsearch.document.PostDocument;
+import com.summit.stp.elasticsearch.service.QueryService;
 import com.summit.stp.post.api.dto.request.QueryPostListPageRequest;
 import com.summit.stp.post.application.service.PostCacheProvider;
 import com.summit.stp.post.application.service.PostQueryService;
@@ -13,6 +16,7 @@ import com.summit.stp.post.application.vo.PostVO;
 import com.summit.stp.post.domain.model.PostStatus;
 import com.summit.stp.post.domain.repository.*;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
+import com.summit.stp.tag.application.service.TagCacheProvider;
 import com.summit.stp.tag.application.vo.TagVO;
 import com.summit.stp.tag.domain.model.PostTag;
 import com.summit.stp.tag.domain.model.Tag;
@@ -20,10 +24,17 @@ import com.summit.stp.tag.domain.repository.PostTagRelRepository;
 import com.summit.stp.tag.domain.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import java.util.function.BiFunction;
 
 /**
  * 帖子查询服务实现（CQRS 读模型实现），直接利用 Mybatis Mapper 完成高性能的多表联合查询
@@ -36,11 +47,13 @@ public class PostQueryServiceImpl implements PostQueryService {
     private final PostTagRelRepository postTagRelRepository;
     private final TagRepository tagRepository;
     private final PostCacheProvider postCacheProvider;
+    private final TagCacheProvider tagCacheProvider;
     private final PostLikeRepository postLikeRepository;
     private final PostCollectRepository postCollectRepository;
     private final PostRepository postRepository;
     private final UserFeignClient userFeignClient;
     private final PostMetadataAssembler metadataAssembler;
+    private final QueryService queryService;
 
     @Override
     public List<PostVO> getPostPage(Long cursor, Boolean self, Long creatorId, Integer status, String orderType, Integer limit) {
@@ -52,48 +65,11 @@ public class PostQueryServiceImpl implements PostQueryService {
 
         if (isGlobalQuery) {
             try {
-                long start = 0;
-                Set<Long> postIds = null;
-                Long rank;
-                // 热门 ZSet 分页：限制翻页深度 5000。若 cursor 不为空，查 rank 计算 start，找不到说明超出或被淘汰，直接返回空列表
-
-                if (PostConstants.Business.ORDER_TYPE_HOT.equalsIgnoreCase(orderType)) {
-                    if (cursor != null) {
-                        rank = postCacheProvider.getRankFromHot(cursor);
-                        if (rank == null) {
-                            return Collections.emptyList();
-                        }
-                        start = rank + 1;
-                    }
-                    postIds = postCacheProvider.getPostIdsFromHot((int) start, limit);
-                    log.info("【热榜SET查询-缓存命中】{}条", postIds.size());
-                } else {
-                    if (cursor != null) {
-                        rank = postCacheProvider.getRankFromNewest(cursor);
-                        if (rank == null) {
-                            return Collections.emptyList();
-                        }
-                        start = rank + 1;
-                    }
-                    postIds = postCacheProvider.getPostIdsFromNewest((int) start, limit);
-                    log.info("【新帖SET查询-缓存命中】 {}条", postIds.size());
-                }
-
-
-                if (!postIds.isEmpty()) {
-
-                    List<PostVO> cachedVOList = fetchPostsByIdsFromCache(new ArrayList<>(postIds));
-
-                    List<PostVO> sortedVOList = sortVoListByOrder(cachedVOList, postIds);
-                    return resolveExtraInfo(sortedVOList);
-                }
-                log.info("【新帖SET查询-缓存未命中】");
-            } catch (Exception e) {
+               return globalCacheQuery(cursor, orderType, limit);
+            }catch (Exception e){
                 log.warn("【帖子模块】分页获取帖子失败，动作：查询Redis缓存降级读库", e);
             }
         }
-
-
         List<PostVO> postVOList = postRepository.queryByPage(cursor, resolvedCreatorId, currentUserId, status, limit);
         if (Objects.equals(resolvedCreatorId, currentUserId)) {
             try {
@@ -121,42 +97,20 @@ public class PostQueryServiceImpl implements PostQueryService {
 
     @Override
     public List<PostVO> getMyCollectPostList(Long targetUserId, String cursor) {
-        Long currentUserId = UserHolder.getUser().getId();
-        Long resolvedTargetUserId = targetUserId != null ? targetUserId : currentUserId;
-        if (!checkListVisiblePermission(resolvedTargetUserId, currentUserId)) {
-            return Collections.emptyList();
-        }
-        List<Long> posts = postCollectRepository.findByUserId(resolvedTargetUserId, cursor);
-        if (posts.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<PostVO> list = postRepository.queryByPostIds(posts, PostStatus.NORMAL.getCode(), currentUserId);
-        return resolveExtraInfo(list);
+        return getInteractPostList(targetUserId, cursor, postCollectRepository::findByUserId);
     }
 
     @Override
     public List<PostVO> getMyLikePostList(Long targetUserId, String cursor) {
-        Long currentUserId = UserHolder.getUser().getId();
-        Long resolvedTargetUserId = targetUserId != null ? targetUserId : currentUserId;
-        if (!checkListVisiblePermission(resolvedTargetUserId, currentUserId)) {
-            return Collections.emptyList();
-        }
-        List<Long> posts = postLikeRepository.findByUserId(resolvedTargetUserId, cursor);
-        if (posts.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<PostVO> list = postRepository.queryByPostIds(posts, PostStatus.NORMAL.getCode(), currentUserId);
-        return resolveExtraInfo(list);
+        return getInteractPostList(targetUserId, cursor, postLikeRepository::findByUserId);
     }
+
 
     @Override
     public List<PostVO> getFollowPostList(QueryPostListPageRequest request) {
         return List.of();
     }
 
-    private boolean checkListVisiblePermission(Long targetUserId, Long currentUserId) {
-        return true;
-    }
 
     @Override
     public PostVO findById(Long id, Long uid, Integer status) {
@@ -185,9 +139,53 @@ public class PostQueryServiceImpl implements PostQueryService {
 
     @Override
     public List<PostVO> searchPost(String keyWord) {
-        return List.of();
+        if (StrUtil.isBlank(keyWord)) return List.of();
+        List<Long> list = queryService.findByKeyWords(keyWord).stream().map(PostDocument::getId).toList();
+        List<PostVO> byPostIds = this.getByPostIds(list);
+        return Objects.requireNonNullElse(byPostIds, List.of());
     }
 
+
+    private List<PostVO> globalCacheQuery(Long cursor, String orderType, Integer limit) {
+
+        long start = 0;
+        Set<Long> postIds;
+        Long rank;
+        // 热门 ZSet 分页：限制翻页深度 5000。若 cursor 不为空，查 rank 计算 start，找不到说明超出或被淘汰，直接返回空列表
+        if (PostConstants.Business.ORDER_TYPE_HOT.equalsIgnoreCase(orderType)) {
+            if (cursor != null) {
+                rank = postCacheProvider.getRankFromHot(cursor);
+                if (rank == null) {
+                    return Collections.emptyList();
+                }
+                start = rank + 1;
+            }
+            postIds = postCacheProvider.getPostIdsFromHot((int) start, limit);
+            log.info("【热榜SET查询-缓存命中】{}条", postIds.size());
+        } else {
+            if (cursor != null) {
+                rank = postCacheProvider.getRankFromNewest(cursor);
+                if (rank == null) {
+                    return Collections.emptyList();
+                }
+                start = rank + 1;
+            }
+            postIds = postCacheProvider.getPostIdsFromNewest((int) start, limit);
+            log.info("【新帖SET查询-缓存命中】 {}条", postIds.size());
+        }
+
+
+        if (!postIds.isEmpty()) {
+            //如果从缓存中拉取的状态帖子不为空,则拉取帖子实体
+            List<PostVO> cachedVOList = fetchPostsByIdsFromCache(new ArrayList<>(postIds));
+            //按指定id顺序对帖子排序
+            List<PostVO> sortedVOList = sortVoListByOrder(cachedVOList, postIds);
+            return resolveExtraInfo(sortedVOList);
+        }
+        throw new RuntimeException("缓存未命中帖子");
+
+
+    }
 
     /**
      * 批量获取帖子主体：优先 detail Hash 缓存，缺失的降级查 DB 并回写缓存。
@@ -221,6 +219,22 @@ public class PostQueryServiceImpl implements PostQueryService {
                 .toList();
     }
 
+    /**
+     * 抽取通用的用户互动帖子列表查询（点赞/收藏模板方法）
+     */
+    private List<PostVO> getInteractPostList(Long targetUserId, String cursor, BiFunction<Long, String, List<Long>> postIdsFetcher) {
+        Long currentUserId = UserHolder.getUser().getId();
+        Long resolvedTargetUserId = targetUserId != null ? targetUserId : currentUserId;
+        if (!checkListVisiblePermission(resolvedTargetUserId, currentUserId)) {
+            return Collections.emptyList();
+        }
+        List<Long> posts = postIdsFetcher.apply(resolvedTargetUserId, cursor);
+        if (posts == null || posts.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<PostVO> list = postRepository.queryByPostIds(posts, PostStatus.NORMAL.getCode(), currentUserId);
+        return resolveExtraInfo(list);
+    }
 
     /**
      * 填充剩余帖子缺失信息(帖子相关图片,标签,缓存预热,点赞,收藏等)
@@ -341,6 +355,9 @@ public class PostQueryServiceImpl implements PostQueryService {
         postVOList.forEach(vo -> vo.setPublisher(userMap.get(vo.getCreatorId())));
     }
 
+    private boolean checkListVisiblePermission(Long targetUserId, Long currentUserId) {
+        return true;
+    }
 
     /**
      * 根据查询请求条件解析实际应当过滤的创作者ID。
@@ -422,7 +439,7 @@ public class PostQueryServiceImpl implements PostQueryService {
         Map<Long, TagVO> result = new HashMap<>(tagIds.size());
         // 缓存
         try {
-            Map<Long, TagVO> cached = postCacheProvider.batchGetTagDetails(tagIds);
+            Map<Long, TagVO> cached = tagCacheProvider.batchGetTagDetails(tagIds);
             result.putAll(cached);
         } catch (Exception e) {
             log.warn("【帖子模块】读取标签详情缓存异常，降级查DB", e);
@@ -448,7 +465,7 @@ public class PostQueryServiceImpl implements PostQueryService {
                 // 回写缓存
                 if (!dbTags.isEmpty()) {
                     try {
-                        postCacheProvider.batchSaveTagDetails(dbTags);
+                        tagCacheProvider.batchSaveTagDetails(dbTags);
                     } catch (Exception e) {
                         log.warn("【帖子模块】回写标签详情缓存异常", e);
                     }
@@ -457,6 +474,7 @@ public class PostQueryServiceImpl implements PostQueryService {
         }
         return result;
     }
+
 
     private List<Long> parseTagIds(String tagIdsStr) {
         if (tagIdsStr == null || tagIdsStr.isBlank()) {

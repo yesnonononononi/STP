@@ -172,14 +172,24 @@ public class PostContentCacheOps {
             public Object execute(@NonNull RedisOperations operations) {
                 for (PostsPO po : poList) {
                     Long pid = po.getPublicId();
-                    long likeCount = po.getLikeCount() != null ? po.getLikeCount() : 0L;
-                    long collectCount = po.getCollectCount() != null ? po.getCollectCount() : 0L;
+                    String likeSetKey = InteractionType.LIKE.buildSetKey(pid);
+                    String collectSetKey = InteractionType.COLLECT.buildSetKey(pid);
+                    Long zsetLikeSize = redisTemplate.opsForZSet().zCard(likeSetKey);
+                    Long zsetCollectSize = redisTemplate.opsForZSet().zCard(collectSetKey);
+                    // 扣除预热标志占位 -1L 后的真实大小
+                    long liveLikeSize = (zsetLikeSize != null && zsetLikeSize > 0) ? (redisTemplate.opsForZSet().score(likeSetKey, -1L) != null ? zsetLikeSize - 1 : zsetLikeSize) : 0L;
+                    long liveCollectSize = (zsetCollectSize != null && zsetCollectSize > 0) ? (redisTemplate.opsForZSet().score(collectSetKey, -1L) != null ? zsetCollectSize - 1 : zsetCollectSize) : 0L;
+
+                    long likeCount = Math.max(liveLikeSize, po.getLikeCount() != null ? po.getLikeCount() : 0L);
+                    long collectCount = Math.max(liveCollectSize, po.getCollectCount() != null ? po.getCollectCount() : 0L);
+
                     List<Long> tagIds = tagIdsMap.getOrDefault(pid, Collections.emptyList());
                     Map<String, Object> fields = buildHashFieldsFromPO(po, likeCount, collectCount, tagIds);
                     String postKey = PostConstants.Cache.DETAIL_PREFIX + pid;
                     operations.opsForHash().putAll(postKey, fields);
                     operations.expire(postKey, randomExpire(), TimeUnit.SECONDS);
                 }
+
                 return null;
             }
         });

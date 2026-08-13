@@ -12,6 +12,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -69,8 +71,8 @@ public class RankCacheProviderImpl implements RankCacheProvider {
         String key = PostConstants.Cache.TOPIC_USE_ZSET;
         for (Tag tag : tags) {
             double score = tag.getUseCount() != null ? tag.getUseCount().doubleValue() : 0.0;
-            redisTemplate.opsForZSet().add(key, tag.getId().toString(), score);
-            redisTemplate.expire(key,7+ ThreadLocalRandom.current().nextInt(1), TimeUnit.DAYS);
+            redisTemplate.opsForZSet().add(key, tag.getId(), score);
+            redisTemplate.expire(key, 7 + ThreadLocalRandom.current().nextInt(1), TimeUnit.DAYS);
         }
     }
 
@@ -80,8 +82,20 @@ public class RankCacheProviderImpl implements RankCacheProvider {
             return;
         }
         String key = PostConstants.Cache.TOPIC_USE_ZSET;
-        redisTemplate.opsForZSet().incrementScore(key, tagId.toString(), delta);
+        redisTemplate.opsForZSet().incrementScore(key, tagId, delta);
     }
+
+    @Override
+    public Double getTopicScore(Long tagId) {
+        if (tagId == null) {
+            return null;
+        }
+        String key = PostConstants.Cache.TOPIC_USE_ZSET;
+        return redisTemplate.opsForZSet().score(key, tagId);
+    }
+
+
+
 
     @Override
     public void cachePostScore(Long postId, double score) {
@@ -96,21 +110,16 @@ public class RankCacheProviderImpl implements RankCacheProvider {
 
     @Override
     public void cachePostsScore(Map<Long, Double> posts) {
-        String key = PostConstants.Cache.POST_HOT_ZSET;
-        List<Object> resList = redisTemplate.executePipelined(new SessionCallback<>() {
-            @Override
-            public  Object execute(RedisOperations operations) throws DataAccessException {
-                posts.forEach((postId, score) -> {
-                    operations.opsForZSet().add(key, postId, score);
-                    operations.expire(key,7+ThreadLocalRandom.current().nextInt(1), TimeUnit.DAYS);
-                });
-                return null;
-            }
-        });
-        List<Object> list = resList.stream().filter(Objects::nonNull).toList();
-        if(!list.isEmpty()){
-            log.info("【帖子热度批量更新】:{}",list.getFirst());
+        if (posts == null || posts.isEmpty()) {
+            return;
         }
+        String key = PostConstants.Cache.POST_HOT_ZSET;
+        Set<ZSetOperations.TypedTuple<Object>> tuples = posts.entrySet().stream()
+                .map(e -> ZSetOperations.TypedTuple.of((Object) e.getKey(), e.getValue()))
+                .collect(Collectors.toSet());
+        redisTemplate.opsForZSet().add(key, tuples);
+        redisTemplate.expire(key, 7 + ThreadLocalRandom.current().nextInt(1), TimeUnit.DAYS);
+        log.info("【排行榜模块】动作：批量更新帖子热度得分, count={}", posts.size());
     }
 
     @Override
@@ -125,23 +134,19 @@ public class RankCacheProviderImpl implements RankCacheProvider {
     @SuppressWarnings("unchecked")
     @Override
     public void updateCreatorRank(List<RankBoard> res) {
-      redisTemplate.executePipelined(new SessionCallback<>() {
-          @Override
-          public Object execute(@NonNull RedisOperations operations) throws DataAccessException {
-              for (RankBoard rb : res) {
-                  Long uid = rb.getEntityId();
-                  String key = buildCreatorRankKey(uid);
-                  operations.opsForZSet().add(key,uid,rb.getScore());
-              }
-              return null;
-          }
-      });
+        redisTemplate.executePipelined(new SessionCallback<>() {
+            @Override
+            public Object execute(@NonNull RedisOperations operations) throws DataAccessException {
+                for (RankBoard rb : res) {
+                    Long uid = rb.getEntityId();
+                    String key = buildCreatorRankKey(uid);
+                    operations.opsForZSet().add(key, uid, rb.getScore());
+                }
+                return null;
+            }
+        });
     }
 
-    @Override
-    public void cacheCreatorRank(List<RankBoard> res) {
-
-    }
 
     private Long toLong(Object obj) {
         if (obj instanceof Long val) return val;

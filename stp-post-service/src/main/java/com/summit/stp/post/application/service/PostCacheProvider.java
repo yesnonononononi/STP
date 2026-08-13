@@ -1,7 +1,7 @@
 package com.summit.stp.post.application.service;
 
 import com.summit.stp.post.application.vo.PostVO;
-import com.summit.stp.tag.application.vo.TagVO;
+import com.summit.stp.post.domain.model.Post;
 
 import java.util.List;
 import java.util.Map;
@@ -11,6 +11,7 @@ import java.util.Set;
  * 帖子缓存服务接口
  */
 public interface PostCacheProvider {
+
 
     /**
      * 点赞（已点赞即取消）
@@ -103,6 +104,12 @@ public interface PostCacheProvider {
     void addToHotZSet(Long postId, double score);
 
     /**
+     * 批量将帖子加入热门 ZSet 缓存
+     */
+    void addToHotZSet(Map<Long, Double> scoresMap);
+
+
+    /**
      * 从最新 ZSet 缓存中按偏移量分页获取帖子ID（降序）
      */
     Set<Long> getPostIdsFromNewest(int offset, int limit);
@@ -148,19 +155,39 @@ public interface PostCacheProvider {
     Map<Long, String> batchGetTagIds(List<Long> postIds);
 
     /**
-     * 批量获取标签详情缓存（仅返回命中的）
+     * 扫描变更备份集合 Key 列表
      */
-    Map<Long, TagVO> batchGetTagDetails(List<Long> tagIds);
+    Set<String> scanChangedRunKeys();
 
     /**
-     * 批量保存标签详情缓存
+     * 判断是否存在变更集合 Key
      */
-    void batchSaveTagDetails(List<TagVO> tags);
+    boolean hasChangedKey();
 
     /**
-     * 删除单个标签详情缓存
+     * 将变更集合 Key 重命名为备份 Key
      */
-    void deleteTagDetail(Long tagId);
+    boolean renameChangedKey(String backupKey);
+
+    /**
+     * 获取备份 Key 中的帖子 ID 集合
+     */
+    Set<Long> getBackupPostIds(String backupKey);
+
+    /**
+     * 删除备份 Key
+     */
+    void deleteBackupKey(String backupKey);
+
+    /**
+     * 从备份 Key 中移除已处理的帖子 ID
+     */
+    void removeBackupPostIds(String backupKey, List<Long> postIds);
+
+    /**
+     * 批量更新写回帖子 Detail Hash 缓存
+     */
+    void batchCachePostDetail(List<Post> posts);
 
     /**
      * 保存帖子本体内容缓存

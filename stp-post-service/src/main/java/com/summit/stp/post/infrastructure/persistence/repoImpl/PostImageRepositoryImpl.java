@@ -1,4 +1,4 @@
-package com.summit.stp.post.infrastructure.persistence;
+package com.summit.stp.post.infrastructure.persistence.repoImpl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.summit.stp.post.application.vo.PostImageVO;

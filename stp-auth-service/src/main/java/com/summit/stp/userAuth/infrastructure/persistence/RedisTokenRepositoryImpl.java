@@ -77,7 +77,8 @@ public class RedisTokenRepositoryImpl implements TokenRepository {
                 newToken,
                 String.valueOf(UserAuthConstants.Business.DEFAULT_REFRESH_TOKEN_EXPIRE_SECONDS),
                 newRefreshToken,
-                objectMapper.writeValueAsString(userSession)};
+                objectMapper.writeValueAsString(userSession)
+        };
 
 
         Long execute = redisTemplate.execute(RESET_SCRIPT, keyList, args);
@@ -141,8 +142,9 @@ public class RedisTokenRepositoryImpl implements TokenRepository {
                 getSessionKey(oldAccessToken, UserSession.TokenType.ACCESS),
                 getTokenKey(username, UserSession.TokenType.REFRESH),
                 getSessionKey(refreshToken, UserSession.TokenType.REFRESH),
-                getTokenKey(newAccessToken, UserSession.TokenType.ACCESS)
+                getSessionKey(newAccessToken, UserSession.TokenType.ACCESS)
         );
+
         Object[] args = new Object[]{
                 String.valueOf(UserAuthConstants.Business.DEFAULT_TOKEN_EXPIRE_SECONDS),
                 String.valueOf(UserAuthConstants.Business.DEFAULT_REFRESH_TOKEN_EXPIRE_SECONDS),

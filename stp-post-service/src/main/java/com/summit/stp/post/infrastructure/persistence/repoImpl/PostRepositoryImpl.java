@@ -1,4 +1,4 @@
-package com.summit.stp.post.infrastructure.persistence;
+package com.summit.stp.post.infrastructure.persistence.repoImpl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.summit.stp.common.application.domain.exception.BusinessException;
@@ -22,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -128,6 +130,18 @@ public class PostRepositoryImpl implements PostRepository {
     }
 
     @Override
+    public List<Post> findByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<PostsPO> postsPOS = postsMapper.selectList(new LambdaQueryWrapper<PostsPO>()
+                .in(PostsPO::getPublicId, ids));
+        return postsPOS == null ? Collections.emptyList() :
+                postsPOS.stream().map(this::convertToDomain).toList();
+    }
+
+
+    @Override
     public Post findById(Long id) {
         PostsPO po = postsMapper.selectOne(new LambdaQueryWrapper<PostsPO>()
                 .eq(PostsPO::getPublicId, id));
@@ -192,7 +206,8 @@ public class PostRepositoryImpl implements PostRepository {
                 .updateTime(post.getUpdateTime())
                 .isTop(post.getIsTop())
                 .viewCount(post.getViewCount())
-                .visibleScope(post.getVisibleScope().getCode())
+                .visibleScope(post.getVisibleScope() == null ? 1 : post.getVisibleScope().getCode())
+
                 .likeCount(post.getLikeCount())
                 .collectCount(post.getCollectCount())
                 .replyCount(post.getReplyCount() != null ? post.getReplyCount().intValue() : 0)

@@ -1,71 +1,75 @@
 <template>
-    <div v-if="visible" class="absolute inset-0 z-100  flex items-center justify-center " :class="props.bgColor">
-        <div class="flex items-center p-2 gap-2 w-auto  h-12">
-            <div v-html="display"></div>
-            <span class="animate-pulse text-gray-500">{{ prompt }}</span>
-        </div>
+  <div v-if="isVisible" class="absolute inset-0 z-100 flex items-center justify-center pointer-events-auto" :class="props.bgColor">
+    <div class="flex items-center p-2 gap-3 w-auto h-12 overflow-hidden">
+      <div v-if="display" v-html="display" class="overflow-hidden"></div>
+      <div v-else class="loading-text">STP</div>
+      <span v-if="prompt" class="animate-pulse text-gray-400 text-sm font-medium">{{ prompt }}</span>
     </div>
+  </div>
 </template>
+
 <script lang="ts" setup>
+import { computed } from 'vue'
+
 const visible = defineModel<boolean>()
-const props = withDefaults(defineProps<
-    {
-        bgColor?: string,
-        prompt?: string,
-        display?: string
-    }>(),
-    {
-        bgColor: 'bg-gray-100',
-        prompt: '',
-        display: '<div class="loading-text" data-text="STP">STP</div>'
-    }
+const props = withDefaults(
+  defineProps<{
+    bgColor?: string
+    prompt?: string
+    display?: string
+  }>(),
+  {
+    bgColor: 'bg-gray-100/90 backdrop-blur-xs',
+    prompt: '',
+    display: '<div class="loading-text" data-text="STP">STP</div>'
+  }
 )
+
+const isVisible = computed(() => (visible.value === undefined ? true : visible.value))
 </script>
 
-
-
-<style>
+<style scoped>
+:deep(.loading-text),
 .loading-text {
-    font-size: 36px;
-    font-weight: bold;
-    color: #ccc;
-    /* 灰色（未填充部分的颜色） */
-    position: relative;
-    display: inline-block;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+
+  /* 基础灰色背景，叠加宽度不超过 1/3 文字长的蓝色高光画布 */
+  background-image: 
+    linear-gradient(
+      90deg, 
+      transparent 0%, 
+      rgba(59, 130, 246, 0.4) 15%, 
+      #2563eb 50%, 
+      rgba(59, 130, 246, 0.4) 85%, 
+      transparent 100%
+    ),
+    linear-gradient(#9ca3af, #9ca3af);
+
+  /* 蓝色画布宽度限定为 30%（严格不超过文字总宽度的 1/3） */
+  background-size: 30% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat;
+
+  /* overflow-hidden 裁切，隐藏文字之外的任何画布背景 */
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+
+  /* 蓝色画布从左到右平滑划过，循环播放 */
+  animation: blueCanvasSweep 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-/* 伪元素作为填充层 */
-.loading-text::before {
-    content: attr(data-text);
-    /* 复制文本内容 */
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    color: blue;
-    /* 填充颜色（蓝色） */
-    /* 关键：用 clip-path 控制显示区域，初始全隐藏 */
-    clip-path: inset(0 100% 0 0);
-    /* 循环动画：2 秒一次，ease-in-out 让两端慢中间快 */
-    animation: fillLoop 0.5s ease-in-out infinite;
-}
-
-@keyframes fillLoop {
-    0% {
-        clip-path: inset(0 100% 0 0);
-    }
-
-    /* 完全隐藏（右边界在 100%） */
-    50% {
-        clip-path: inset(0 0% 0 0);
-    }
-
-    /* 完全显示（右边界在 0%） */
-    100% {
-        clip-path: inset(0 100% 0 0);
-    }
-
-    /* 回到隐藏 */
+@keyframes blueCanvasSweep {
+  0% {
+    background-position: -35% 0, 0 0;
+  }
+  100% {
+    background-position: 135% 0, 0 0;
+  }
 }
 </style>
+

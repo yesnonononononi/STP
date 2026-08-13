@@ -5,6 +5,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
 import com.summit.stp.post.infrastructure.persistence.mapper.PostsMapper;
 import com.summit.stp.tag.application.service.TagCacheProvider;
+import com.summit.stp.tag.application.service.impl.cache.TagDetailCacheOps;
+import com.summit.stp.tag.application.vo.TagVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -27,6 +29,8 @@ public class TagCacheProviderImpl implements TagCacheProvider {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final PostsMapper postsMapper;
+    private final TagDetailCacheOps tagDetailCacheOps;
+
 
     /**
      * 全局热门帖子本地缓存 (防止高频请求击穿 Redis)
@@ -252,4 +256,20 @@ public class TagCacheProviderImpl implements TagCacheProvider {
             return 0;
         }
     }
+
+    @Override
+    public Map<Long, TagVO> batchGetTagDetails(List<Long> tagIds) {
+        return tagDetailCacheOps.batchGetTagDetails(tagIds);
+    }
+
+    @Override
+    public void batchSaveTagDetails(List<TagVO> tags) {
+        tagDetailCacheOps.batchSaveTagDetails(tags);
+    }
+
+    @Override
+    public void deleteTagDetail(Long tagId) {
+        tagDetailCacheOps.deleteTagDetail(tagId);
+    }
 }
+

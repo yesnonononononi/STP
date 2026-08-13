@@ -17,7 +17,6 @@ public class StpMetaObjectHandler implements MetaObjectHandler {
         if (metaObject.hasGetter("publicId") ) {
             Object publicId = this.getFieldValByName("publicId", metaObject);
             if (publicId == null || StrUtil.isBlank(publicId.toString()) || publicId.toString().equals("undefined")) {
-                log.info("【公共】自动填充 publicId");
                 this.strictInsertFill(metaObject, "publicId", Long.class, IdUtil.getSnowflakeNextId());
             }
         }

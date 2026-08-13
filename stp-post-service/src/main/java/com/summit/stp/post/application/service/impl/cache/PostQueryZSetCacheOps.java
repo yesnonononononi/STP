@@ -43,6 +43,24 @@ public class PostQueryZSetCacheOps {
     }
 
     /**
+     * 批量添加帖子到热门 ZSet
+     */
+    public void addToHotZSet(Map<Long, Double> scoresMap) {
+        if (scoresMap == null || scoresMap.isEmpty()) return;
+        try {
+            String key = PostConstants.Cache.QUERY_HOT;
+            Set<ZSetOperations.TypedTuple<Object>> tuples = scoresMap.entrySet().stream()
+                    .map(e -> ZSetOperations.TypedTuple.of((Object) e.getKey(), e.getValue()))
+                    .collect(Collectors.toSet());
+            zSetOps.add(key, tuples);
+            trimZSet(key);
+        } catch (Exception e) {
+            log.warn("【帖子模块】Redis服务异常，动作：批量添加帖子到热门ZSet缓存", e);
+        }
+    }
+
+
+    /**
      * 从最新 ZSet 按偏移量分页获取帖子 ID（降序）
      */
     public Set<Long> getPostIdsFromNewest(int offset, int limit) {

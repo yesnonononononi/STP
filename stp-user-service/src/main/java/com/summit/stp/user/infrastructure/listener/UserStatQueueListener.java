@@ -1,7 +1,7 @@
 package com.summit.stp.user.infrastructure.listener;
 
 import com.rabbitmq.client.Channel;
-import com.summit.stp.common.application.domain.event.PostPublishEvent;
+import com.summit.stp.common.application.domain.event.PostChangeEvent;
 import com.summit.stp.common.application.domain.event.UserFansChangeEvent;
 import com.summit.stp.common.application.domain.event.UserLikedChangeEvent;
 import com.summit.stp.common.constants.MqConstants;
@@ -106,11 +106,17 @@ public class UserStatQueueListener {
     @RabbitListener(bindings = @QueueBinding(
             value = @Queue(name = MqConstants.User.QUEUE_TOPIC, durable = "true"),
             exchange = @Exchange(name = MqConstants.Post.EXCHANGE, type = "topic"),
-            key = MqConstants.Post.ROUTING_KEY
+            key = MqConstants.Post.ROUTING_KEY_CHANGE
     ))
-    public void onTopicEvent(PostPublishEvent event, Message message, Channel channel) throws Exception {
+
+    public void onTopicEvent(PostChangeEvent event, Message message, Channel channel) throws Exception {
+
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
-        Long userId = event.getUserId();
+        if(!event.getEventType().equals(PostChangeEvent.EventType.CREATE)){
+            channel.basicAck(deliveryTag, false);
+            return;
+        }
+        Long userId = event.getUid();
         Integer delta = 1;
         if (userId == null) {
             channel.basicAck(deliveryTag, false);

@@ -51,6 +51,15 @@ public interface RankCacheProvider {
     void incrementTopicScore(Long tagId, double delta);
 
     /**
+     * 获取单个话题的实时热度/使用分数值
+     *
+     * @param tagId 话题id
+     * @return 分数值
+     */
+    Double getTopicScore(Long tagId);
+
+
+    /**
      * 缓存或更新单个帖子的热度得分，并为该 ZSet 键设置 7 天的过期时间
      *
      * @param postId 帖子 ID
@@ -69,6 +78,6 @@ public interface RankCacheProvider {
     Double getPostScore(Long postId);
 
     void updateCreatorRank(List<RankBoard> res);
-    void cacheCreatorRank(List<RankBoard> res);
 }
+
 

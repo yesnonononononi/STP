@@ -14,8 +14,16 @@ import java.time.Instant;
 @Builder
 @AllArgsConstructor
 public class PostInteractionEvent implements Serializable {
+    private final Boolean isOnce;
+    private final Boolean offset;
     private final Long postId;
     private final Long userId;
     private final String interactionType; // "LIKE" 或 "COLLECT"
     private final Instant timestamp;
+
+
+    @Override
+    public String toString() {
+        return String.format("PostInteractionEvent(isOnce=%s,postId=%s,userId=%s,interactionType=%s,timestamp=%s",isOnce,postId,userId,interactionType,timestamp);
+    }
 }

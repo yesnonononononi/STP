@@ -213,13 +213,13 @@ public class RankServiceImpl implements RankService {
 
     private PostRankVO toPostVO(RankBoard rankBoard, @Nullable PostVO entity) {
         return PostRankVO.builder()
-                .id(rankBoard.getId())
+                .id(rankBoard.getId() != null ? rankBoard.getId() : rankBoard.getEntityId())
                 .entityId(rankBoard.getEntityId())
                 .rank(rankBoard.getRank())
                 .entityInfo(entity)
                 .name(rankBoard.getName())
                 .score(rankBoard.getScore())
-                .entityName(rankBoard.getEntityName())
+                .entityName(entity != null ? entity.getTitle() : rankBoard.getEntityName())
                 .week_start_date(rankBoard.getWeekStartDate())
                 .type(rankBoard.getType())
                 .bgImg(rankBoard.getBgImg())
@@ -228,13 +228,13 @@ public class RankServiceImpl implements RankService {
 
     private TopicRankVO toTopicVO(RankBoard rankBoard, @Nullable Tag entity) {
         return TopicRankVO.builder()
-                .id(rankBoard.getId())
-                .entityId(entity != null && entity.getId() != null ? entity.getId().toString() : null)
+                .id(rankBoard.getId() != null ? rankBoard.getId() : rankBoard.getEntityId())
+                .entityId(entity != null && entity.getId() != null ? entity.getId().toString() : (rankBoard.getEntityId() != null ? rankBoard.getEntityId().toString() : null))
                 .rank(rankBoard.getRank())
                 .entityInfo(entity != null ? convertToVO(entity) : null)
                 .name(rankBoard.getName())
                 .score(rankBoard.getScore())
-                .entityName(rankBoard.getEntityName())
+                .entityName(entity != null ? entity.getTagName() : rankBoard.getEntityName())
                 .week_start_date(rankBoard.getWeekStartDate())
                 .type(rankBoard.getType())
                 .bgImg(rankBoard.getBgImg())
@@ -308,7 +308,9 @@ public class RankServiceImpl implements RankService {
             }
             Double score = scoresMap.get(postId);
             RankBoard rb = RankBoard.builder()
+                    .id(pvo.getId())
                     .entityId(pvo.getId())
+                    .entityName(pvo.getTitle())
                     .name("热点榜")
                     .score(score != null ? score : 0.0)
                     .rank(rank++)
@@ -368,16 +370,21 @@ public class RankServiceImpl implements RankService {
             if (tag == null) {
                 continue;
             }
-            double score = tag.getUseCount() != null ? tag.getUseCount().doubleValue() : 0.0;
+            Double liveScore = rankCacheProvider.getTopicScore(tagId);
+            double score = liveScore != null ? liveScore : (tag.getUseCount() != null ? tag.getUseCount().doubleValue() : 0.0);
             RankBoard rb = RankBoard.builder()
+                    .id(tagId)
                     .entityId(tagId)
+                    .entityName(tag.getTagName())
                     .name("话题榜")
                     .score(score)
                     .rank(rank++)
                     .type(BoardType.TOPIC.getType())
                     .build();
             result.add(this.toTopicVO(rb, tag));
+
         }
         return result;
     }
+
 }

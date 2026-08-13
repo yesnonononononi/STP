@@ -4,6 +4,7 @@ import com.summit.stp.post.infrastructure.persistence.po.PostLikePO;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface PostLikeRepository {
     void save(PostLikePO postLike);
@@ -16,6 +17,8 @@ public interface PostLikeRepository {
 
 
     void batchSave(List<PostLikePO> toAddList);
+
+    void batchSave(Map<Long, Set<Long>> map);
 
     void batchDelete(List<Long[]> toRemoveList);
 }

@@ -50,6 +50,8 @@ public class PostController {
                 .status(request.getStatus())
                 .tagIds(request.getTagIds())
                 .isTop(request.getIsTop())
+
+
                 .build();
         return postAppService.createPost(command);
 

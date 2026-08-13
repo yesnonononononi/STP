@@ -47,8 +47,9 @@ export class PostAPI {
    * 帖子搜索
    */
   static async search(keyWord: string): Promise<Result<PostVO[]>> {
-    return await request.get(`/post/search/${keyWord}`)
+    return await request.get(`/post/search/${encodeURIComponent(keyWord)}`)
   }
+
 
   /**
    * 发布新帖子

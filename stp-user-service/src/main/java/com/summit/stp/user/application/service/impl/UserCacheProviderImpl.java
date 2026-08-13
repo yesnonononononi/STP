@@ -61,6 +61,7 @@ public class UserCacheProviderImpl implements UserCacheProvider {
 
     @Override
     public void batchSetUserSimpleVO(Map<Long, UserSimpleVO> userSimpleVOMap) {
+        if(userSimpleVOMap.isEmpty())return;
         redisTemplate.executePipelined(new SessionCallback<>() {
             @Override
             public Object execute(@NonNull RedisOperations operations) throws DataAccessException {

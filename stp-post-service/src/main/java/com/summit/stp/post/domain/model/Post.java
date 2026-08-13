@@ -5,9 +5,12 @@ import com.summit.stp.post.infrastructure.constants.PostConstants;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import org.apache.ibatis.annotations.Insert;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Builder
@@ -115,6 +118,22 @@ public class Post {
         this.updateTime = new Timestamp(System.currentTimeMillis());
     }
 
+    public void updateMeta(Long likeCount,Long viewCount,Long collectCount,Long replyCount){
+        if(likeCount != null){
+            this.likeCount = likeCount;
+        }
+        if(viewCount != null){
+            this.viewCount = viewCount;
+        }
+        if(collectCount != null){
+            this.collectCount = collectCount;
+        }
+        if(replyCount != null){
+            this.replyCount = replyCount;
+        }
+        this.updateTime = new Timestamp(System.currentTimeMillis());
+    }
+
     public boolean isImage(){
         return this.type == PostType.IMAGE;
     }
@@ -151,9 +170,13 @@ public class Post {
         long diffMillis = System.currentTimeMillis() - this.createTime.getTime();
         double hours = diffMillis / (1000.0 * 3600);  // 转换为小时
         long like = this.likeCount != null ? this.likeCount : 0L;
+        long collect = this.collectCount != null ? this.collectCount : 0L;
         long reply = this.replyCount != null ? this.replyCount : 0L;
-        double score = (like + reply * 3.0) / Math.pow(hours + 2, 1.5);
+        long view = this.viewCount != null ? this.viewCount : 0L;
+
+        double score = (like * 1.0 + collect * 2.0 + reply * 3.0 + view * 0.1) / Math.pow(hours + 2, 1.5);
         this.hotScore = Math.ceil(score);
         return this.hotScore;
     }
+
 }

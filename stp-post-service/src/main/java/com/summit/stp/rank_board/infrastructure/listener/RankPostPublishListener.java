@@ -1,8 +1,8 @@
 package com.summit.stp.rank_board.infrastructure.listener;
 
 import com.rabbitmq.client.Channel;
-import com.summit.stp.common.application.domain.event.PostPublishEvent;
 import com.summit.stp.common.constants.MqConstants;
+import com.summit.stp.common.application.domain.event.PostChangeEvent;
 import com.summit.stp.post.domain.model.Post;
 import com.summit.stp.post.domain.repository.PostRepository;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
@@ -34,12 +34,18 @@ public class RankPostPublishListener {
     @RabbitListener(bindings = @QueueBinding(
             value = @Queue(name = MqConstants.Rank.QUEUE_POST_PUBLISH, durable = "true"),
             exchange = @Exchange(name = MqConstants.Post.EXCHANGE, type = "topic"),
-            key = MqConstants.Post.ROUTING_KEY
+            key = MqConstants.Post.ROUTING_KEY_CHANGE
     ))
-    public void listen(PostPublishEvent postPublishEvent, Channel channel, Message message) {
+
+    public void listen(PostChangeEvent postPublishEvent, Channel channel, Message message) {
+
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         try {
-            channel.basicAck(deliveryTag, false);
+            if(!postPublishEvent.getEventType().equals(PostChangeEvent.EventType.CREATE)){
+                channel.basicAck(deliveryTag, false);
+                return;
+            }
+
             Long postId = postPublishEvent.getPostId();
             log.info("【排行榜实时更新】接收到发帖事件: postId={}", postId);
             
@@ -57,11 +63,17 @@ public class RankPostPublishListener {
             }
             
             // 2. 将标签的使用次数增加 1
-            List<PostTag> postTagRel = postTagRelRepository.findByPostId(postId);
-            for (PostTag tag : postTagRel) {
-                rankCacheProvider.incrementTopicScore(tag.getTagId(), 1.0);
-                log.info("【排行榜实时更新】自增标签使用次数, tagId={}", tag.getTagId());
+            List<Long> tagIds = postPublishEvent.getTagIds();
+            if (tagIds == null || tagIds.isEmpty()) {
+                List<PostTag> postTagRel = postTagRelRepository.findByPostId(postId);
+                tagIds = postTagRel.stream().map(PostTag::getTagId).toList();
             }
+            for (Long tagId : tagIds) {
+                rankCacheProvider.incrementTopicScore(tagId, 1.0);
+                log.info("【排行榜实时更新】自增标签使用次数, tagId={}", tagId);
+            }
+            channel.basicAck(deliveryTag, false);
+
         } catch (Exception e) {
             try {
                 channel.basicNack(deliveryTag, false, true);

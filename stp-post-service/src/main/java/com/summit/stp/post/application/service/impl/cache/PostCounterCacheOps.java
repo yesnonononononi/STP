@@ -113,23 +113,46 @@ public class PostCounterCacheOps {
                 }
             });
             for (int i = 0; i < postIds.size(); i++) {
-                Object rawList = pipelineResults.get(i);
+                Long postId = postIds.get(i);
                 long likeCount = 0L;
                 long collectCount = 0L;
-                if (rawList instanceof List<?> list) {
-                    likeCount = parseLongSafely((List<Object>) list, 0);
-                    collectCount = parseLongSafely((List<Object>) list, 1);
+                if (pipelineResults != null && i < pipelineResults.size()) {
+                    Object rawList = pipelineResults.get(i);
+                    if (rawList instanceof List<?> list && !list.isEmpty()) {
+                        likeCount = parseLongSafely((List<Object>) list, 0);
+                        collectCount = parseLongSafely((List<Object>) list, 1);
+                    }
                 }
                 Map<String, Long> countMap = new HashMap<>(2);
                 countMap.put(CacheFieldConstants.LIKE_COUNT, likeCount);
                 countMap.put(CacheFieldConstants.COLLECT_COUNT, collectCount);
-                map.put(postIds.get(i), countMap);
+                map.put(postId, countMap);
             }
         } catch (Exception e) {
-            log.warn("【帖子模块】批量读取点赞收藏计数缓存异常", e);
+            log.warn("【帖子模块】批量读取点赞收藏计数缓存异常，动作：执行单条兜底读取", e);
+            for (Long postId : postIds) {
+                try {
+                    List<Object> res = redisTemplate.opsForHash().multiGet(
+                            PostConstants.Cache.DETAIL_PREFIX + postId,
+                            List.of(CacheFieldConstants.LIKE_COUNT, CacheFieldConstants.COLLECT_COUNT)
+                    );
+                    long likeCount = parseLongSafely(res, 0);
+                    long collectCount = parseLongSafely(res, 1);
+                    Map<String, Long> countMap = new HashMap<>(2);
+                    countMap.put(CacheFieldConstants.LIKE_COUNT, likeCount);
+                    countMap.put(CacheFieldConstants.COLLECT_COUNT, collectCount);
+                    map.put(postId, countMap);
+                } catch (Exception ex) {
+                    Map<String, Long> countMap = new HashMap<>(2);
+                    countMap.put(CacheFieldConstants.LIKE_COUNT, 0L);
+                    countMap.put(CacheFieldConstants.COLLECT_COUNT, 0L);
+                    map.put(postId, countMap);
+                }
+            }
         }
         return map;
     }
+
 
     private void incrementField(Long postId, String field, long delta) {
         String key = PostConstants.Cache.DETAIL_PREFIX + postId;

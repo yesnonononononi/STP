@@ -1,4 +1,4 @@
-package com.summit.stp.post.infrastructure.persistence;
+package com.summit.stp.post.infrastructure.persistence.repoImpl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.summit.stp.post.domain.repository.PostLikeRepository;
@@ -7,15 +7,18 @@ import com.summit.stp.post.infrastructure.persistence.po.PostLikePO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import com.summit.stp.post.infrastructure.constants.PostConstants;
+import org.springframework.data.redis.core.RedisTemplate;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
 public class PostLikeRepositoryImpl implements PostLikeRepository {
     private final PostLikeMapper postLikeMapper;
+    private final RedisTemplate<String, Object> redisTemplate;
+
 
     @Override
     public void save(PostLikePO postLike) {
@@ -98,15 +101,52 @@ public class PostLikeRepositoryImpl implements PostLikeRepository {
                 .orderByDesc(PostLikePO::getPostId)
                 .last("limit 10");
         if (cursor != null && !cursor.isEmpty()) {
-            eq.lt(PostLikePO::getPostId, cursor);
+            try {
+                eq.lt(PostLikePO::getPostId, Long.parseLong(cursor));
+            } catch (Exception ignored) {
+            }
         }
-        return postLikeMapper.selectList(eq).stream().map(PostLikePO::getPostId).collect(Collectors.toList());
+        List<Long> dbPostIds = postLikeMapper.selectList(eq).stream().map(PostLikePO::getPostId).collect(Collectors.toList());
+        if (dbPostIds.isEmpty() || userId == null) {
+            return dbPostIds;
+        }
+
+        List<Long> validPostIds = new ArrayList<>(dbPostIds.size());
+        for (Long pid : dbPostIds) {
+            String likeKey = PostConstants.Cache.LIKE_SET_PREFIX + pid;
+            if (Boolean.TRUE.equals(redisTemplate.hasKey(likeKey))) {
+                Double score = redisTemplate.opsForZSet().score(likeKey, userId);
+                if (score != null) {
+                    validPostIds.add(pid);
+                }
+            } else {
+                validPostIds.add(pid);
+            }
+        }
+        return validPostIds;
     }
+
 
     @Override
     public void batchSave(List<PostLikePO> toAddList) {
         postLikeMapper.insert(toAddList);
     }
+
+    @Override
+    public void batchSave(Map<Long, Set<Long>> map){
+       List<PostLikePO> poList = new ArrayList<>();
+      map.forEach((postId,set)->{
+          set.forEach(userId -> {
+              PostLikePO entity = PostLikePO.builder()
+                      .postId(postId)
+                      .userId(userId)
+                      .build();
+              poList.add(entity);
+          });
+      });
+      postLikeMapper.insert(poList);
+    }
+
 
     @Override
     public void batchDelete(List<Long[]> toRemoveList) {

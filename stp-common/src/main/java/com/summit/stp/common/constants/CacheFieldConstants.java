@@ -5,6 +5,8 @@ package com.summit.stp.common.constants;
  */
 public final class CacheFieldConstants {
 
+    public static final String HOT_SCORE = "hotScore";
+
     private CacheFieldConstants() {}
 
     public static final String CREATOR_ID = "creatorId";

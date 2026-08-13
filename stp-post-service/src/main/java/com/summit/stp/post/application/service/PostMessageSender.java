@@ -1,9 +1,10 @@
 package com.summit.stp.post.application.service;
 
 import com.summit.stp.common.application.domain.event.PostInteractionEvent;
-import com.summit.stp.common.application.domain.event.PostPublishEvent;
 import com.summit.stp.common.application.service.queue.QueueSender;
 import com.summit.stp.common.constants.MqConstants;
+import com.summit.stp.common.application.domain.event.PostChangeEvent;
+import com.summit.stp.elasticsearch.document.PostDocument;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -13,13 +14,7 @@ public class PostMessageSender {
     private final QueueSender queueSender;
 
 
-    /**
-     * 发送帖子发布事件
-     * @param event 帖子发布领域事件
-     */
-    public void sendPostPublish(PostPublishEvent event) {
-        queueSender.send(MqConstants.Post.EXCHANGE, MqConstants.Post.ROUTING_KEY, event);
-    }
+
 
     /**
      * 发送帖子互动事件 (点赞/收藏)
@@ -28,4 +23,16 @@ public class PostMessageSender {
     public void sendPostInteraction(PostInteractionEvent event) {
         queueSender.send(MqConstants.Post.EXCHANGE, MqConstants.Post.ROUTING_KEY_INTERACTION, event);
     }
+
+
+    /**
+     * 发送帖子变更事件
+     * @param event 帖子变更事件
+     */
+    public void sendPostChangeEvent(PostChangeEvent event) {
+        queueSender.send(MqConstants.Post.EXCHANGE, MqConstants.Post.ROUTING_KEY_CHANGE, event);
+    }
+
+
+
 }

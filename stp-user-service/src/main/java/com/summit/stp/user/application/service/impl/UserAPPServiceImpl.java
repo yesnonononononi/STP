@@ -32,10 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -184,25 +181,122 @@ public class UserAPPServiceImpl implements UserApplicationService {
         if (userIds == null || userIds.isEmpty()) {
             return Map.of();
         }
-        userIds = userIds.stream().distinct().toList();
+        int size = userIds.size();
+        userIds = new ArrayList<>(new HashSet<>(userIds));
+        Map<Long, UserSimpleVO> resFromCache = new HashMap<>();
+
+
         try{
-            Map<Long, UserSimpleVO> resFromCache = userCacheProvider.batchGetUserSimpleVO((List<Long>) userIds);
+            // 尝试从缓存获取用户信息
+            resFromCache = userCacheProvider.batchGetUserSimpleVO((List<Long>) userIds);
             if(!resFromCache.isEmpty()){
-                log.info("【批量获取用户信息-缓存命中】:{}/{}条",resFromCache.size(),userIds.size());
-                if(resFromCache.size() == userIds.size()) {
+                log.info("【批量获取用户信息-缓存命中】:{}/{}条",resFromCache.size(), size);
+                if(resFromCache.size() == size) {
                     return resFromCache;
                 }
-                userIds  = userIds.stream().filter(id -> !resFromCache.containsKey(id)).toList();
+                Map<Long, UserSimpleVO> finalResFromCache = resFromCache;
+                userIds  = userIds.stream().filter(id -> !finalResFromCache.containsKey(id)).toList();
             }
         }catch (Exception e){
             log.error("【批量缓存用户】获取用户信息缓存失败,降级数据库查询", e);
         }
+
+        // 查询剩余未缓存的用户从数据库
         log.info("【批量获取用户信息-缓存未全部命中】查询数据库");
+        Map<Long, UserSimpleVO> res = findUsersFromDB(userIds);
+        log.info("【批量获取用户信息-db】:{}/{}条",res.size(), size);
+
+        try {
+            userCacheProvider.batchSetUserSimpleVO(res);
+            log.info("【批量缓存用户】设置用户信息缓存成功");
+        }catch (Exception e){
+            log.error("【批量缓存用户】设置用户信息缓存失败,跳过缓存", e);
+        }
+
+        res.putAll(resFromCache);
+        return res;
+    }
+
+    private UserProfileVO convertToVO(User user, UserMember userMember) {
+        boolean followed = false;
+        try {
+            UserSession currentUser = UserHolder.getUser();
+            if(!currentUser.isLogin()){
+                return convertToVO(user, userMember, followed);
+            }
+            if (!currentUser.getId().equals(user.getId())) {
+                UserFollowPO follow = userFollowRepository.findByFollowerAndFollowee(currentUser.getId(), user.getId());
+                if (follow != null && follow.getStatus() == 1) {
+                    followed = true;
+                }
+            }
+        } catch (NoFoundUserInfoException e) {
+            // 未登录或非 Web 请求线程，默认设为未关注
+        }
+        return convertToVO(user, userMember, followed);
+    }
+
+    private UserProfileVO convertToVO(User user, UserMember userMember, boolean followed) {
+        if (user == null) {
+            return null;
+        }
+        String memberLevel = "";
+        String vipType = MemberConstants.DEFAULT_VIP_TYPE;
+        String vipExpireDate = null;
+
+        if (userMember != null) {
+            if (userMember.getLevel() != null && userMember.getLevel().getLevel() != null) {
+                memberLevel = userMember.getLevel().getLevelName();
+            }
+            if (userMember.isMemberActive()) {
+                if (userMember.getMemberType() != null) {
+                    vipType = userMember.getMemberType().getTypeName();
+                } else {
+                    vipType = MemberConstants.FALLBACK_VIP_TYPE;
+                }
+                if (userMember.getExpireTime() != null) {
+                    vipExpireDate = userMember.getExpireTime().toString();
+                }
+            }
+        }
+
+        String nick = user.getNick();
+        PhoneNumber phoneNumber = user.getPhoneNumber();
+        Email email = user.getEmail();
+        return UserProfileVO.builder()
+                .id(user.getId())
+                .nick(nick == null ? user.getUsername().getValue() : nick)
+                .avatar(user.getAvatar())
+                .introduction(user.getIntroduction())
+                .memberLevel(memberLevel)
+                .phone(phoneNumber != null ? EncryptUtil.encodeStrForStar(phoneNumber.getValue(), "phone") : null)
+                .email(email != null ? EncryptUtil.encodeStrForStar(email.getValue(), "email") : null)
+                .ip(user.getIp())
+                .liked(user.getLiked() != null ? String.valueOf(user.getLiked()) : "0")
+                .topic(user.getTopic() != null ? String.valueOf(user.getTopic()) : "0")
+                .fans(user.getFans() != null ? String.valueOf(user.getFans()) : "0")
+                .vipType(vipType)
+                .bgImage(user.getBgImage())
+                .vipConfigIcon(userMember != null && userMember.getLevel() != null ? userMember.getLevel().getIconUrl() : null)
+                .vipExpireDate(vipExpireDate)
+                .gender(user.getGender())
+                .age(user.getAge())
+                .followed(followed)
+                .build();
+    }
+
+
+    /**
+     * 批量从数据库获取用户信息
+     * @param userIds 用户ID集合
+     * @return 用户信息Map
+     */
+    private Map<Long,UserSimpleVO>  findUsersFromDB(Collection<Long> userIds){
 
         Map<Long, User> map = userRepository.findUserByIds(userIds);
         Map<Long, UserMember> memberMap = userMemberRepository.queryUserMemberByUserIds(userIds);
 
-        Map<Long, UserSimpleVO> res = map.values().stream()
+        return map.values().stream()
                 .filter(Objects::nonNull)
                 .map(user -> {
                     UserMember userMember = memberMap.get(user.getId());
@@ -231,87 +325,5 @@ public class UserAPPServiceImpl implements UserApplicationService {
                             .build();
                 })
                 .collect(Collectors.toMap(UserSimpleVO::getId, vo -> vo, (v1, v2) -> v1));
-        log.info("【批量获取用户信息-db】:{}/{}条",res.size(),userIds.size());
-        try {
-            userCacheProvider.batchSetUserSimpleVO(res);
-            log.info("【批量缓存用户】设置用户信息缓存成功");
-        }catch (Exception e){
-            log.error("【批量缓存用户】设置用户信息缓存失败,跳过缓存", e);
-        }
-
-        return res;
-    }
-
-    private UserProfileVO convertToVO(User user, UserMember userMember) {
-        boolean followed = false;
-        try {
-            UserSession currentUser = UserHolder.getUser();
-            if(!currentUser.isLogin()){
-                return convertToVO(user, userMember, followed);
-            }
-            if (!currentUser.getId().equals(user.getId())) {
-                UserFollowPO follow = userFollowRepository.findByFollowerAndFollowee(currentUser.getId(), user.getId());
-                if (follow != null && follow.getStatus() == 1) {
-                    followed = true;
-                }
-            }
-        } catch (NoFoundUserInfoException e) {
-            // 未登录或非 Web 请求线程，默认设为未关注
-        }
-        return convertToVO(user, userMember, followed);
-    }
-
-    private UserProfileVO convertToVO(User user, UserMember userMember, boolean followed) {
-        if (user == null) {
-            return null;
-        }
-
-        String memberLevel = "";
-        String vipType = MemberConstants.DEFAULT_VIP_TYPE;
-        String vipExpireDate = null;
-
-        if (userMember != null) {
-            if (userMember.getLevel() != null && userMember.getLevel().getLevel() != null) {
-                memberLevel = userMember.getLevel().getLevelName();
-            }
-            if (userMember.isMemberActive()) {
-                if (userMember.getMemberType() != null) {
-                    vipType = userMember.getMemberType().getTypeName();
-                } else {
-                    vipType = MemberConstants.FALLBACK_VIP_TYPE;
-                }
-                if (userMember.getExpireTime() != null) {
-                    vipExpireDate = userMember.getExpireTime().toString();
-                }
-            }
-        }
-
-        String nick = user.getNick();
-        PhoneNumber phoneNumber = user.getPhoneNumber();
-        Email email = user.getEmail();
-        UserProfileVO vo = UserProfileVO.builder()
-                .id(user.getId())
-                .nick(nick == null ? user.getUsername().getValue() : nick)
-                .avatar(user.getAvatar())
-                .introduction(user.getIntroduction())
-                .memberLevel(memberLevel)
-                .phone(phoneNumber != null ? EncryptUtil.encodeStrForStar(phoneNumber.getValue(), "phone") : null)
-                .email(email != null ? EncryptUtil.encodeStrForStar(email.getValue(), "email") : null)
-                .ip(user.getIp())
-                .liked(user.getLiked() != null ? String.valueOf(user.getLiked()) : "0")
-                .topic(user.getTopic() != null ? String.valueOf(user.getTopic()) : "0")
-                .fans(user.getFans() != null ? String.valueOf(user.getFans()) : "0")
-                .vipType(vipType)
-                .bgImage(user.getBgImage())
-                .vipConfigIcon(userMember != null && userMember.getLevel() != null ? userMember.getLevel().getIconUrl() : null)
-                .vipExpireDate(vipExpireDate)
-                .gender(user.getGender())
-                .age(user.getAge())
-                .followed(followed)
-                .build();
-        if (vo != null && "The follower of summit".equals(vo.getNick())) {
-            vo.setVipConfigIcon("http://localhost:9001/api/v1/download-shared-object/aHR0cDovLzEyNy4wLjAuMTo5MDAwL3N0cC1zdW1taXQtZmlsZXMvYXZhdGFyL2RlY29yYXRpb24vMjAyNTAxMDIxNzM1ODA1Njc5MTE0NDE3NS5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BUThUT1JDRFk3RkxOVUFVQjVBWiUyRjIwMjYwNzAxJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MDcwMVQxMzA1MzRaJlgtQW16LUV4cGlyZXM9NDMyMDAmWC1BbXotU2VjdXJpdHktVG9rZW49ZXlKaGJHY2lPaUpJVXpVeE1pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmhZMk5sYzNOTFpYa2lPaUpCVVRoVVQxSkRSRmszUmt4T1ZVRlZRalZCV2lJc0ltVjRjQ0k2TVRjNE1qazFOREl6T0N3aWNHRnlaVzUwSWpvaVlXUnRhVzRpZlEuNlVZOElwX1l1aGM5MjhndDY1bGtKRGRoX2ZfdUI0ck5BM3BrUEwzbVhONUhmbTU0SHZRenoxbDBIb0xFMWRWYXE1V29WZnpjeVc4Mjh5UG1jamU1UUEmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnZlcnNpb25JZD1udWxsJlgtQW16LVNpZ25hdHVyZT1mOWI0MTU4MmVmMzc4NjcyYjQxZDcyODM4YWQ1ZTY4NzNiNGYyNWQ5ZjgyNjEzOWQ3N2I4NTMyN2FhOTE3ZTIw");
-        }
-        return vo;
     }
 }

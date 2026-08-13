@@ -287,15 +287,24 @@ public class MqConfig {
 
     //帖子 - 用户 队列
     @Bean
-    public Queue postQueue() {
+    public Queue postTagQueue() {
         return QueueBuilder.durable(MqConstants.Post.QUEUE).build();
     }
 
     //帖子 - 用户 绑定
     @Bean
-    public Binding postUserBinding(Queue postQueue, TopicExchange topicExchange) {
-        return BindingBuilder.bind(postQueue).to(topicExchange).with(MqConstants.Post.ROUTING_KEY);
+    public Binding postTagBinding(Queue postTagQueue, TopicExchange topicExchange) {
+        return BindingBuilder.bind(postTagQueue).to(topicExchange).with(MqConstants.Post.ROUTING_KEY);
     }
 
+    @Bean
+    public Queue postChangeQueue() {
+        return QueueBuilder.durable(MqConstants.Post.QUEUE_CHANGE).build();
+    }
+
+    @Bean
+    public Binding postChangeBinding(Queue postChangeQueue, TopicExchange topicExchange){
+        return BindingBuilder.bind(postChangeQueue).to(topicExchange).with(MqConstants.Post.ROUTING_KEY_CHANGE);
+    }
 
 }

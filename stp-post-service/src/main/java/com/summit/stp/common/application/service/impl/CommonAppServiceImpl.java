@@ -12,6 +12,7 @@ import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
 import io.minio.UploadObjectArgs;
 import jakarta.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,11 +21,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.nio.channels.FileChannel;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-
+@Slf4j
 @Service
 public class CommonAppServiceImpl implements CommonAppService {
     private final FileUploadUtil fileUploadUtil;
@@ -75,31 +77,52 @@ public class CommonAppServiceImpl implements CommonAppService {
 
     @Override
     public Result<UploadVO> uploadDealBigFile(MultipartFile file, String folder, Integer curIndex, Integer chunk) {
+        //1, 校验上传参数
+        validateUploadParams(curIndex);
+        //2, 准备临时目录
+        File folderDir = prepareTempFolder(folder);
+
+        if (curIndex.equals(chunk)) {
+            //3, 合并分片并上传
+            return mergeAndUpload(folderDir, chunk, folder, file);
+        }
+
+        //4, 保存当前分片
+        return saveChunkFile(file, folderDir, curIndex);
+    }
+
+    /**
+     * 上传参数私有校验
+     */
+    private void validateUploadParams(Integer curIndex) {
         if (curIndex < 0) {
             throw new ParameterException("当前索引不能小于0");
         }
+    }
 
-        // bigFileTempFolder 目录确保存在
+    /**
+     * 准备临时分片文件夹目录
+     */
+    private File prepareTempFolder(String folder) {
         if (!bigFileTempFolder.exists()) {
             bigFileTempFolder.mkdirs();
         }
-
         File folderDir = new File(bigFileTempFolder, folder);
         if (!folderDir.exists()) {
             folderDir.mkdirs();
         }
+        return folderDir;
+    }
 
-        // 如果是最后一步：合并大文件
-        if (curIndex.equals(chunk)) {
-            return merge(folderDir, chunk, folder, file);
-        }
-
-        // 非合并步骤：校验并写入当前分片
+    /**
+     * 保存单个分片（128KB 扩容缓冲区高效保存）
+     */
+    private Result<UploadVO> saveChunkFile(MultipartFile file, File folderDir, Integer curIndex) {
         check(file);
         File partFile = new File(folderDir, String.valueOf(curIndex));
         try (InputStream inputStream = file.getInputStream();
              FileOutputStream fileOutputStream = new FileOutputStream(partFile)) {
-            byte[] buffer = new byte[8192];
+            byte[] buffer = new byte[128 * 1024]; // 扩容为 128KB 缓冲区，减少94%的System Call
             int readBytes;
             while ((readBytes = inputStream.read(buffer)) != -1) {
                 fileOutputStream.write(buffer, 0, readBytes);
@@ -107,54 +130,73 @@ public class CommonAppServiceImpl implements CommonAppService {
         } catch (Exception e) {
             throw new FileUploadException("保存分片文件失败: " + e.getMessage());
         }
-
         return Result.success(new UploadVO(String.format("当前分片 %d 上传成功!", curIndex), file.getOriginalFilename()));
     }
 
+    /**
+     * 合并大文件并上传 MinIO 私有编排方法
+     */
+    private Result<UploadVO> mergeAndUpload(File folderDir, Integer chunk, String folder, MultipartFile file) {
+        List<File> partFiles = getAndValidatePartFiles(folderDir, chunk);
+        String originalFilename = (file != null) ? file.getOriginalFilename() : "";
+        File resFile = mergePartFilesWithNio(partFiles, originalFilename);
+
+        String fileUrl = uploadToMinioAndClean(resFile, folderDir, folder, file);
+        log.info("【文件模块】动作：完成大文件分片合并上传, fileUrl={}", fileUrl);
+        return Result.success(new UploadVO(fileUrl, resFile.getName()));
+    }
 
     /**
-     * 合并大文件
-     * @param folderDir 临时文件夹 如 /file/folder/index.part
-     * @param chunk 文件总片
-     * @param folder 临时文件夹名
-     * @param file 分片文件实体(最后一片)
-     * @return 合并结果
+     * 获取并校验有序列的分片列表
      */
-    private Result<UploadVO> merge(File folderDir,Integer chunk,String folder,MultipartFile file){
-        File[] files1 = folderDir.listFiles();
-        if (files1 == null || files1.length == 0) {
-            return Result.error("没有找到分片文件");
+    private List<File> getAndValidatePartFiles(File folderDir, Integer chunk) {
+        File[] files = folderDir.listFiles();
+        if (files == null || files.length == 0) {
+            throw new FileUploadException("没有找到分片文件");
         }
 
-        // 筛选并按分片名序号从小到大排序
-        List<File> partFiles = Arrays.stream(files1)
+        List<File> partFiles = Arrays.stream(files)
                 .filter(f -> f.isFile() && f.getName().matches("\\d+"))
                 .sorted(Comparator.comparingInt(f -> Integer.parseInt(f.getName())))
                 .toList();
 
         if (partFiles.size() != chunk) {
-            return Result.error(String.format("缺少分片文件，当前有 %d 个分片，期望 %d 个", partFiles.size(), chunk));
+            throw new FileUploadException(String.format("缺少分片文件，当前有 %d 个分片，期望 %d 个", partFiles.size(), chunk));
         }
+        return partFiles;
+    }
 
-        // 获取原文件名扩展名并生成唯一合并文件名，将合并文件建在分片文件夹外部以防删除时冲突
+    /**
+     * 使用 NIO FileChannel 块级复制高效合并分片文件
+     */
+    private File mergePartFilesWithNio(List<File> partFiles, String originalFilename) {
         String ext = "";
-        String originalFilename = (file != null) ? file.getOriginalFilename() : "";
         if (StrUtil.isNotBlank(originalFilename) && originalFilename.contains(".")) {
             ext = originalFilename.substring(originalFilename.lastIndexOf("."));
         }
-        String fileName = UUID.randomUUID().toString() + ext;
+        String fileName = UUID.randomUUID() + ext;
         File resFile = new File(bigFileTempFolder, fileName);
 
+        long expectSize = getExpectSize(partFiles, resFile);
+
+        if (!resFile.exists() || resFile.length() != expectSize) {
+            if (resFile.exists()) {
+                resFile.delete();
+            }
+            throw new FileUploadException("合并文件校验失败，大小不符或文件不存在");
+        }
+        return resFile;
+    }
+
+    private static long getExpectSize(List<File> partFiles, File resFile) {
         long expectSize = 0;
-        try (FileOutputStream fileOutputStream = new FileOutputStream(resFile)) {
-            byte[] buffer = new byte[8192];
+        try (FileOutputStream fos = new FileOutputStream(resFile);
+             FileChannel outChannel = fos.getChannel()) {
             for (File partFile : partFiles) {
                 expectSize += partFile.length();
-                try (FileInputStream fileInputStream = new FileInputStream(partFile)) {
-                    int readBytes;
-                    while ((readBytes = fileInputStream.read(buffer)) != -1) {
-                        fileOutputStream.write(buffer, 0, readBytes);
-                    }
+                try (FileInputStream fis = new FileInputStream(partFile);
+                     FileChannel inChannel = fis.getChannel()) {
+                    inChannel.transferTo(0, inChannel.size(), outChannel);
                 }
             }
         } catch (Exception e) {
@@ -163,17 +205,14 @@ public class CommonAppServiceImpl implements CommonAppService {
             }
             throw new FileUploadException("合并分片文件流写入失败: " + e.getMessage());
         }
+        return expectSize;
+    }
 
-        // 检查合并后的文件是否正常
-        if (!resFile.exists() || resFile.length() != expectSize) {
-            if (resFile.exists()) {
-                resFile.delete();
-            }
-            throw new FileUploadException("合并文件校验失败，大小不符或文件不存在");
-        }
-
-        // 上传到 MinIO
-        String objectName = (folder == null ? "" : (folder + "/")) + fileName;
+    /**
+     * 上传合并后的文件到 MinIO 并递归清理临时文件
+     */
+    private String uploadToMinioAndClean(File resFile, File folderDir, String folder, MultipartFile file) {
+        String objectName = (folder == null ? "" : (folder + "/")) + resFile.getName();
         try {
             minioClient.uploadObject(
                     UploadObjectArgs.builder()
@@ -186,20 +225,14 @@ public class CommonAppServiceImpl implements CommonAppService {
         } catch (Exception e) {
             throw new FileUploadException("上传合并后的文件到 MinIO 失败: " + e.getMessage());
         } finally {
-            // 删除合并后的本地临时文件
             if (resFile.exists()) {
                 resFile.delete();
             }
-            // 递归清理整个分片临时文件夹
             cn.hutool.core.io.FileUtil.del(folderDir);
         }
-
-        // 获取最终的静态 URL
-        String fileUrl = buildPublicFileUrl(bucketName, objectName);
-
-        return Result.success(new UploadVO(fileUrl, fileName));
-
+        return buildPublicFileUrl(bucketName, objectName);
     }
+
 
 
 

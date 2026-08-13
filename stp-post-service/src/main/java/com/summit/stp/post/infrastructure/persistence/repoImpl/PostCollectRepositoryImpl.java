@@ -1,13 +1,16 @@
-package com.summit.stp.post.infrastructure.persistence;
+package com.summit.stp.post.infrastructure.persistence.repoImpl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.summit.stp.post.domain.repository.PostCollectRepository;
 import com.summit.stp.post.infrastructure.persistence.mapper.PostCollectMapper;
 import com.summit.stp.post.infrastructure.persistence.po.PostCollectPO;
-import io.netty.util.internal.StringUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import com.summit.stp.post.infrastructure.constants.PostConstants;
+import org.springframework.data.redis.core.RedisTemplate;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +20,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PostCollectRepositoryImpl implements PostCollectRepository {
     private final PostCollectMapper postCollectMapper;
+    private final RedisTemplate<String, Object> redisTemplate;
+
 
     @Override
     public void save(PostCollectPO postCollect) {
@@ -94,12 +99,36 @@ public class PostCollectRepositoryImpl implements PostCollectRepository {
 
     @Override
     public List<Long> findByUserId(Long userId, String cursor) {
-        LambdaQueryWrapper<PostCollectPO> eq = new LambdaQueryWrapper<PostCollectPO>().eq(PostCollectPO::getUserId, userId).last("limit 10");
-        if (!StringUtil.isNullOrEmpty(cursor)) {
-            eq.le(PostCollectPO::getPostId, cursor);
+        LambdaQueryWrapper<PostCollectPO> eq = new LambdaQueryWrapper<PostCollectPO>()
+                .eq(PostCollectPO::getUserId, userId)
+                .orderByDesc(PostCollectPO::getPostId)
+                .last("limit 10");
+        if (cursor != null && !cursor.isEmpty()) {
+            try {
+                eq.lt(PostCollectPO::getPostId, Long.parseLong(cursor));
+            } catch (Exception ignored) {
+            }
         }
-        return postCollectMapper.selectList(eq).stream().map(PostCollectPO::getPostId).toList();
+        List<Long> dbPostIds = postCollectMapper.selectList(eq).stream().map(PostCollectPO::getPostId).toList();
+        if (dbPostIds.isEmpty() || userId == null) {
+            return dbPostIds;
+        }
+
+        List<Long> validPostIds = new ArrayList<>(dbPostIds.size());
+        for (Long pid : dbPostIds) {
+            String collectKey = PostConstants.Cache.COLLECT_SET_PREFIX + pid;
+            if (Boolean.TRUE.equals(redisTemplate.hasKey(collectKey))) {
+                Double score = redisTemplate.opsForZSet().score(collectKey, userId);
+                if (score != null) {
+                    validPostIds.add(pid);
+                }
+            } else {
+                validPostIds.add(pid);
+            }
+        }
+        return validPostIds;
     }
+
 
     @Override
     public void batchSave(List<PostCollectPO> toAddList) {

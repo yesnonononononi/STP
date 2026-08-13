@@ -41,8 +41,12 @@ public class PostInteractionListener {
     ))
     public void onPostInteraction(PostInteractionEvent event, Channel channel, Message message) {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
-        log.info("【消息模块】监听到帖子互动 MQ 消息，postId={}, type={}", event.getPostId(), event.getInteractionType());
+        boolean isOnce = Objects.requireNonNullElse(event.getIsOnce(), false);
         try {
+            if(!isOnce){
+                channel.basicAck(deliveryTag,false);
+            }
+            log.info("【消息模块】监听到帖子互动 MQ 消息，postId={}, type={}", event.getPostId(), event.getInteractionType());
             Long postId = event.getPostId();
             Long userId = event.getUserId();
 

@@ -13,7 +13,7 @@ public interface PostRepository {
     void update(Post post);
 
     List<PostVO> queryByPostIds(List<Long> posts,Integer status,Long userId);
-
+    List<Post> findByIds(List<Long> ids);
     Post findById(Long id);
 
     /**

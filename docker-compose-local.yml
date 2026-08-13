@@ -136,7 +136,7 @@ services:
     env_file:
       - .env
     environment:
-      SEATA_IP: 192.168.5.4
+      SEATA_IP: ${SEATA_IP}
       SEATA_PORT: 8091
       SEATA_MODE: db
     depends_on:
@@ -144,6 +144,28 @@ services:
         condition: service_healthy
     volumes:
       - ./seata.yml:/seata-server/resources/application.yml
+
+  elasticsearch:
+    container_name: stp-elasticsearch
+    image: elasticsearch:9.4.4
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    env_file:
+      - .env
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    restart: always
+    networks:
+      - stp-local
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 volumes:
   redis-data:
   mysql-data:
@@ -151,6 +173,7 @@ volumes:
   nacos-data:
   nacos-logs:
   rabbitmq-data:
+  elasticsearch-data:
 
 networks:
   stp-local:

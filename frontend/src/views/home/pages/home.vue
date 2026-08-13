@@ -19,18 +19,44 @@
           <span @click="toggleTab('home')" class="cursor-pointer hover:text-blue-200 text-xs md:text-base shrink-0"
             :class="curTab === 'home' ? 'text-blue-300 font-semibold' : ''">首页</span>
         </span>
-        <div class="hidden lg:block search p-2 w-60 shrink-0">
-          <el-input v-model="keyword" placeholder="请输入内容" class="w-full" @keyup.enter="handleSearch">
-            <template #suffix>
-              <svg t="1781494755543" class="icon size-4 cursor-pointer " viewBox="0 0 1024 1024" version="1.1"
-                @click="handleSearch" xmlns="http://www.w3.org/2000/svg" p-id="5766">
-                <path
-                  d="M644.096 251.904a277.333333 277.333333 0 1 0-392.192 392.192 277.333333 277.333333 0 0 0 392.192-392.192zM191.573333 191.573333a362.666667 362.666667 0 0 1 541.269334 480.938667l228.053333 228.053333-60.330667 60.330667-228.053333-228.053333A362.709333 362.709333 0 0 1 191.573333 191.573333z"
-                  fill="#bfbfbf" p-id="5767"></path>
-              </svg>
-            </template>
-          </el-input>
+        <!-- 浅蓝色主题带分割线搜索框 (匹配设计图) -->
+        <div class="hidden md:flex items-center relative w-72 lg:w-80 h-9 px-3.5 rounded-lg border border-blue-200/90 bg-blue-50/20 hover:border-blue-300 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 focus-within:bg-white transition-all duration-200 shadow-2xs group shrink-0">
+          <input
+            v-model="keyword"
+            type="text"
+            placeholder="搜索帖子或内容..."
+            class="w-full h-full bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-hidden border-none pr-1"
+            @keyup.enter="handleSearch"
+          />
+          
+          <!-- 内容一键清空按钮 -->
+          <button 
+            v-if="keyword" 
+            @click="keyword = ''; handleSearch()" 
+            class="p-0.5 mr-1 text-gray-300 hover:text-gray-500 transition-colors cursor-pointer shrink-0"
+            title="清空"
+          >
+            <svg class="size-3.5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+          </button>
+
+          <!-- 右侧竖向分割线 -->
+          <div class="h-3.5 w-px bg-gray-200 shrink-0 mx-1.5"></div>
+
+          <!-- 右侧搜索按钮 (浅蓝色放大镜图标 + 搜索) -->
+          <button 
+            @click="handleSearch" 
+            class="flex items-center gap-1 pl-1 py-0.5 text-blue-500 hover:text-blue-600 active:scale-95 transition-all cursor-pointer shrink-0 font-normal text-sm select-none"
+          >
+            <svg class="size-4 stroke-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <span>搜索</span>
+          </button>
         </div>
+
+
         <div class="avatar h-14 flex flex-col group items-center justify-center relative gap-2 shrink-0">
           <img v-avatar-skeleton
             class="h-8 w-8 md:h-12 md:w-12 rounded-full bg-gray-300 relative z-20 cursor-pointer object-cover"
@@ -387,8 +413,16 @@ watch(() => route.query.keyword, (newVal) => {
 }, { immediate: true });
 
 function handleSearch() {
-  router.push({ name: 'homeMain', query: { keyword: keyword.value || undefined } });
+  const kw = keyword.value ? keyword.value.trim() : undefined;
+  router.push({
+    name: 'homeMain',
+    query: {
+      keyword: kw,
+      _t: Date.now()
+    }
+  });
 }
+
 
 const user = useUserInfoStore();
 const userProfile = computed(() => user.user)

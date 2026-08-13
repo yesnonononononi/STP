@@ -410,6 +410,8 @@ export function usePost() {
     form.value.tagIds = selectedTags.value
       .map((t) => String(t.id))
       .filter((id) => id !== undefined)
+
+
     
     try {
       if (fileList.value.length > 0) {

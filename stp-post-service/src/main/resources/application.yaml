@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: stp-post-service
+  elasticsearch:
+    uris: http://${HOST}:9200
   config:
     import:
       - optional:nacos:jdbc.yaml
@@ -30,8 +32,6 @@ spring:
     multipart:
       max-file-size: ${MAX_FILE_SIZE}
       max-request-size: ${MAX_REQUEST_SIZE}
-
-
 stp:
   jdbc:
     mapper-locations: classpath*:mapper/post/**/*.xml,classpath*:mapper/rank_board/**/*.xml

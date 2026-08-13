@@ -18,4 +18,5 @@ public class CreatePostCommand {
     private Integer status;
     private List<Long> tagIds;
     private Integer isTop;
+
 }

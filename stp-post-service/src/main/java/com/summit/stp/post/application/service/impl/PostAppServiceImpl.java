@@ -2,14 +2,18 @@ package com.summit.stp.post.application.service.impl;
 
 
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.application.domain.event.PostChangeEvent;
 import com.summit.stp.common.application.domain.event.PostInteractionEvent;
-import com.summit.stp.common.application.domain.event.PostPublishEvent;
 import com.summit.stp.common.application.domain.exception.BusinessException;
 import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.stp.common.application.service.TextSafe.TextSafeServiceProvider;
 import com.summit.stp.common.result.Result;
+
+
+import com.summit.stp.elasticsearch.document.PostDocument;
 import com.summit.stp.post.api.dto.request.ImageInfo;
 import com.summit.stp.post.application.command.CreatePostCommand;
 import com.summit.stp.post.application.command.QueryPostListByCursorCommand;
@@ -30,16 +34,16 @@ import com.summit.stp.tag.domain.model.PostTag;
 import com.summit.stp.tag.domain.model.Tag;
 import com.summit.stp.tag.domain.repository.PostTagRelRepository;
 import com.summit.stp.tag.domain.repository.TagRepository;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.List;
-import java.util.Objects;
 
 
 @Slf4j
@@ -56,7 +60,6 @@ public class PostAppServiceImpl implements PostAppService {
     private final PostLikeRepository postLikeRepository;
     private final PostCollectRepository postCollectRepository;
     private final PostsMapper postsMapper;
-    private final ApplicationEventPublisher applicationEventPublisher;
     private final TagRepository tagRepository;
     private final PostTagRelRepository postTagRelRepository;
     private final TagCacheProvider tagCacheProvider;
@@ -84,14 +87,23 @@ public class PostAppServiceImpl implements PostAppService {
         List<Long> actualTagIds = tagRepository.findByIds(command.getTagIds()).stream().map(Tag::getId).toList();
         bindPostTags(postId, actualTagIds);
 
+
+
+
         // 4. 初始化帖子缓存
         initPostCache(post);
 
         // 5. 发布帖子发布事件
-        publishPostEvent(post);
+        try {
+            publishPostEvent(post, PostChangeEvent.EventType.CREATE, actualTagIds);
+        } catch (Exception e) {
+            log.warn("【帖子模块】发送发帖事件异常，postId={}", postId, e);
+        }
+
 
         return Result.success();
     }
+
 
     private Post buildNewPost(CreatePostCommand command) {
         PostStatus status = PostStatus.fromCode(command.getStatus());
@@ -123,8 +135,9 @@ public class PostAppServiceImpl implements PostAppService {
 
     /**
      * 解析帖子媒体元信息
+     *
      * @param mediaUrls 媒体链接
-     * @param type 发布类型
+     * @param type      发布类型
      * @return 非图片类型信息的url
      */
     private String resolvePostMediaMetaInfo(List<ImageInfo> mediaUrls, Integer type) {
@@ -143,7 +156,8 @@ public class PostAppServiceImpl implements PostAppService {
 
     /**
      * 批量保存帖子图片
-     * @param post 帖子实体
+     *
+     * @param post      帖子实体
      * @param mediaUrls 图片链接集
      */
     private void savePostImages(Post post, List<ImageInfo> mediaUrls) {
@@ -155,6 +169,7 @@ public class PostAppServiceImpl implements PostAppService {
 
     /**
      * 绑定标签集到一个帖子
+     *
      * @param postId 帖子id
      * @param tagIds 标签ids
      */
@@ -166,6 +181,7 @@ public class PostAppServiceImpl implements PostAppService {
 
     /**
      * 初始化帖子实体缓存(post:detail)
+     *
      * @param post 帖子实体
      */
     private void initPostCache(Post post) {
@@ -181,18 +197,30 @@ public class PostAppServiceImpl implements PostAppService {
         }
     }
 
-    /**
-     * 发布帖子发布事件
-     * @param post 帖子实体
-     */
-    private void publishPostEvent(Post post) {
-        if (post.getStatus().equals(PostStatus.NORMAL)) {
-            PostPublishEvent event = new PostPublishEvent();
-            event.setPostId(post.getId());
-            event.setUserId(post.getCreatorId());
-            postMessageSender.sendPostPublish(event);
+    private void publishPostEvent(Post post, PostChangeEvent.EventType eventType, List<Long> tagIds) {
+        if (post == null) return;
+        // 非删除事件且状态不是 NORMAL 时拦截；删除事件放行
+        if (eventType != PostChangeEvent.EventType.DELETE && !PostStatus.NORMAL.equals(post.getStatus())) {
+            return;
         }
+        PostDocument data = PostDocument.builder()
+                .id(post.getId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .build();
+
+        PostChangeEvent event = PostChangeEvent.builder()
+                .postId(post.getId())
+                .uid(post.getCreatorId())
+                .eventType(eventType)
+                .data(data)
+                .tagIds(tagIds)
+                .build();
+        postMessageSender.sendPostChangeEvent(event);
     }
+
+
+
 
     /**
      * 构建图片领域实体
@@ -230,12 +258,12 @@ public class PostAppServiceImpl implements PostAppService {
                         .content(textSafeServiceProvider.xssFilter(command.getContent()))
                         .mediaUrls(mediaUrlsStr)
                         .urls(mediaUrls != null ? mediaUrls.stream().map(image ->
-                                PostImage.builder()
-                                        .imageUrl(image.getUrl())
-                                        .postId(postId)
-                                        .width(image.getWidth())
-                                        .height(image.getHeight())
-                                        .build())
+                                        PostImage.builder()
+                                                .imageUrl(image.getUrl())
+                                                .postId(postId)
+                                                .width(image.getWidth())
+                                                .height(image.getHeight())
+                                                .build())
                                 .toList() : null)
                         .isTop(command.getIsTop())
                         .build()
@@ -263,11 +291,11 @@ public class PostAppServiceImpl implements PostAppService {
         try {
             postCacheProvider.deletePostContent(postId);
             postCacheProvider.cachePostStatus(postId, post.getStatus().getCode());
+            publishPostEvent(post, PostChangeEvent.EventType.UPDATE, null);
         } catch (Exception e) {
             log.warn("【帖子模块】更新帖子缓存异常，postId={}", postId, e);
         }
     }
-
 
 
     @Override
@@ -290,6 +318,7 @@ public class PostAppServiceImpl implements PostAppService {
             if (!tagIds.isEmpty()) {
                 tagCacheProvider.removePostFromTags(id, tagIds);
             }
+            publishPostEvent(post, PostChangeEvent.EventType.DELETE, null);
         } catch (Exception e) {
             log.warn("【帖子模块】更新帖子删除状态缓存异常，postId={}", id, e);
         }
@@ -310,12 +339,14 @@ public class PostAppServiceImpl implements PostAppService {
         post.republish();
         postRepository.update(post);
         try {
+            publishPostEvent(post, PostChangeEvent.EventType.CREATE, null);
             postCacheProvider.deletePostContent(id);
             postCacheProvider.cachePostStatus(id, PostStatus.NORMAL.getCode());
         } catch (Exception e) {
-            log.warn("【帖子模块】更新帖子重新发布状态缓存异常，postId={}", id, e);
+            log.warn("【帖子模块】更新帖子重新发布事件及缓存异常，postId={}", id, e);
         }
     }
+
 
     @Override
     public List<PostVO> getPostPage(QueryPostListByCursorCommand command) {
@@ -332,8 +363,9 @@ public class PostAppServiceImpl implements PostAppService {
 
     /**
      * 帖子互动操作执行
+     *
      * @param postId 帖子ID
-     * @param type 互动类型
+     * @param type   互动类型
      */
     private void toggleInteraction(Long postId, InteractionType type) {
         Long userId = UserHolder.getUser().getId();
@@ -343,17 +375,17 @@ public class PostAppServiceImpl implements PostAppService {
             if (post == null || !post.isActive()) {
                 throw new BusinessException("帖子状态异常,无法" + actionName);
             }
-            boolean isOnce = type == InteractionType.LIKE 
-                    ? postCacheProvider.like(postId, userId) 
+            boolean isOnce = type == InteractionType.LIKE
+                    ? postCacheProvider.like(postId, userId)
                     : postCacheProvider.collect(postId, userId);
-            if (isOnce) {
-                postMessageSender.sendPostInteraction(PostInteractionEvent.builder()
-                        .postId(postId)
-                        .userId(userId)
-                        .interactionType(type.name())
-                        .timestamp(Instant.now())
-                        .build());
-            }
+
+            postMessageSender.sendPostInteraction(PostInteractionEvent.builder()
+                    .isOnce(isOnce)
+                    .postId(postId)
+                    .userId(userId)
+                    .interactionType(type.name())
+                    .timestamp(Instant.now())
+                    .build());
         } catch (Exception e) {
             log.warn("【帖子模块】{}帖子异常，postId={}", actionName, postId, e);
             fallbackInteractionInDb(postId, userId, type);
@@ -381,7 +413,6 @@ public class PostAppServiceImpl implements PostAppService {
     public boolean isCollected(Long postId) {
         return postCacheProvider.isCollected(postId, UserHolder.getUser().getId());
     }
-
 
 
     /**
@@ -429,7 +460,6 @@ public class PostAppServiceImpl implements PostAppService {
     }
 
 
-
     // ======================== 其他操作 ========================
 
     @Override
@@ -468,7 +498,6 @@ public class PostAppServiceImpl implements PostAppService {
         }
         throw new BusinessException("无权修改他人帖子");
     }
-
 
 
     /**
@@ -514,3 +543,6 @@ public class PostAppServiceImpl implements PostAppService {
         validatePostContent(command.getTitle(), command.getContent(), command.getMediaUrls());
     }
 }
+
+
+

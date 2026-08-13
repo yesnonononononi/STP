@@ -4,6 +4,7 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.summit.stp.common.ThreadContext.UserHolder;
 import com.summit.stp.common.application.domain.event.UserRegisterEvent;
+import com.summit.stp.common.application.domain.exception.BusinessException;
 import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.stp.common.application.domain.model.Password;
 import com.summit.stp.common.application.domain.model.PhoneNumber;
@@ -22,6 +23,7 @@ import com.summit.stp.userAuth.application.command.RegisterCommand;
 import com.summit.stp.userAuth.application.vo.LoginVO;
 import com.summit.stp.userAuth.application.vo.RefreshTokenVO;
 import com.summit.stp.userAuth.domain.exception.ResetPasswordException;
+import com.summit.stp.userAuth.domain.exception.UserNotFoundException;
 import com.summit.stp.userAuth.domain.model.AuthUser;
 import com.summit.stp.userAuth.domain.model.ResetType;
 import com.summit.stp.userAuth.domain.repository.AuthUserRepository;
@@ -96,8 +98,6 @@ public class UserAuthAppServiceImpl implements UserAuthApplicationService {
     @Override
     public Result<RefreshTokenVO> refreshToken(RefreshTokenCommand refreshTokenCommand) {
         if(StrUtil.equals(refreshTokenCommand.getRefreshToken(), UserAuthConstants.Business.JWT_FALLBACK,true)){
-            log.warn("【refresh-token-warn】用户 {} 尝试使用降级占位符刷新 Token, IP: {}",
-                    refreshTokenCommand.getUsername(), refreshTokenCommand.getIp());
             return Result.error("令牌无效,请尝试重新登录");
         }
         String username = refreshTokenCommand.getUsername();
@@ -105,14 +105,17 @@ public class UserAuthAppServiceImpl implements UserAuthApplicationService {
         String oldAccessToken = refreshTokenCommand.getOldAccessToken();
         String refreshToken = refreshTokenCommand.getRefreshToken();
         log.info("【Token-refresh】用户刷新 Token 请求: {}", username);
+        AuthUser user = authUserRepository.findByUsername(username).orElseThrow(UserNotFoundException::new);
         UserSession userSession = UserSession.builder()
+                .username(username)
                 .token(newAccessToken)
                 .ip(refreshTokenCommand.getIp())
-                .id(refreshTokenCommand.getUserId())
+                .id(user.getId())
                 .loginTime(LocalDateTime.now())
                 .onlineStatus("1")
                 .tokenType(UserSession.TokenType.ACCESS)
                 .build();
+
 
         if (!tokenRepository.refreshToken(oldAccessToken,refreshToken,newAccessToken,userSession)) {
             return Result.error("刷新令牌已过期,请重新登录");

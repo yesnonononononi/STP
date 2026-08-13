@@ -41,14 +41,18 @@ public class PostInteractionCacheOps {
             Double score = redisTemplate.opsForZSet().score(setKey, userId);
             //如果score不存在,意味着是第一次互动且未互动成功
             //否则,score == 1 : 已经互动,需要取消 score == 0 : 未互动,需要添加
-            if (score == null || score == 0) {
+            if (score == null || score == 0.0) {
                 redisTemplate.opsForZSet().add(setKey, userId, 1.0);
                 redisTemplate.opsForHash().increment(postKey, type.getCountField(), 1);
-            } else if (score == 1) {
-                redisTemplate.opsForZSet().add(setKey, userId, 0.0);
-                redisTemplate.opsForHash().increment(postKey, type.getCountField(), -1);
+            } else if (score == 1.0) {
+                redisTemplate.opsForZSet().remove(setKey, userId);
+                Long newCount = redisTemplate.opsForHash().increment(postKey, type.getCountField(), -1);
+                if (newCount != null && newCount < 0) {
+                    redisTemplate.opsForHash().put(postKey, type.getCountField(), 0L);
+                }
             }
             return score == null;
+
 
         } catch (Exception e) {
             log.warn("【帖子模块】互动写入异常，type={}，动作：自增自减", type, e);

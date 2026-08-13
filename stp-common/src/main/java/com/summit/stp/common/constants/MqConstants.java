@@ -38,6 +38,8 @@ public interface MqConstants {
 
         String QUEUE_INTERACTION = "post.interaction.queue";
         String ROUTING_KEY_INTERACTION = "post.interaction";
+        String QUEUE_CHANGE = "post.change.queue";
+        String ROUTING_KEY_CHANGE = "post.change.routing.key";
     }
 
     interface Rank {
