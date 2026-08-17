@@ -1,11 +1,15 @@
 package com.summit.stp.user.application.command;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Builder
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserPasswordUpdateCommand {
-    private final String oldPassword;
-    private final String newPassword;
+    private String oldPassword;
+    private String newPassword;
 }

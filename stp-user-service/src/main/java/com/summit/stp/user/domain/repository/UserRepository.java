@@ -1,20 +1,20 @@
 package com.summit.stp.user.domain.repository;
 
-import com.summit.stp.user.domain.model.User;
-
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 
-public interface UserRepository {
-    public void save(User user);
+public interface UserRepository<T> {
+    public Long saveUser(T user);
 
-    void put(User user);
+    Optional<T> findUserByName(String username);
 
-    User findUserByName(String username);
+    Optional<T> findUserById(Long id);
 
-    User findUserById(Long id);
 
-    void updateProfile(User user);
+    Map<Long, T> findUserByIds(Collection<Long> userIds);
 
-    Map<Long, User> findUserByIds(Collection<Long> userIds);
+    Optional<T> findUserByPhone(String phone);
+
+    void updateById(T user);
 }

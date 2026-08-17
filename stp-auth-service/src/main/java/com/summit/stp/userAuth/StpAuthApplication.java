@@ -9,7 +9,7 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@EnableFeignClients(basePackages = {"com.summit.stp.common.feign"})
+@EnableFeignClients(basePackages = {"com.summit.stp.user.api"})
 @ComponentScan(basePackages = {"com.summit.stp.userAuth", "com.summit.stp.common"})
 @MapperScan("com.summit.stp.userAuth.infrastructure.persistence.mapper")
 public class StpAuthApplication {

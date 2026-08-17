@@ -7,10 +7,11 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public interface CommentRepository {
-    Comment findById(Long id);
+    Optional<Comment> findById(Long id);
     List<Comment> findByIds(List<Long> ids);
     void save(Comment comment);
     void delete(Long id);

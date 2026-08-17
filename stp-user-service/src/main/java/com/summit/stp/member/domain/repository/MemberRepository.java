@@ -1,15 +1,24 @@
 package com.summit.stp.member.domain.repository;
 
-import com.summit.stp.common.application.api.vo.MemberVO;
 import com.summit.stp.member.domain.model.Member;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-public interface MemberRepository {
-    Member findMemberById(Long id);
+public interface MemberRepository<T> {
+    Optional<T> findMemberById(Long id);
 
-    List<Member> findMemberByType(Long typeId, int status);
+    List<T> findMemberByType(Long typeId, int status);
 
-    Map<Long, MemberVO> findMemberByIds(List<Long> packageIds);
+    Map<Long, Member> findMemberByIds(List<Long> packageIds);
+
+    void save(T member);
+
+
+    void delete(T memberById);
+
+    List<T> list();
+
 }
+

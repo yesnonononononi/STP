@@ -47,11 +47,8 @@ public interface PostQueryService {
     List<PostVO> getFollowPostList(QueryPostListPageRequest request);
     PostVO findById(Long id, Long uid, Integer status);
 
-    /**
-     * 搜索帖子
-     *
-     * @param keyWord 关键词
-     * @return 帖子列表
-     */
-    List<PostVO> searchPost(String keyWord);
+
+    List<PostVO> searchPost(String keyWord, Integer page);
+
+    com.summit.stp.post.api.vo.PostSimpleVO findSimplePostById(Long id);
 }

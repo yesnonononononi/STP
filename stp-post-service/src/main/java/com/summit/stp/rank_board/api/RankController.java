@@ -1,6 +1,6 @@
 package com.summit.stp.rank_board.api;
 
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.rank_board.application.service.RankService;
 import com.summit.stp.rank_board.application.vo.CreatorRankVO;
 import com.summit.stp.rank_board.application.vo.PostRankVO;

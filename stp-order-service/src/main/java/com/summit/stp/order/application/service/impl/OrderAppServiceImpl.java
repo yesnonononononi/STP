@@ -1,19 +1,19 @@
 package com.summit.stp.order.application.service.impl;
 
-import com.summit.stp.common.ThreadContext.UserHolder;
-import com.summit.stp.common.application.service.command.PayCommand;
+import com.summit.stp.common.auth.UserHolder;
+import com.summit.stp.payment.api.dto.PayCommand;
 import com.summit.stp.common.application.domain.event.OrderPaidEvent;
 import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.stp.common.application.domain.model.PayType;
 import com.summit.stp.common.application.domain.model.UserSession;
-import com.summit.stp.common.application.api.vo.CouponQueryVO;
-import com.summit.stp.common.application.api.vo.MemberVO;
-import com.summit.stp.common.application.api.vo.OrderQueryVO;
-import com.summit.stp.common.application.api.vo.PayVO;
-import com.summit.stp.common.feign.CouponFeignClient;
-import com.summit.stp.common.feign.MemberFeignClient;
-import com.summit.stp.common.feign.PayFeignClient;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.coupon.api.vo.CouponQueryVO;
+import com.summit.stp.user.api.vo.MemberVO;
+import com.summit.stp.order.api.vo.OrderQueryVO;
+import com.summit.stp.payment.api.vo.PayVO;
+import com.summit.stp.coupon.api.client.CouponFeignClient;
+import com.summit.stp.user.api.client.MemberFeignClient;
+import com.summit.stp.payment.api.client.PayFeignClient;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.order.api.dto.OrderCreateRequest;
 import com.summit.stp.order.application.service.OrderAppService;
 import com.summit.stp.order.application.service.OrderReconciliationAppService;
@@ -26,7 +26,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.seata.spring.annotation.GlobalTransactional;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -317,3 +316,4 @@ public class OrderAppServiceImpl implements OrderAppService {
                 .build();
     }
 }
+

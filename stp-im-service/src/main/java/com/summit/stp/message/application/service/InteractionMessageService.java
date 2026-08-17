@@ -8,5 +8,5 @@ import java.util.List;
 public interface InteractionMessageService {
     List<InteractionMessageVO> getInteractionList(Long lastPublicId, Integer limit);
     void saveMessage(InteractionMessage msg);
-    void deleteInteractionMessage(Long publicId);
+    void deleteInteractionMessage(Long id);
 }

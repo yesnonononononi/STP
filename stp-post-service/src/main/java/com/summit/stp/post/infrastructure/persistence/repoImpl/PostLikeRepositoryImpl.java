@@ -1,51 +1,41 @@
 package com.summit.stp.post.infrastructure.persistence.repoImpl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import com.summit.stp.post.domain.repository.PostLikeRepository;
+import com.summit.stp.post.infrastructure.constants.PostConstants;
 import com.summit.stp.post.infrastructure.persistence.mapper.PostLikeMapper;
 import com.summit.stp.post.infrastructure.persistence.po.PostLikePO;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Repository;
-
-import com.summit.stp.post.infrastructure.constants.PostConstants;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Repository;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository
-@RequiredArgsConstructor
-public class PostLikeRepositoryImpl implements PostLikeRepository {
+public class PostLikeRepositoryImpl extends AbstractRepository<PostLikePO, PostLikePO> implements PostLikeRepository {
     private final PostLikeMapper postLikeMapper;
     private final RedisTemplate<String, Object> redisTemplate;
 
+    public PostLikeRepositoryImpl(PostLikeMapper postLikeMapper, RedisTemplate<String, Object> redisTemplate) {
+        super(postLikeMapper);
+        this.postLikeMapper = postLikeMapper;
+        this.redisTemplate = redisTemplate;
+    }
 
     @Override
     public void save(PostLikePO postLike) {
-        PostLikePO existing = findExisting(postLike);
-        if (existing == null) {
-            postLikeMapper.insert(postLike);
-            return;
+        if (postLike == null) return;
+        if (postLike.getId() != null && findById(postLike.getId()).isPresent()) {
+            super.updateById(postLike);
+        } else {
+            super.save(postLike);
         }
-        postLike.setId(existing.getId());
-        postLike.setPublicId(existing.getPublicId());
-        postLikeMapper.updateById(postLike);
-    }
-
-    private PostLikePO findExisting(PostLikePO postLike) {
-        if (postLike.getPublicId() != null) {
-            return postLikeMapper.selectOne(new LambdaQueryWrapper<PostLikePO>()
-                    .eq(PostLikePO::getPublicId, postLike.getPublicId()));
-        }
-        if (postLike.getId() != null && postLike.getId() != 0) {
-            return postLike;
-        }
-        return null;
     }
 
     @Override
     public void delete(Long postId, Long userId) {
-        postLikeMapper.delete(
+        getBaseMapper().delete(
                 new LambdaQueryWrapper<PostLikePO>()
                         .eq(PostLikePO::getPostId, postId)
                         .eq(PostLikePO::getUserId, userId)
@@ -54,7 +44,7 @@ public class PostLikeRepositoryImpl implements PostLikeRepository {
 
     @Override
     public boolean exists(Long postId, Long userId) {
-        return postLikeMapper.selectCount(
+        return getBaseMapper().selectCount(
                 new LambdaQueryWrapper<PostLikePO>()
                         .eq(PostLikePO::getPostId, postId)
                         .eq(PostLikePO::getUserId, userId)
@@ -63,7 +53,7 @@ public class PostLikeRepositoryImpl implements PostLikeRepository {
 
     @Override
     public long countByPostId(Long postId) {
-        return postLikeMapper.selectCount(
+        return getBaseMapper().selectCount(
                 new LambdaQueryWrapper<PostLikePO>()
                         .eq(PostLikePO::getPostId, postId)
         );
@@ -71,7 +61,7 @@ public class PostLikeRepositoryImpl implements PostLikeRepository {
 
     @Override
     public List<Long> findUserIdsByPostId(Long postId) {
-        return postLikeMapper.selectList(
+        return getBaseMapper().selectList(
                 new LambdaQueryWrapper<PostLikePO>()
                         .select(PostLikePO::getUserId)
                         .eq(PostLikePO::getPostId, postId)
@@ -83,7 +73,7 @@ public class PostLikeRepositoryImpl implements PostLikeRepository {
         if (postIds == null || postIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        List<PostLikePO> list = postLikeMapper.selectList(
+        List<PostLikePO> list = getBaseMapper().selectList(
                 new LambdaQueryWrapper<PostLikePO>()
                         .select(PostLikePO::getPostId, PostLikePO::getUserId)
                         .in(PostLikePO::getPostId, postIds)
@@ -106,7 +96,7 @@ public class PostLikeRepositoryImpl implements PostLikeRepository {
             } catch (Exception ignored) {
             }
         }
-        List<Long> dbPostIds = postLikeMapper.selectList(eq).stream().map(PostLikePO::getPostId).collect(Collectors.toList());
+        List<Long> dbPostIds = getBaseMapper().selectList(eq).stream().map(PostLikePO::getPostId).collect(Collectors.toList());
         if (dbPostIds.isEmpty() || userId == null) {
             return dbPostIds;
         }
@@ -126,27 +116,27 @@ public class PostLikeRepositoryImpl implements PostLikeRepository {
         return validPostIds;
     }
 
-
     @Override
     public void batchSave(List<PostLikePO> toAddList) {
-        postLikeMapper.insert(toAddList);
+        if (toAddList == null || toAddList.isEmpty()) return;
+        getBaseMapper().insert(toAddList);
     }
 
     @Override
-    public void batchSave(Map<Long, Set<Long>> map){
-       List<PostLikePO> poList = new ArrayList<>();
-      map.forEach((postId,set)->{
-          set.forEach(userId -> {
-              PostLikePO entity = PostLikePO.builder()
-                      .postId(postId)
-                      .userId(userId)
-                      .build();
-              poList.add(entity);
-          });
-      });
-      postLikeMapper.insert(poList);
+    public void batchSave(Map<Long, Set<Long>> map) {
+        if (map == null || map.isEmpty()) return;
+        List<PostLikePO> poList = new ArrayList<>();
+        map.forEach((postId, set) -> {
+            set.forEach(userId -> {
+                PostLikePO entity = PostLikePO.builder()
+                        .postId(postId)
+                        .userId(userId)
+                        .build();
+                poList.add(entity);
+            });
+        });
+        getBaseMapper().insert(poList);
     }
-
 
     @Override
     public void batchDelete(List<Long[]> toRemoveList) {
@@ -164,8 +154,19 @@ public class PostLikeRepositoryImpl implements PostLikeRepository {
                 }
                 queryWrapper.eq(PostLikePO::getPostId, pair[0]).eq(PostLikePO::getUserId, pair[1]);
             }
-            postLikeMapper.delete(queryWrapper);
+            getBaseMapper().delete(queryWrapper);
         }
     }
+
+    @Override
+    protected PostLikePO toPO(PostLikePO entity) {
+        return entity;
+    }
+
+    @Override
+    protected PostLikePO toModel(PostLikePO po) {
+        return po;
+    }
 }
+
 

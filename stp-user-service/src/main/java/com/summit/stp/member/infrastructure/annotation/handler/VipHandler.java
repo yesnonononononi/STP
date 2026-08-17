@@ -1,8 +1,8 @@
 package com.summit.stp.member.infrastructure.annotation.handler;
 
-import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.common.application.domain.exception.BusinessException;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.member.domain.model.MemberType;
 import com.summit.stp.member.domain.model.UserMember;
 import com.summit.stp.member.infrastructure.annotation.VIP;

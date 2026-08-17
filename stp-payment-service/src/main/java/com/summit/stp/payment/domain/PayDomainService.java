@@ -1,7 +1,7 @@
 package com.summit.stp.payment.domain;
 
 import com.summit.stp.common.application.domain.model.PayType;
-import com.summit.stp.common.application.api.vo.PayVO;
+import com.summit.stp.payment.api.vo.PayVO;
 import com.summit.stp.common.util.EncryptUtil;
 import com.summit.stp.common.util.PaymentSignHelper;
 import lombok.RequiredArgsConstructor;
@@ -167,3 +167,4 @@ public class PayDomainService {
 
 
 }
+

@@ -1,8 +1,8 @@
 package com.summit.stp.rank_board.application.service.impl;
 
-import com.summit.stp.common.application.api.vo.UserSimpleVO;
-import com.summit.stp.common.feign.UserFeignClient;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.user.api.vo.UserSimpleVO;
+import com.summit.stp.user.api.client.UserFeignClient;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.post.application.vo.PostVO;
 import com.summit.stp.post.domain.model.Post;
 import com.summit.stp.post.domain.repository.PostRepository;
@@ -388,3 +388,4 @@ public class RankServiceImpl implements RankService {
     }
 
 }
+

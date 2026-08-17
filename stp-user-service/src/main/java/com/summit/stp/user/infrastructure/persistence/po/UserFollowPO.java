@@ -14,8 +14,6 @@ public class UserFollowPO {
     @TableId(type = IdType.AUTO)
     @ApiModelProperty(value = "主键ID")
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
 
     @ApiModelProperty(value = "关注者用户ID")
     private Long followerId;

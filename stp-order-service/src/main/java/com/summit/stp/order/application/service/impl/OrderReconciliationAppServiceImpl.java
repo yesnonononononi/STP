@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.summit.stp.common.application.domain.event.PaySuccessEvent;
 import com.summit.stp.common.application.service.queue.QueueSender;
 import com.summit.stp.common.constants.MqConstants;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.common.util.PaymentSignHelper;
 import com.summit.stp.order.application.service.OrderReconciliationAppService;
 import com.summit.stp.order.application.vo.PaymentQueryResultVO;
@@ -40,7 +40,7 @@ public class OrderReconciliationAppServiceImpl implements OrderReconciliationApp
         log.info("【订单对账】开始对账订单: {}", orderId);
         
         OrderPO orderPO = orderMapper.selectOne(new LambdaQueryWrapper<OrderPO>()
-                .eq(OrderPO::getPublicId, orderId));
+                .eq(OrderPO::getId, orderId));
         if (orderPO == null) {
             return Result.error("对账失败，订单不存在: " + orderId);
         }

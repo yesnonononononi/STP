@@ -71,7 +71,7 @@
         <!-- Common Dependency -->
         <dependency>
             <groupId>com.summit</groupId>
-            <artifactId>stp-common</artifactId>
+            <artifactId>common-web</artifactId>
         </dependency>
 
         <!-- Lombok -->
@@ -96,6 +96,24 @@
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>com.summit</groupId>
+            <artifactId>user-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.summit</groupId>
+            <artifactId>coupon-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.summit</groupId>
+            <artifactId>payment-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.summit</groupId>
+            <artifactId>order-api</artifactId>
+        </dependency>
+
     </dependencies>
 
         <build>
@@ -108,3 +126,6 @@
             </plugins>
         </build>
 </project>
+
+
+

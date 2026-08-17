@@ -20,8 +20,6 @@ public class CouponPO {
      */
     @TableId(type = IdType.AUTO)
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
     /**
      * 优惠券名称
      */

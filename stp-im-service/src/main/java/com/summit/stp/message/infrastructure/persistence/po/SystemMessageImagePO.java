@@ -10,8 +10,6 @@ import lombok.Data;
 public class SystemMessageImagePO {
     @TableId(type = IdType.AUTO)
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
     private Long messageId;
     private String image;
     private String status;

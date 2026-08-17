@@ -18,8 +18,6 @@ import java.time.LocalDate;
 public class CreatorRankPO {
     @TableId(type = IdType.AUTO)
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
     private Long userId;
     private BigDecimal score;
     @TableField("`rank`")

@@ -1,7 +1,7 @@
 package com.summit.stp.message.api;
 
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.message.api.dto.request.AddDraftRequest;
 import com.summit.stp.message.api.dto.request.AddSessionRequest;
 import com.summit.stp.message.application.command.CreateSessionCommand;

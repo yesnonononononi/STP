@@ -1,8 +1,8 @@
 package com.summit.stp.order.application.service;
 
-import com.summit.stp.common.application.api.vo.OrderQueryVO;
-import com.summit.stp.common.application.api.vo.PayVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.order.api.vo.OrderQueryVO;
+import com.summit.stp.payment.api.vo.PayVO;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.order.api.dto.OrderCreateRequest;
 import com.summit.stp.order.domain.model.Order;
 
@@ -50,3 +50,4 @@ public interface OrderAppService {
      */
     void cancelOrder(Long orderId);
 }
+

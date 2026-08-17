@@ -1,7 +1,7 @@
 package com.summit.stp.message.application.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.summit.stp.common.application.api.vo.MessageVO;
+import com.summit.stp.im.api.vo.MessageVO;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -31,4 +31,5 @@ public class MessageListVO {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long sessionId;
 }
+
 

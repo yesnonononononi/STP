@@ -1,83 +1,71 @@
 package com.summit.stp.userAuth.infrastructure.persistence;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import cn.hutool.core.util.StrUtil;
 import com.summit.stp.common.application.domain.model.Password;
 import com.summit.stp.common.application.domain.model.PhoneNumber;
 import com.summit.stp.common.application.domain.model.Username;
+import com.summit.stp.user.api.client.AuthFeignClient;
+import com.summit.stp.user.api.client.UserFeignClient;
+import com.summit.stp.user.api.vo.UserAuthVO;
 import com.summit.stp.userAuth.domain.model.AuthUser;
 import com.summit.stp.userAuth.domain.repository.AuthUserRepository;
-import com.summit.stp.userAuth.infrastructure.persistence.mapper.UserAuthMapper;
-import com.summit.stp.userAuth.infrastructure.persistence.po.UserPO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import java.util.Objects;
+import java.util.function.Supplier;
 
 @Repository
 @RequiredArgsConstructor
 public class AuthUserRepositoryImpl implements AuthUserRepository {
-    private final  UserAuthMapper userMapper;
 
+    private final AuthFeignClient authFeignClient;
+    private final UserFeignClient userFeignClient;
+
+    /**
+     * 根据用户名或用户ID或手机号查找用户
+     *
+     * @param username 用户名
+     * @param userId   用户ID
+     * @param phone    手机号
+     * @param error    错误供应商
+     * @return AuthUser 认证用户领域模型
+     */
     @Override
-    public Optional<AuthUser> findByUsername(String username) {
-        LambdaQueryWrapper<UserPO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(UserPO::getUname, username);
-        return findUserByWrapper(wrapper);
-    }
-
-    @Override
-    public Optional<AuthUser> findByPhone(String phone) {
-        LambdaQueryWrapper<UserPO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(UserPO::getPhone, phone);
-        return findUserByWrapper(wrapper);
-    }
-
-
-    private Optional<AuthUser> findUserByWrapper(LambdaQueryWrapper<UserPO> wrapper){
-        UserPO userPO = userMapper.selectOne(wrapper);
-
-        if (userPO == null) {
-            return Optional.empty();
+    public <T extends Throwable> AuthUser findUserByOrThrow(String username, Long userId, String phone, Supplier<? extends T> error) throws T {
+        UserAuthVO vo = null;
+        
+        // 根据不同条件调用对应的认证接口
+        if (userId != null) {
+            vo = authFeignClient.getUserAuthById(userId).getData();
+        } else if (StrUtil.isNotBlank(username)) {
+            vo = authFeignClient.getUserAuthByUsername(username).getData();
+        } else if (StrUtil.isNotBlank(phone)) {
+            vo = authFeignClient.getUserAuthByPhone(phone).getData();
         }
-
-        AuthUser user = AuthUser.builder()
-                .id(userPO.getPublicId())
-                .username(Username.of(userPO.getUname()))
-                .password(Password.fromHash(userPO.getPassword()))
-                .phoneNumber(PhoneNumber.of(userPO.getPhone()))
-                .statusCode(userPO.getStatusCode())
+        
+        if (Objects.isNull(vo)) {
+            throw error.get();
+        }
+        
+        // 将 UserAuthVO 转换为 AuthUser 领域模型
+        return AuthUser.builder()
+                .userId(vo.getUserId())
+                .username(Username.of(vo.getUsername()))
+                .password(Password.fromHash(vo.getPassword()))
+                .phoneNumber(vo.getPhoneNumber() != null ? PhoneNumber.of(vo.getPhoneNumber()) : null)
+                .statusCode(vo.getStatusCode())
                 .build();
-
-
-        return Optional.of(user);
     }
 
     @Override
     public void save(AuthUser user) {
-        LambdaQueryWrapper<UserPO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(UserPO::getUname, user.getUsername());
-        UserPO existingPO = userMapper.selectOne(wrapper);
-        
-        if (existingPO != null) {
-            existingPO.setPassword(user.getPassword().getEncryptedValue());
-            existingPO.setPhone(user.getPhoneNumber().getValue());
-            existingPO.setStatusCode(user.getStatusCode() != null ? user.getStatusCode() : 1);
-            userMapper.updateById(existingPO);
-        } else {
-            UserPO userPO = new UserPO();
-            userPO.setUname(user.getUsername().getValue());
-            userPO.setPassword(user.getPassword().getEncryptedValue());
-            userPO.setPhone(user.getPhoneNumber().getValue());
-            userPO.setStatusCode(1); // 默认激活状态
-            userMapper.insert(userPO);
-        }
+        // 认证服务不负责保存用户数据
+        // 用户数据的保存由用户服务负责
     }
 
     @Override
-    public boolean existsByPhone(String phone) {
-        LambdaQueryWrapper<UserPO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(UserPO::getPhone, phone);
-        return userMapper.selectCount(wrapper) > 0;
+    public void updateUserIp(Long userId, String ipLocation) {
+        userFeignClient.updateUserIp(userId,ipLocation);
     }
 }
-

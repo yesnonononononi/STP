@@ -1,110 +1,90 @@
 package com.summit.stp.tag.infrastructure.persistence;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import com.summit.stp.tag.domain.model.PostTag;
 import com.summit.stp.tag.domain.repository.PostTagRelRepository;
-import com.summit.stp.tag.infrastructure.persistence.mapper.PostTagRelMapper;
 import com.summit.stp.tag.infrastructure.persistence.po.PostTagRelPO;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Repository
-@RequiredArgsConstructor
-public class PostTagRelRepositoryImpl implements PostTagRelRepository {
-    private final PostTagRelMapper postTagRelMapper;
+public class PostTagRelRepositoryImpl extends AbstractRepository<PostTag, PostTagRelPO> implements PostTagRelRepository {
+
+    public PostTagRelRepositoryImpl(BaseMapper<PostTagRelPO> baseMapper) {
+        super(baseMapper);
+    }
 
     @Override
     public void save(PostTag rel) {
         if (rel == null) {
             return;
         }
-        PostTagRelPO po = toPO(rel);
-        if (po.getPublicId() == null || po.getPublicId() == 0) {
-            postTagRelMapper.insert(po);
+        if (rel.getId() != null && findById(rel.getId()).isPresent()) {
+            super.updateById(rel);
         } else {
-            PostTagRelPO existing = postTagRelMapper.selectOne(new LambdaQueryWrapper<PostTagRelPO>()
-                    .eq(PostTagRelPO::getPublicId, po.getPublicId()));
-            if (existing == null) {
-                postTagRelMapper.insert(po);
-            } else {
-                po.setId(existing.getId());
-                po.setPublicId(existing.getPublicId());
-                postTagRelMapper.updateById(po);
-            }
+            super.save(rel);
         }
     }
 
     @Override
     public void delete(Long id) {
-        postTagRelMapper.delete(new LambdaQueryWrapper<PostTagRelPO>()
-                .eq(PostTagRelPO::getPublicId, id));
+        delete(id, PostTagRelPO::getId);
     }
 
     @Override
     public void deleteByPostId(Long postId) {
-        postTagRelMapper.delete(
-                new LambdaQueryWrapper<PostTagRelPO>().eq(PostTagRelPO::getPostId, postId)
-        );
+        delete(postId, PostTagRelPO::getPostId);
     }
 
     @Override
     public List<PostTag> findByPostId(Long postId) {
-        return postTagRelMapper.selectList(new LambdaQueryWrapper<PostTagRelPO>().eq(PostTagRelPO::getPostId, postId))
-                .stream()
-                .map(this::toDomain)
-                .collect(Collectors.toList());
+        return findListBy(postId, PostTagRelPO::getPostId);
     }
 
     @Override
     public List<PostTag> findByTagId(Long tagId) {
-        return postTagRelMapper.selectList(new LambdaQueryWrapper<PostTagRelPO>().eq(PostTagRelPO::getTagId, tagId))
-                .stream()
-                .map(this::toDomain)
-                .collect(Collectors.toList());
+        return findListBy(tagId, PostTagRelPO::getTagId);
     }
 
     @Override
     public List<PostTag> findByPostIds(List<Long> postIds) {
-        if (postIds == null || postIds.isEmpty()) {
-            return List.of();
-        }
-        return postTagRelMapper.selectList(new LambdaQueryWrapper<PostTagRelPO>().in(PostTagRelPO::getPostId, postIds))
-                .stream()
-                .map(this::toDomain)
-                .collect(Collectors.toList());
+        return findListIn(postIds, PostTagRelPO::getPostId);
     }
 
     @Override
     public void batchSave(Long postId, List<Long> tags) {
+        if (tags == null || tags.isEmpty()) return;
         List<PostTagRelPO> list = tags.stream().map(tagId -> PostTagRelPO.builder().postId(postId).tagId(tagId).build())
                 .toList();
-        postTagRelMapper.insert(list);
+        getBaseMapper().insert(list);
     }
 
-    private PostTag toDomain(PostTagRelPO po) {
+    @Override
+    protected PostTag toModel(PostTagRelPO po) {
         if (po == null) {
             return null;
         }
         return PostTag.builder()
-                .id(po.getPublicId())
+                .id(po.getId())
                 .postId(po.getPostId())
                 .tagId(po.getTagId())
                 .createTime(po.getCreateTime())
                 .build();
     }
 
-    private PostTagRelPO toPO(PostTag domain) {
+    @Override
+    protected PostTagRelPO toPO(PostTag domain) {
         if (domain == null) {
             return null;
         }
         return PostTagRelPO.builder()
-                .publicId(domain.getId())
+                .id(domain.getId())
                 .postId(domain.getPostId() != null ? domain.getPostId() : 0L)
                 .tagId(domain.getTagId() != null ? domain.getTagId() : 0L)
                 .createTime(domain.getCreateTime())
                 .build();
     }
 }
+

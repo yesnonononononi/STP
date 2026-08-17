@@ -18,8 +18,6 @@ import java.time.LocalDate;
 public class TopicRankPO {
     @TableId(type = IdType.AUTO)
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
     private Long tagId;
     private BigDecimal score;
 

@@ -2,15 +2,14 @@ package com.summit.stp.post.application.service.impl;
 
 
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.common.application.domain.event.PostChangeEvent;
 import com.summit.stp.common.application.domain.event.PostInteractionEvent;
 import com.summit.stp.common.application.domain.exception.BusinessException;
 import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.stp.common.application.service.TextSafe.TextSafeServiceProvider;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 
 
 import com.summit.stp.elasticsearch.document.PostDocument;
@@ -37,7 +36,6 @@ import com.summit.stp.tag.domain.repository.TagRepository;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -76,7 +74,7 @@ public class PostAppServiceImpl implements PostAppService {
 
         // 1. 构建并保存帖子主体
         Post post = buildNewPost(command);
-        post = postRepository.save(post);
+        postRepository.save(post);
 
         Long postId = post.getId();
 
@@ -243,7 +241,7 @@ public class PostAppServiceImpl implements PostAppService {
 
     @Override
     public void updatePost(UpdatePostCommand command) {
-        Post post = postRepository.findById(command.getId());
+        Post post = postRepository.findById(command.getId()).orElseThrow(() -> new ParameterException("帖子不存在"));
         validatePostForUpdate(command, post);
         List<ImageInfo> mediaUrls = command.getMediaUrls();
         Long postId = post.getId();
@@ -300,10 +298,7 @@ public class PostAppServiceImpl implements PostAppService {
 
     @Override
     public void deletePost(Long id) {
-        Post post = postRepository.findById(id);
-        if (post == null) {
-            throw new ParameterException("帖子不存在");
-        }
+        Post post = postRepository.findById(id).orElseThrow(() -> new ParameterException("帖子不存在"));
         if (!Objects.equals(post.getCreatorId(), UserHolder.getUser().getId())) {
             throw new BusinessException("无权删除他人帖子");
         }
@@ -326,10 +321,7 @@ public class PostAppServiceImpl implements PostAppService {
 
     @Override
     public void republishPost(Long id) {
-        Post post = postRepository.findById(id);
-        if (post == null) {
-            throw new ParameterException("帖子不存在");
-        }
+        Post post = postRepository.findById(id).orElseThrow(() -> new ParameterException("帖子不存在"));
         if (!Objects.equals(post.getCreatorId(), UserHolder.getUser().getId())) {
             throw new BusinessException("无权重新发布他人帖子");
         }
@@ -371,7 +363,7 @@ public class PostAppServiceImpl implements PostAppService {
         Long userId = UserHolder.getUser().getId();
         String actionName = type == InteractionType.LIKE ? "点赞" : "收藏";
         try {
-            Post post = postRepository.findById(postId);
+            Post post = postRepository.findById(postId).orElse(null);
             if (post == null || !post.isActive()) {
                 throw new BusinessException("帖子状态异常,无法" + actionName);
             }
@@ -435,10 +427,10 @@ public class PostAppServiceImpl implements PostAppService {
         } else {
             long id = IdUtil.getSnowflakeNextId();
             if (isLike) {
-                postLikeRepository.save(PostLikePO.builder().publicId(id).postId(postId).userId(userId).build());
+                postLikeRepository.save(PostLikePO.builder().id(id).postId(postId).userId(userId).build());
                 updateLikeCountDelta(postId, 1);
             } else {
-                postCollectRepository.save(PostCollectPO.builder().publicId(id).postId(postId).userId(userId).build());
+                postCollectRepository.save(PostCollectPO.builder().id(id).postId(postId).userId(userId).build());
             }
             postMessageSender.sendPostInteraction(PostInteractionEvent.builder()
                     .postId(postId)
@@ -454,7 +446,7 @@ public class PostAppServiceImpl implements PostAppService {
      */
     private void updateLikeCountDelta(Long postId, long delta) {
         LambdaUpdateWrapper<PostsPO> wrapper = new LambdaUpdateWrapper<>();
-        wrapper.eq(PostsPO::getPublicId, postId)
+        wrapper.eq(PostsPO::getId, postId)
                 .setSql("like_count = like_count + " + delta);
         postsMapper.update(null, wrapper);
     }
@@ -465,10 +457,7 @@ public class PostAppServiceImpl implements PostAppService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void topPost(Long id, Integer isTop) {
-        Post post = postRepository.findById(id);
-        if (post == null) {
-            throw new ParameterException("帖子不存在");
-        }
+        Post post = postRepository.findById(id).orElseThrow(() -> new ParameterException("帖子不存在"));
         if (!Objects.equals(post.getCreatorId(), UserHolder.getUser().getId())) {
             throw new BusinessException("无权置顶他人帖子");
         }
@@ -481,16 +470,13 @@ public class PostAppServiceImpl implements PostAppService {
 
     @Override
     public void viewPost(Long id) {
-        Post post = postRepository.findById(id);
-        if (post == null) {
-            throw new ParameterException("帖子不存在");
-        }
+        Post post = postRepository.findById(id).orElseThrow(() -> new ParameterException("帖子不存在"));
         postCacheProvider.incrViewCount(id);
     }
 
     @Override
     public void visibleSelf(Long id, Integer visible) {
-        Post post = postRepository.findById(id);
+        Post post = postRepository.findById(id).orElse(null);
         if (post.getCreatorId().equals(UserHolder.getUser().getId())) {
             post.updateScope(visible);
             postRepository.update(post);

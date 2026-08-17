@@ -9,11 +9,11 @@ import com.summit.stp.comment.domain.model.Comment;
 import com.summit.stp.comment.domain.model.CommentImage;
 import com.summit.stp.comment.domain.repository.CommentImageRepository;
 import com.summit.stp.comment.domain.repository.CommentRepository;
-import com.summit.stp.common.ThreadContext.UserHolder;
-import com.summit.stp.common.application.api.vo.CommentSimpleVO;
-import com.summit.stp.common.application.api.vo.UserSimpleVO;
-import com.summit.stp.common.feign.UserFeignClient;
-import com.summit.stp.common.result.CursorPageResult;
+import com.summit.stp.common.auth.UserHolder;
+import com.summit.stp.comment.api.vo.CommentSimpleVO;
+import com.summit.stp.user.api.vo.UserSimpleVO;
+import com.summit.stp.user.api.client.UserFeignClient;
+import com.summit.stp.common.application.api.result.CursorPageResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -62,7 +62,7 @@ public class CommentQueryServiceImpl implements CommentQueryService {
 
     @Override
     public CommentVO queryCommentById(Long commentId) {
-        Comment comment = commentRepository.findById(commentId);
+        Comment comment = commentRepository.findById(commentId).orElse(null);
         if (comment == null) {
             return null;
         }
@@ -113,7 +113,7 @@ public class CommentQueryServiceImpl implements CommentQueryService {
 
     @Override
     public CommentSimpleVO querySimpleCommentWithLikeStatus(Long commentId) {
-        Comment comment = commentRepository.findById(commentId);
+        Comment comment = commentRepository.findById(commentId).orElse(null);
         if (comment == null) {
             return null;
         }
@@ -181,3 +181,4 @@ public class CommentQueryServiceImpl implements CommentQueryService {
                 .build();
     }
 }
+

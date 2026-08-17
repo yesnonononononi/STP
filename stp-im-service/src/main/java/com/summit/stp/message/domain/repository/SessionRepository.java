@@ -4,9 +4,10 @@ import com.summit.stp.message.domain.model.Session;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface SessionRepository {
-    Session findById(Long sessionId);
+    Optional<Session> findById(Long sessionId);
 
     void save(Session session);
 

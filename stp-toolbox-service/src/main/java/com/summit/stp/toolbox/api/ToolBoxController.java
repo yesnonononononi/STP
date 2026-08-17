@@ -1,8 +1,8 @@
 package com.summit.stp.toolbox.api;
 
-import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.toolbox.api.dto.SignInInfoVO;
 import com.summit.stp.toolbox.application.UserSignStatsService;
 import io.swagger.annotations.Api;

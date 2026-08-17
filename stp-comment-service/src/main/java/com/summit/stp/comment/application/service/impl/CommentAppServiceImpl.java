@@ -12,16 +12,16 @@ import com.summit.stp.comment.domain.repository.CommentImageRepository;
 import com.summit.stp.comment.domain.repository.CommentRepository;
 import com.summit.stp.comment.infrastructure.constants.CommentConstants;
 import com.summit.stp.comment.infrastructure.persistence.po.CommentImagePO;
-import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.common.application.domain.event.CommentNotificationMessage;
 import com.summit.stp.common.application.domain.event.FileDeleteEvent;
 import com.summit.stp.common.application.domain.exception.BusinessException;
 import com.summit.stp.common.application.domain.model.UserSession;
 import com.summit.stp.common.application.service.TextSafe.TextSafeServiceProvider;
-import com.summit.stp.common.application.api.vo.PostSimpleVO;
-import com.summit.stp.common.application.api.vo.UserSimpleVO;
-import com.summit.stp.common.feign.PostFeignClient;
-import com.summit.stp.common.feign.UserFeignClient;
+import com.summit.stp.post.api.vo.PostSimpleVO;
+import com.summit.stp.user.api.vo.UserSimpleVO;
+import com.summit.stp.post.api.client.PostFeignClient;
+import com.summit.stp.user.api.client.UserFeignClient;
 import io.netty.util.internal.StringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,10 +61,8 @@ public class CommentAppServiceImpl extends AbstractCommentAppService {
         Long parentId = command.getParentId();
         Long rootId = null;
         if (parentId != null) {
-            Comment parentComment = commentRepository.findById(parentId);
-            if (parentComment == null) {
-                throw new BusinessException("未找到父评论信息");
-            }
+            Comment parentComment = commentRepository.findById(parentId)
+                    .orElseThrow(() -> new BusinessException("未找到父评论信息"));
             // 父评论是根评论 → rootId = parentId；父评论是回复 → rootId = 父评论的 rootId
             rootId = parentComment.getRootId() != null ? parentComment.getRootId() : parentComment.getId();
         }
@@ -154,7 +152,7 @@ public class CommentAppServiceImpl extends AbstractCommentAppService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteComment(Long id) {
-        Comment comment = commentRepository.findById(id);
+        Comment comment = commentRepository.findById(id).orElse(null);
 
         List<CommentImagePO> images = commentImageRepository.findByCommentId(id);
 
@@ -195,7 +193,7 @@ public class CommentAppServiceImpl extends AbstractCommentAppService {
         Long uid = UserHolder.getUser().getId();
         if(!(post.getCreatorId().equals(uid)))throw new BusinessException("无权限");
         //2,获取评论信息
-        Comment comment = commentRepository.findById(id);
+        Comment comment = commentRepository.findById(id).orElse(null);
         if(!comment.getIsAudit())throw new BusinessException("评论正在审核");
         //3,置顶评论,已经置顶则取消置顶
         boolean topState = comment.toggleTop();
@@ -247,3 +245,4 @@ public class CommentAppServiceImpl extends AbstractCommentAppService {
 
 
 }
+

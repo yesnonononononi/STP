@@ -1,11 +1,10 @@
 package com.summit.stp.tag.application.service.impl;
 
-import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.stp.common.application.service.SearchSuggest.SuggestVO;
-import com.summit.stp.common.result.CursorPageResult;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.CursorPageResult;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.post.application.service.PostQueryService;
 import com.summit.stp.post.application.vo.PostVO;
 import com.summit.stp.post.domain.repository.PostRepository;
@@ -37,14 +36,14 @@ public class TagAppServiceImpl implements TagAppService {
 
     @Override
     public TagVO getTagById(Long id) {
-        Tag tag = tagRepository.findById(id);
+        Tag tag = tagRepository.findById(id).orElse(null);
         return tag == null ? null : convertToVO(tag);
     }
 
     @Override
     public TagVO getTagByUuid(String uuid) {
         Long tagId = parseTagId(uuid);
-        Tag tag = tagRepository.findById(tagId);
+        Tag tag = tagRepository.findById(tagId).orElse(null);
         return tag == null ? null : convertToVO(tag);
     }
 
@@ -69,10 +68,8 @@ public class TagAppServiceImpl implements TagAppService {
     @Override
     public void updateTag(UpdateTagCommand command) {
         Long tagId = parseTagId(command.getId());
-        Tag tag = tagRepository.findById(tagId);
-        if (tag == null) {
-            throw new ParameterException("标签不存在");
-        }
+        Tag tag = tagRepository.findById(tagId)
+                .orElseThrow(() -> new ParameterException("标签不存在"));
         tag.updateInfo(command.getTagName(), command.getSort(), command.getStatus());
         tagRepository.save(tag);
         try {

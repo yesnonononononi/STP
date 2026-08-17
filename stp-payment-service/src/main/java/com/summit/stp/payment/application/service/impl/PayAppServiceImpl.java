@@ -1,13 +1,13 @@
 package com.summit.stp.payment.application.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.summit.stp.common.application.service.command.PayCommand;
+import com.summit.stp.payment.api.dto.PayCommand;
 import com.summit.stp.common.application.domain.event.PayFailEvent;
 import com.summit.stp.common.application.domain.event.PaySuccessEvent;
 import com.summit.stp.common.application.domain.exception.BusinessException;
 import com.summit.stp.common.application.domain.model.PayType;
-import com.summit.stp.common.application.api.vo.PayVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.payment.api.vo.PayVO;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.common.util.PaymentSignHelper;
 import com.summit.stp.payment.application.command.PayCallbackCheckCommand;
 import com.summit.stp.payment.application.dto.GatewayPayResponse;
@@ -211,3 +211,4 @@ public class PayAppServiceImpl implements PayAppService {
     }
 
 }
+

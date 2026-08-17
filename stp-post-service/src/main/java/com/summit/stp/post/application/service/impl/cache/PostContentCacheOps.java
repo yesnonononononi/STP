@@ -171,7 +171,7 @@ public class PostContentCacheOps {
             @Override
             public Object execute(@NonNull RedisOperations operations) {
                 for (PostsPO po : poList) {
-                    Long pid = po.getPublicId();
+                    Long pid = po.getId();
                     String likeSetKey = InteractionType.LIKE.buildSetKey(pid);
                     String collectSetKey = InteractionType.COLLECT.buildSetKey(pid);
                     Long zsetLikeSize = redisTemplate.opsForZSet().zCard(likeSetKey);

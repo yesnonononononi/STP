@@ -2,8 +2,8 @@ package com.summit.stp.tag.application.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.common.application.service.SearchSuggest.SuggestVO;
-import com.summit.stp.common.result.CursorPageResult;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.CursorPageResult;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.post.application.vo.PostVO;
 import com.summit.stp.tag.application.command.UpdateTagCommand;
 import com.summit.stp.tag.application.vo.TagVO;

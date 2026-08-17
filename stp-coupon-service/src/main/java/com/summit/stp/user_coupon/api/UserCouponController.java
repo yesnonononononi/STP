@@ -2,8 +2,8 @@ package com.summit.stp.user_coupon.api;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.application.api.vo.CouponQueryVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.coupon.api.vo.CouponQueryVO;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.user_coupon.application.service.UserCouponAppService;
 import com.summit.stp.user_coupon.domain.model.CouponStatus;
 import io.swagger.annotations.Api;
@@ -46,3 +46,4 @@ public class UserCouponController {
         return Result.success(userCouponAppService.queryCouponsForOrder(typeId, packageId));
     }
 }
+

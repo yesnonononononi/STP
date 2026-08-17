@@ -1,14 +1,14 @@
 package com.summit.stp.user_coupon.application.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.summit.stp.common.ThreadContext.UserHolder;
-import com.summit.stp.common.application.api.vo.CouponQueryVO;
-import com.summit.stp.common.application.api.vo.MemberVO;
-import com.summit.stp.common.application.api.vo.OrderQueryVO;
+import com.summit.stp.common.auth.UserHolder;
+import com.summit.stp.coupon.api.vo.CouponQueryVO;
+import com.summit.stp.user.api.vo.MemberVO;
+import com.summit.stp.order.api.vo.OrderQueryVO;
 import com.summit.stp.common.application.domain.exception.BusinessException;
 import com.summit.stp.common.application.domain.exception.ParameterException;
-import com.summit.stp.common.feign.MemberFeignClient;
-import com.summit.stp.common.feign.OrderFeignClient;
+import com.summit.stp.user.api.client.MemberFeignClient;
+import com.summit.stp.order.api.client.OrderFeignClient;
 import com.summit.stp.common.util.DistributedLockUtil;
 import com.summit.stp.coupon.domain.model.Coupon;
 import com.summit.stp.coupon.domain.repository.CouponRepository;
@@ -263,3 +263,4 @@ public class UserCouponAppServiceImpl implements UserCouponAppService {
                 .build();
     }
 }
+

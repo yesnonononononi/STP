@@ -61,7 +61,7 @@ public class PostTagRelAppServiceImpl implements PostTagRelAppService {
         }
         Tag tag = null;
         try {
-            tag = tagRepository.findById(Long.parseLong(tagUuid));
+            tag = tagRepository.findById(Long.parseLong(tagUuid)).orElse(null);
         } catch (NumberFormatException e) {
             tag = tagRepository.findByName(tagUuid);
         }
@@ -73,7 +73,7 @@ public class PostTagRelAppServiceImpl implements PostTagRelAppService {
     }
 
     private void checkPostActive(Long postId) {
-        Post post = postRepository.findById(postId);
+        Post post = postRepository.findById(postId).orElse(null);
         if (post == null || post.getStatus() != PostStatus.NORMAL) {
             throw new BusinessException("帖子已被删除!");
         }

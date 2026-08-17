@@ -1,8 +1,8 @@
 package com.summit.stp.coupon.api;
 
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.application.api.vo.CouponQueryVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.coupon.api.vo.CouponQueryVO;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.coupon.application.service.CouponAppService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -23,3 +23,4 @@ public class CouponTemplateController {
         return Result.success(couponAppService.queryById(id));
     }
 }
+

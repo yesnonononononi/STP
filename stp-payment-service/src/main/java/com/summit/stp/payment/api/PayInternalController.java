@@ -1,8 +1,8 @@
 package com.summit.stp.payment.api;
 
-import com.summit.stp.common.application.service.command.PayCommand;
-import com.summit.stp.common.application.api.vo.PayVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.payment.api.dto.PayCommand;
+import com.summit.stp.payment.api.vo.PayVO;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.payment.application.service.PayAppService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,3 +22,4 @@ public class PayInternalController {
         return Result.success(payAppService.pay(payCommand));
     }
 }
+

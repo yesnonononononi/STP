@@ -1,170 +1,60 @@
 package com.summit.stp.user.infrastructure.persistence;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.summit.stp.common.application.domain.model.Password;
-import com.summit.stp.common.application.domain.model.PhoneNumber;
-import com.summit.stp.common.application.domain.model.Username;
-import com.summit.stp.user.domain.model.Email;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import com.summit.stp.user.domain.model.User;
 import com.summit.stp.user.domain.repository.UserRepository;
-import com.summit.stp.user.infrastructure.persistence.mapper.UserMapper;
-import com.summit.stp.user.infrastructure.persistence.mapper.UserStatMapper;
 import com.summit.stp.user.infrastructure.persistence.po.UserPO;
-import com.summit.stp.user.infrastructure.persistence.po.UserStatPO;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Repository
-@RequiredArgsConstructor
-public class UserRepositoryImpl implements UserRepository {
-    private final UserMapper userMapper;
-    private final UserStatMapper userStatMapper;
+public class UserRepositoryImpl extends AbstractRepository<User, UserPO> implements UserRepository<User> {
+
+
+    public UserRepositoryImpl(BaseMapper<UserPO> baseMapper) {
+        super(baseMapper);
+    }
+
 
     @Override
-    public void save(User user) {
-        UserPO po = toPO(user);
-        // 如果存在则更新，不存在则插入
-        UserPO existing = userMapper.selectOne(new LambdaQueryWrapper<UserPO>()
-                .eq(UserPO::getUname, po.getUname()));
-        if (existing != null) {
-            po.setId(existing.getId());
-            if (po.getPublicId() == null) {
-                po.setPublicId(existing.getPublicId());
-            }
-            int i = userMapper.updateById(po);
-            if(i == 0){
-                log.warn("更新用户失败:{}",user.getNick());
-            }
-        } else {
-            userMapper.insert(po);
-        }
-        // 保存用户统计信息，user_stat.user_id 使用用户业务ID
-        saveUserStat(po.getPublicId(), user);
+    public Long saveUser(User user) {
+        Number id = save(user, UserPO::getId);
+        return id != null ? id.longValue() : null;
     }
 
     @Override
-    public void put(User user) {
-        save(user);
+    public Optional<User> findUserByName(String username) {
+        return  findBy(username,UserPO::getUname);
     }
 
     @Override
-    public User findUserByName(String username) {
-        UserPO po = userMapper.selectOne(new LambdaQueryWrapper<UserPO>()
-                .eq(UserPO::getUname, username));
-        if (po == null) {
-            return null;
-        }
-        return fromPO(po, null);
-    }
-
-    @Override
-    public User findUserById(Long id) {
-        UserPO userPO = userMapper.selectOne(new LambdaQueryWrapper<UserPO>()
-                .eq(UserPO::getPublicId, id));
-        if (userPO == null) {
-            return null;
-        }
-        return fromPO(userPO, null);
-    }
-
-    @Override
-    public void updateProfile(User user) {
-        UserPO existing = userMapper.selectOne(new LambdaQueryWrapper<UserPO>()
-                .eq(UserPO::getPublicId, user.getId()));
-        if (existing == null) {
-            log.warn("更新用户资料失败，用户不存在:{}", user.getId());
-            return;
-        }
-        UserPO po = toPO(user);
-        po.setId(existing.getId());
-        po.setPublicId(existing.getPublicId());
-        userMapper.updateById(po);
-        saveUserStat(user.getId(), user);
+    public Optional<User> findUserById(Long id) {
+        return findBy(id,UserPO::getId);
     }
 
     @Override
     public Map<Long, User> findUserByIds(Collection<Long> userIds) {
-        if(userIds.isEmpty())return Map.of();
-        List<UserPO> userPOS = userMapper.selectList(new LambdaQueryWrapper<UserPO>()
-                .in(UserPO::getPublicId, userIds));
-        List<UserStatPO> statPOS = userStatMapper.selectList(new LambdaQueryWrapper<UserStatPO>().in(UserStatPO::getUserId, userIds));
-        Map<Long, UserStatPO> map = statPOS.stream().collect(Collectors.toMap(UserStatPO::getUserId, po -> po));
-        return userPOS.stream().map(po -> fromPO(po, map.get(po.getPublicId()))).collect(Collectors.toMap(User::getId, user -> user));
+        return findList(userIds).stream().collect(Collectors.toMap(User::getId, Function.identity()));
     }
 
-    private void saveUserStat(Long userId, User user) {
-        UserStatPO stat = userStatMapper.selectById(userId);
-        boolean isNew = (stat == null);
-        if (isNew) {
-            stat = new UserStatPO();
-            stat.setUserId(userId);
-        }
-        stat.setFans(user.getFans() != null ? user.getFans() : 0L);
-        stat.setTopic(user.getTopic() != null ? user.getTopic() : 0L);
-        stat.setLiked(user.getLiked() != null ? user.getLiked() : 0L);
-        if (isNew) {
-            userStatMapper.insert(stat);
-        } else {
-            userStatMapper.updateById(stat);
-        }
+    @Override
+    public Optional<User>findUserByPhone(String phone) {
+        return findBy(phone,UserPO::getPhone);
     }
 
-    private UserPO toPO(User user) {
-        UserPO po = new UserPO();
-        po.setNick(user.getNick());
-        po.setPublicId(user.getId());
-        po.setUname(user.getUsername().getValue());
-        po.setPassword(user.getPassword().getEncryptedValue());
-        po.setPhone(user.getPhoneNumber() != null ? user.getPhoneNumber().getValue() : null);
-        po.setStatusCode(user.getStatusCode());
-        po.setAvatar(user.getAvatar());
-        po.setIntroduction(user.getIntroduction());
-        po.setIp(user.getIp());
-        po.setGender(user.getGender());
-        po.setBgImage(user.getBgImage());
-        po.setAge(user.getAge());
-        return po;
+    @Override
+    protected UserPO toPO(User entity) {
+        return UserPO.toPO(entity);
     }
 
-    private User fromPO(UserPO po,UserStatPO statPO) {
-        Long fans, topic, liked;
-        if(statPO  == null) {
-            UserStatPO stat = null;
-            if (po.getPublicId() != null) {
-                stat = userStatMapper.selectById(po.getPublicId());
-            }
-            fans = (stat != null && stat.getFans() != null) ? stat.getFans() : 0L;
-            topic = (stat != null && stat.getTopic() != null) ? stat.getTopic() : 0L;
-            liked = (stat != null && stat.getLiked() != null) ? stat.getLiked() : 0L;
-        }else {
-            fans = statPO.getFans();
-            topic = statPO.getTopic();
-            liked = statPO.getLiked();
-        }
-        return User.builder()
-                .username(Username.of(po.getUname()))
-                .password(Password.fromHash(po.getPassword()))
-                .introduction(po.getIntroduction())
-                .phoneNumber(po.getPhone() != null ? PhoneNumber.of(po.getPhone()) : null)
-                .statusCode(po.getStatusCode())
-                .fans(fans)
-                .nick(po.getNick())
-                .liked(liked)
-                .topic(topic)
-                .email(Email.of(po.getEmail()))
-                .avatar(po.getAvatar())
-                .ip(po.getIp())
-                .bgImage(po.getBgImage())
-                .id(po.getPublicId())
-                .gender(po.getGender())
-                .age(po.getAge())
-                .build();
+    @Override
+    protected User toModel(UserPO po) {
+        return UserPO.toDomain(po, null, null, null);
     }
 }

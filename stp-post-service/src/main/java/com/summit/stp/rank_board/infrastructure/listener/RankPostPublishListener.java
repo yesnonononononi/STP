@@ -50,7 +50,7 @@ public class RankPostPublishListener {
             log.info("【排行榜实时更新】接收到发帖事件: postId={}", postId);
             
             // 1. 初始化帖子热度值到 ZSet
-            Post post = postRepository.findById(postId);
+            Post post = postRepository.findById(postId).orElse(null);
             if (post != null) {
                 double score = post.calculateHotScore();
                 rankCacheProvider.cachePostScore(postId, score);

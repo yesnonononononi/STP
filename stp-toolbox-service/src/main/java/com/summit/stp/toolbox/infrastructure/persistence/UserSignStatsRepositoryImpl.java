@@ -1,37 +1,36 @@
 package com.summit.stp.toolbox.infrastructure.persistence;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import com.summit.stp.toolbox.domain.model.UserSignStats;
 import com.summit.stp.toolbox.domain.repository.UserSignStatsRepository;
-import com.summit.stp.toolbox.infrastructure.persistence.mapper.UserSignStatsMapper;
 import com.summit.stp.toolbox.infrastructure.persistence.po.UserSignStatsPO;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Repository
-@RequiredArgsConstructor
-public class UserSignStatsRepositoryImpl implements UserSignStatsRepository {
-    private final UserSignStatsMapper userSignStatsMapper;
+public class UserSignStatsRepositoryImpl extends AbstractRepository<UserSignStats, UserSignStatsPO> implements UserSignStatsRepository {
+
+    public UserSignStatsRepositoryImpl(BaseMapper<UserSignStatsPO> baseMapper) {
+        super(baseMapper);
+    }
 
     @Override
     public void save(UserSignStats userSignStats) {
-        UserSignStatsPO po = toPO(userSignStats);
-        UserSignStatsPO existing = userSignStatsMapper.selectById(po.getUserId());
-        if (existing != null) {
-            userSignStatsMapper.updateById(po);
+        if (userSignStats == null) return;
+        if (userSignStats.getUserId() != null && findById(userSignStats.getUserId()).isPresent()) {
+            super.updateById(userSignStats);
         } else {
-            userSignStatsMapper.insert(po);
+            super.save(userSignStats);
         }
     }
 
     @Override
     public UserSignStats findByUserId(Long userId) {
-        UserSignStatsPO po = userSignStatsMapper.selectById(userId);
-        return toModel(po);
+        return findById(userId).orElse(null);
     }
-
 
     @Override
     public UserSignStats initSignStat(Long userId, int totalDays, int currentContinuousDays, int maxContinuousDays, LocalDate lastSignDate) {
@@ -47,7 +46,8 @@ public class UserSignStatsRepositoryImpl implements UserSignStatsRepository {
         return entity;
     }
 
-    private UserSignStatsPO toPO(UserSignStats model) {
+    @Override
+    protected UserSignStatsPO toPO(UserSignStats model) {
         if (model == null) {
             return null;
         }
@@ -61,7 +61,8 @@ public class UserSignStatsRepositoryImpl implements UserSignStatsRepository {
         return po;
     }
 
-    private UserSignStats toModel(UserSignStatsPO po) {
+    @Override
+    protected UserSignStats toModel(UserSignStatsPO po) {
         if (po == null) {
             return null;
         }
@@ -75,3 +76,4 @@ public class UserSignStatsRepositoryImpl implements UserSignStatsRepository {
                 .build();
     }
 }
+

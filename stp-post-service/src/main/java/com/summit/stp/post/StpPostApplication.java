@@ -12,7 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableScheduling
-@EnableFeignClients(basePackages = "com.summit.stp.common.feign")
+@EnableFeignClients(basePackages = "com.summit.stp.user.api")
 @EnableElasticsearchRepositories(basePackages = "com.summit.stp.elasticsearch.repo")
 @ComponentScan(basePackages = {"com.summit.stp.post", "com.summit.stp.tag", "com.summit.stp.rank_board", "com.summit.stp.common", "com.summit.stp.elasticsearch"})
 

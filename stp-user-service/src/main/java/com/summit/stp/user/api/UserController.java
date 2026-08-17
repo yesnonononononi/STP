@@ -1,17 +1,18 @@
 package com.summit.stp.user.api;
 
-import com.summit.stp.common.ThreadContext.UserHolder;
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.application.api.vo.UserProfileVO;
-import com.summit.stp.common.application.api.vo.UserSimpleVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.annotation.PublicId;
+import com.summit.stp.common.application.api.result.Result;
+import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.user.api.dto.request.UserPasswordUpdateRequest;
 import com.summit.stp.user.api.dto.request.UserPhoneBindRequest;
 import com.summit.stp.user.api.dto.request.UserProfileUpdateRequest;
-import com.summit.stp.user.application.UserApplicationService;
+import com.summit.stp.user.api.vo.UserProfileVO;
+import com.summit.stp.user.api.vo.UserSimpleVO;
 import com.summit.stp.user.application.command.UserPasswordUpdateCommand;
 import com.summit.stp.user.application.command.UserPhoneBindCommand;
 import com.summit.stp.user.application.command.UserProfileUpdateCommand;
+import com.summit.stp.user.application.service.UserApplicationService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -73,7 +74,7 @@ public class UserController {
     @GetMapping("/{id}")
     @ApiOperation(value = "获取用户信息", notes = "根据用户ID获取个人公开的属性资料")
     public Result<UserProfileVO> findUserById(
-            @ApiParam(value = "用户ID", required = true) @PathVariable Long id) {
+            @ApiParam(value = "用户ID", required = true) @PublicId @PathVariable Long id) {
         return Result.success(userApplicationService.findUserById(id));
     }
 
@@ -88,7 +89,8 @@ public class UserController {
     @GetMapping("/simple/{id}")
     @ApiOperation(value = "获取用户简单公开展示信息", notes = "根据用户ID获取基础公开信息（如昵称、头像、粉丝、话题数、获赞数）")
     public Result<UserSimpleVO> findSimpleUserById(
-            @ApiParam(value = "用户ID", required = true) @PathVariable Long id) {
+            @ApiParam(value = "用户ID", required = true) @PublicId @PathVariable Long id) {
         return Result.success(userApplicationService.findSimpleUserById(id));
     }
 }
+

@@ -2,14 +2,14 @@ package com.summit.stp.message.application.service.impl;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
-import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.stp.common.application.service.TextSafe.TextSafeServiceProvider;
-import com.summit.stp.common.application.api.vo.MessageVO;
-import com.summit.stp.common.application.api.vo.SysMessageVO;
-import com.summit.stp.common.application.api.vo.UserSimpleVO;
+import com.summit.stp.im.api.vo.MessageVO;
+import com.summit.stp.im.api.vo.SysMessageVO;
+import com.summit.stp.user.api.vo.UserSimpleVO;
 import com.summit.stp.common.constants.ImConstants;
-import com.summit.stp.common.feign.UserFeignClient;
+import com.summit.stp.user.api.client.UserFeignClient;
 import com.summit.stp.common.infrastructure.websocket.Event;
 import com.summit.stp.common.infrastructure.websocket.provide.CacheProvider;
 import com.summit.stp.common.util.DateUtil;
@@ -83,7 +83,7 @@ public class MessageAppServiceImpl implements MessageAppService {
         Long sessionId = messageVO.getSessionId();
         Long senderId = UserHolder.getUser().getId();
         Long receiverId = messageVO.getReceiverId();
-        Session session = sessionRepositoryImpl.findById(sessionId);
+        Session session = sessionRepositoryImpl.findById(sessionId).orElse(null);
         if (session == null) {
             session = Session.builder()
                     .id(sessionId)
@@ -145,7 +145,7 @@ public class MessageAppServiceImpl implements MessageAppService {
 
     @Override
     public void deleteMessage(Long messageId) {
-        PrivateMessage privateMessage = privateMessageRepositoryImpl.findById(messageId);
+        PrivateMessage privateMessage = privateMessageRepositoryImpl.findById(messageId).orElse(null);
         if (!privateMessage.getUserId().equals(UserHolder.getUser().getId())) {
             throw new RuntimeException("无权操作该消息");
         }
@@ -313,3 +313,4 @@ public class MessageAppServiceImpl implements MessageAppService {
 
 
 }
+

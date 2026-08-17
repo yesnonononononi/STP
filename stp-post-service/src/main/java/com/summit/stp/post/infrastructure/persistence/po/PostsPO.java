@@ -16,8 +16,6 @@ public class PostsPO {
     @TableId(type = IdType.AUTO)
     @ApiModelProperty(value = "帖子ID")
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
 
     @ApiModelProperty(value = "发布者用户ID")
     private long creatorId;

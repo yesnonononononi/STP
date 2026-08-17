@@ -19,12 +19,8 @@ spring:
   cloud:
     nacos:
       config:
-        import-check:
-          enabled: false
         username: ${NACOS_USER_NAME}
         password: ${NACOS_USER_PASSWORD}
-        refresh-enabled: true
-        file-extension: yaml
       server-addr: ${HOST}:8848
 
   # 文件上传限制：multipart 请求限制需要高于业务层的图片/视频限制

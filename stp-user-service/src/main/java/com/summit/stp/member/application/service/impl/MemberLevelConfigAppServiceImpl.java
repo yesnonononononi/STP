@@ -1,7 +1,11 @@
 package com.summit.stp.member.application.service.impl;
 
-import com.summit.stp.common.result.Result;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.summit.stp.common.application.api.result.PageResult;
+import com.summit.stp.common.application.api.result.Result;
+import com.summit.stp.common.application.domain.exception.BusinessException;
 import com.summit.stp.member.api.dto.LevelConfigSaveRequest;
+import com.summit.stp.member.api.dto.LevelConfigUpdateRequest;
 import com.summit.stp.member.application.service.MemberLevelConfigAppService;
 import com.summit.stp.member.application.vo.MemberLevelConfigVO;
 import com.summit.stp.member.domain.model.MemberLevelConfig;
@@ -11,17 +15,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class MemberLevelConfigAppServiceImpl implements MemberLevelConfigAppService {
 
-    private final MemberLevelConfigRepository repository;
+    private final MemberLevelConfigRepository<MemberLevelConfig> repository;
 
     @Override
     @Transactional
-    public Result<Void> saveOrUpdate(LevelConfigSaveRequest request) {
+    public Result<Void> save(LevelConfigSaveRequest request) {
         if (request.getLevel() == null || request.getLevel() <= 0) {
             return Result.error("等级数值必须大于0");
         }
@@ -31,27 +36,48 @@ public class MemberLevelConfigAppServiceImpl implements MemberLevelConfigAppServ
         if (request.getMinRecharge() < 0) {
             return Result.error("最小充值金额不能为负数");
         }
-
-        MemberLevelConfig config = repository.findByLevel(request.getLevel());
-        if (config != null) {
-            config.updateConfig(
-                    request.getLevelName(),
-                    request.getMinRecharge(),
-                    request.getPrivilegesJson(),
-                    request.getIconUrl(),
-                    request.getSortOrder()
-            );
-        } else {
-            config = MemberLevelConfig.builder()
-                    .level(request.getLevel())
-                    .levelName(request.getLevelName())
-                    .minRecharge(request.getMinRecharge())
-                    .privilegesJson(request.getPrivilegesJson())
-                    .iconUrl(request.getIconUrl())
-                    .sortOrder(request.getSortOrder())
-                    .build();
+        if (repository.findByLevel(request.getLevel()).isPresent()) {
+            return Result.error("等级数值 " + request.getLevel() + " 已存在");
         }
+
+        MemberLevelConfig config = MemberLevelConfig.builder()
+                .level(request.getLevel())
+                .levelName(request.getLevelName())
+                .minRecharge(request.getMinRecharge())
+                .privileges(Objects.requireNonNullElse(MemberLevelConfig.Privilege.deserialize(request.getPrivilegesJson(), true), null))
+                .iconUrl(request.getIconUrl())
+                .sortOrder(request.getSortOrder())
+                .build();
         repository.save(config);
+
+        return Result.success();
+    }
+
+    @Override
+    @Transactional
+    public Result<Void> update(LevelConfigUpdateRequest request) {
+        if (request.getId() == null) {
+            return Result.error("配置ID不能为空");
+        }
+        if (request.getLevelName() == null || request.getLevelName().trim().isEmpty()) {
+            return Result.error("等级名称不能为空");
+        }
+        if (request.getMinRecharge() < 0) {
+            return Result.error("最小充值金额不能为负数");
+        }
+
+        MemberLevelConfig config = repository.findById(request.getId())
+                .orElseThrow(() -> new BusinessException("等级配置不存在"));
+
+        config.updateConfig(
+                request.getLevelName(),
+                request.getMinRecharge(),
+                request.getPrivilegesJson(),
+                request.getIconUrl(),
+                request.getSortOrder()
+        );
+        repository.update(config);
+
         return Result.success();
     }
 
@@ -60,21 +86,13 @@ public class MemberLevelConfigAppServiceImpl implements MemberLevelConfigAppServ
         if (level == null) {
             return Result.error("等级数值不能为空");
         }
-        MemberLevelConfig config = repository.findByLevel(level);
+        MemberLevelConfig config = repository.findByLevel(level).orElse(null);
         if (config == null) {
             return Result.error("等级配置不存在");
         }
         return Result.success(convertToVO(config));
     }
 
-    @Override
-    public Result<List<MemberLevelConfigVO>> listAll() {
-        List<MemberLevelConfig> configs = repository.findAll();
-        List<MemberLevelConfigVO> vos = configs.stream()
-                .map(this::convertToVO)
-                .collect(Collectors.toList());
-        return Result.success(vos);
-    }
 
     @Override
     @Transactional
@@ -86,15 +104,24 @@ public class MemberLevelConfigAppServiceImpl implements MemberLevelConfigAppServ
         return Result.success();
     }
 
+    @Override
+    public PageResult<List<MemberLevelConfigVO>> list(Integer page, Integer pageSize) {
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<MemberLevelConfig> p = repository.findByPage(Objects.requireNonNullElse(page, 1), Objects.requireNonNullElse(pageSize, 10));
+        List<MemberLevelConfigVO> list = p.getRecords().stream().map(this::convertToVO).toList();
+        return new PageResult<>((int) p.getCurrent(), p.getTotal(), list);
+    }
+
+
     private MemberLevelConfigVO convertToVO(MemberLevelConfig config) {
         if (config == null) {
             return null;
         }
         return MemberLevelConfigVO.builder()
+                .id(config.getId())
                 .level(config.getLevel())
                 .levelName(config.getLevelName())
                 .minRecharge(config.getMinRecharge())
-                .privilegesJson(config.getPrivilegesJson())
+                .privilegesJson(config.getPrivileges())
                 .iconUrl(config.getIconUrl())
                 .sortOrder(config.getSortOrder())
                 .build();

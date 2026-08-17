@@ -2,7 +2,7 @@ package com.summit.stp.comment.application.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.summit.stp.comment.domain.model.Comment;
-import com.summit.stp.common.application.api.vo.UserSimpleVO;
+import com.summit.stp.user.api.vo.UserSimpleVO;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -3,8 +3,8 @@ package com.summit.stp.comment.application.service;
 import com.summit.stp.comment.application.command.CommentReplyQueryCommand;
 import com.summit.stp.comment.application.command.QueryCommentCommand;
 import com.summit.stp.comment.application.vo.CommentVO;
-import com.summit.stp.common.application.api.vo.CommentSimpleVO;
-import com.summit.stp.common.result.CursorPageResult;
+import com.summit.stp.comment.api.vo.CommentSimpleVO;
+import com.summit.stp.common.application.api.result.CursorPageResult;
 
 import java.util.List;
 
@@ -43,3 +43,4 @@ public interface CommentQueryService {
      */
     List<CommentSimpleVO> querySimpleCommentsWithLikeStatus(List<Long> commentIds);
 }
+

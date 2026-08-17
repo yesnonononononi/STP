@@ -1,25 +1,40 @@
 package com.summit.stp.message.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import com.summit.stp.message.domain.model.SystemMessageImage;
 import com.summit.stp.message.domain.repository.SystemMessageImageRepository;
-import com.summit.stp.message.infrastructure.persistence.mapper.SystemMessageImageMapper;
 import com.summit.stp.message.infrastructure.persistence.po.SystemMessageImagePO;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Repository
-@RequiredArgsConstructor
-public class SystemMessageImageRepositoryImpl implements SystemMessageImageRepository {
-    private final SystemMessageImageMapper systemMessageImageMapper;
+public class SystemMessageImageRepositoryImpl extends AbstractRepository<SystemMessageImage, SystemMessageImagePO> implements SystemMessageImageRepository {
 
-    public SystemMessageImagePO toPO(SystemMessageImage systemMessageImage){
+    public SystemMessageImageRepositoryImpl(BaseMapper<SystemMessageImagePO> baseMapper) {
+        super(baseMapper);
+    }
+
+    @Override
+    public Map<Long, List<SystemMessageImage>> findByIds(List<Long> list) {
+        if (list == null || list.isEmpty()) return Collections.emptyMap();
+        LambdaQueryWrapper<SystemMessageImagePO> queryWrapper = new LambdaQueryWrapper<SystemMessageImagePO>().in(SystemMessageImagePO::getMessageId, list);
+        return getBaseMapper().selectList(queryWrapper)
+                .stream()
+                .map(this::toModel)
+                .collect(Collectors.groupingBy(SystemMessageImage::getMessageId));
+    }
+
+    @Override
+    public SystemMessageImagePO toPO(SystemMessageImage systemMessageImage) {
+        if (systemMessageImage == null) return null;
         return SystemMessageImagePO.builder()
-                .publicId(systemMessageImage.getId())
+                .id(systemMessageImage.getId())
                 .messageId(systemMessageImage.getMessageId())
                 .image(systemMessageImage.getImage())
                 .status(systemMessageImage.getStatus())
@@ -27,9 +42,12 @@ public class SystemMessageImageRepositoryImpl implements SystemMessageImageRepos
                 .updateTime(systemMessageImage.getUpdateTime())
                 .build();
     }
-    public SystemMessageImage toDomain(SystemMessageImagePO systemMessageImagePO){
+
+    @Override
+    public SystemMessageImage toModel(SystemMessageImagePO systemMessageImagePO) {
+        if (systemMessageImagePO == null) return null;
         return SystemMessageImage.builder()
-                .id(systemMessageImagePO.getPublicId())
+                .id(systemMessageImagePO.getId())
                 .messageId(systemMessageImagePO.getMessageId())
                 .image(systemMessageImagePO.getImage())
                 .status(systemMessageImagePO.getStatus())
@@ -37,14 +55,5 @@ public class SystemMessageImageRepositoryImpl implements SystemMessageImageRepos
                 .updateTime(systemMessageImagePO.getUpdateTime())
                 .build();
     }
-//// SELECT  id,public_id,message_id,image,status,create_time,update_time  FROM system_message_image      WHERE  (id IN ())
-
-    @Override
-    public Map<Long, List<SystemMessageImage>> findByIds(List<Long> list) {
-        LambdaQueryWrapper<SystemMessageImagePO> queryWrapper = new LambdaQueryWrapper<SystemMessageImagePO>().in(SystemMessageImagePO::getMessageId, list);
-        return systemMessageImageMapper.selectList(queryWrapper)
-                .stream()
-                .map(this::toDomain)
-                .collect(Collectors.groupingBy(SystemMessageImage::getMessageId));
-    }
 }
+

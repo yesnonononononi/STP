@@ -1,11 +1,11 @@
 package com.summit.stp.post.application.service.impl;
 
-import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.common.application.domain.event.PostChangeEvent;
 import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.stp.common.application.domain.model.UserSession;
 import com.summit.stp.common.application.service.TextSafe.TextSafeServiceProvider;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.post.api.dto.request.ImageInfo;
 import com.summit.stp.post.application.command.CreatePostCommand;
 import com.summit.stp.post.application.service.PostCacheProvider;
@@ -38,6 +38,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -90,7 +91,7 @@ class PostAppServiceImplTest {
     void testCreatePost_Success() {
         CreatePostCommand command = buildMockCommand("测试标题", "这是一篇CI自动化测试帖子内容", PostType.IMAGE.getCode());
         when(textSafeServiceProvider.xssFilter(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(postRepository.save(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doNothing().when(postRepository).save(any(Post.class));
         when(tagRepository.findByIds(anyList())).thenReturn(List.of(Tag.builder().id(1L).tagName("Java").build()));
 
         Result<Void> result = postAppService.createPost(command);
@@ -104,7 +105,7 @@ class PostAppServiceImplTest {
         verify(postCacheProvider).loadCache(anyLong());
         verify(postCacheProvider).addToNewestZSet(anyLong());
 
-        ArgumentCaptor<PostChangeEvent<?>> eventCaptor = ArgumentCaptor.forClass(PostChangeEvent.class);
+        ArgumentCaptor<PostChangeEvent> eventCaptor = ArgumentCaptor.forClass(PostChangeEvent.class);
         verify(postMessageSender).sendPostChangeEvent(eventCaptor.capture());
         assertEquals(TEST_USER_ID, eventCaptor.getValue().getUid());
 

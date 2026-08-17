@@ -8,18 +8,20 @@ import com.summit.stp.user.domain.exception.UserPasswordErrorException;
 import com.summit.stp.user.infrastructure.constants.UserConstants;
 import io.netty.util.internal.StringUtil;
 import jakarta.annotation.Nullable;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import lombok.*;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 
 @Getter
 @EqualsAndHashCode
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class User {
-    private final Long id;
-    private final Username username;
+    @Setter
+    private Long id;
+    private Username username;
     private String nick;
     private String avatar;
     private String ip;
@@ -37,23 +39,41 @@ public class User {
     private PhoneNumber phoneNumber;
     private Integer gender;
     private Integer age;
+    private Instant createTime;
+    private Instant updateTime;
 
-    /**
-     * 更新用户登录地理IP位置
-     */
+    @Getter
+    public enum StatusCode {
+        ACTIVE(1),
+        BANNED(0);
+
+        private final int code;
+
+        StatusCode(int code) {
+            this.code = code;
+        }
+
+        public int getCode() {
+            return code;
+        }
+    }
+
     public void updateIp(String ip) {
         this.ip = ip;
+        this.updateTime = Instant.now();
     }
 
     public void updateBgImage(String bgImage) {
-        if(StringUtil.isNullOrEmpty(bgImage)){
+        if (StringUtil.isNullOrEmpty(bgImage)) {
             throw new ParameterException("背景图片不能为空");
         }
         this.bgImage = bgImage;
+        this.updateTime = Instant.now();
     }
 
     public void clearBgImage() {
         this.bgImage = null;
+        this.updateTime = Instant.now();
     }
 
     public void updateProfile(String nick, String avatar, String email, @Nullable String introduction, @Nullable String verifyCode, Integer gender, Integer age) {
@@ -78,41 +98,43 @@ public class User {
             }
         }
         if (gender != null) {
-            if(gender != 0 && gender != 1){
+            if (gender != 0 && gender != 1) {
                 throw new IllegalArgumentException("无效性别");
             }
             this.gender = gender;
         }
         if (age != null) {
-            if(age < 0 || age > 120){
+            if (age < 0 || age > 120) {
                 throw new IllegalArgumentException("无效年龄");
             }
             this.age = age;
         }
+        this.updateTime = Instant.now();
     }
 
-
-    /**
-     * 修改密码逻辑
-     */
     public void changePassword(String oldRaw, Password newPassword) {
         if (!this.password.matches(oldRaw)) {
             throw new UserPasswordErrorException();
         }
         this.password = newPassword;
+        this.updateTime = Instant.now();
     }
 
-    /**
-     * 修改手机号
-     */
     public void changePhoneNumber(PhoneNumber newPhone) {
         this.phoneNumber = newPhone;
+        this.updateTime = Instant.now();
     }
 
-
-
-
     public boolean isActive() {
-        return statusCode == 1;
+        return statusCode == StatusCode.ACTIVE.getCode();
+    }
+
+    public void toggleBan(boolean attemptBan) {
+        this.statusCode = attemptBan ? StatusCode.BANNED.getCode() : StatusCode.ACTIVE.getCode();
+        this.updateTime = Instant.now();
+    }
+
+    public boolean vipIsExpire(){
+        return this.vipExpireDate.before(Timestamp.from(Instant.now()));
     }
 }

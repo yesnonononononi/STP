@@ -1,9 +1,9 @@
 package com.summit.stp.message.application.service.impl;
 
-import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.common.application.domain.exception.ParameterException;
-import com.summit.stp.common.application.api.vo.UserSimpleVO;
-import com.summit.stp.common.feign.UserFeignClient;
+import com.summit.stp.user.api.vo.UserSimpleVO;
+import com.summit.stp.user.api.client.UserFeignClient;
 import com.summit.stp.message.application.command.CreateSessionCommand;
 import com.summit.stp.message.application.service.SessionService;
 import com.summit.stp.message.application.vo.SessionVO;
@@ -149,3 +149,4 @@ public class SessionServiceImpl implements SessionService {
 
     }
 }
+

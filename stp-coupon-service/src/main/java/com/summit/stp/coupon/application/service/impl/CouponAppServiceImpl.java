@@ -1,6 +1,6 @@
 package com.summit.stp.coupon.application.service.impl;
 
-import com.summit.stp.common.application.api.vo.CouponQueryVO;
+import com.summit.stp.coupon.api.vo.CouponQueryVO;
 import com.summit.stp.coupon.application.service.CouponAppService;
 import com.summit.stp.coupon.domain.model.Coupon;
 import com.summit.stp.coupon.domain.repository.CouponRepository;
@@ -51,3 +51,4 @@ public class CouponAppServiceImpl implements CouponAppService {
                 .build();
     }
 }
+

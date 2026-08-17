@@ -13,8 +13,6 @@ public class PrivateMessagePO {
     @ApiModelProperty(notes = "消息id")
     @TableId(type = IdType.AUTO)
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
     @ApiModelProperty(notes = "发送者id")
     private Long userId;
     @ApiModelProperty(notes = "接收者id")

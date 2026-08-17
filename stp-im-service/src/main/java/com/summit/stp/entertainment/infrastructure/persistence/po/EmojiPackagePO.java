@@ -12,8 +12,6 @@ import java.sql.Timestamp;
 public class EmojiPackagePO {
     @TableId(type = IdType.AUTO)
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
     private String name;
     private String description;
     private String coverImage;

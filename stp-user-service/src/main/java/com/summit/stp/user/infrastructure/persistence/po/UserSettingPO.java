@@ -10,8 +10,6 @@ import java.sql.Timestamp;
 public class UserSettingPO {
     @TableId(type = IdType.AUTO)
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
 
     @TableField("user_id")
     private Long userId;

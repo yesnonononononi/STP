@@ -1,41 +1,45 @@
 package com.summit.stp.coupon.infrastructure.persistence;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import com.summit.stp.coupon.domain.model.Coupon;
 import com.summit.stp.coupon.domain.repository.CouponRepository;
-import com.summit.stp.coupon.infrastructure.persistence.mapper.CouponMapper;
 import com.summit.stp.coupon.infrastructure.persistence.mapper.CouponUseScopeMapper;
 import com.summit.stp.coupon.infrastructure.persistence.po.CouponPO;
 import com.summit.stp.coupon.infrastructure.persistence.po.CouponUseScopePO;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Repository
-@RequiredArgsConstructor
-public class CouponRepositoryImpl implements CouponRepository {
-    private final CouponMapper couponMapper;
+public class CouponRepositoryImpl extends AbstractRepository<Coupon, CouponPO> implements CouponRepository {
     private final CouponUseScopeMapper couponUseScopeMapper;
+
+    public CouponRepositoryImpl(BaseMapper<CouponPO> baseMapper, CouponUseScopeMapper couponUseScopeMapper) {
+        super(baseMapper);
+        this.couponUseScopeMapper = couponUseScopeMapper;
+    }
 
     @Override
     public Coupon findCouponById(Long couponId) {
-        CouponPO couponPO = couponMapper.selectOne(new LambdaQueryWrapper<CouponPO>().eq(CouponPO::getPublicId, couponId));
+        CouponPO couponPO = getBaseMapper().selectOne(new LambdaQueryWrapper<CouponPO>().eq(CouponPO::getId, couponId));
         if (couponPO == null) {
             return null;
         }
 
-        // 查询关联的可用范围实体ID列表
         List<Long> relationIds = couponUseScopeMapper.selectList(
                 new LambdaQueryWrapper<CouponUseScopePO>()
                         .eq(CouponUseScopePO::getCouponId, couponId)
         ).stream().map(CouponUseScopePO::getRelationId).collect(Collectors.toList());
 
         return Coupon.builder()
-                .id(couponPO.getPublicId())
+                .id(couponPO.getId())
                 .name(couponPO.getName())
                 .amount(couponPO.getAmount())
                 .discount(couponPO.getDiscount())
@@ -51,37 +55,57 @@ public class CouponRepositoryImpl implements CouponRepository {
 
     @Override
     public void update(Coupon template) {
-        CouponPO build = CouponPO.builder().build();
-        BeanUtil.copyProperties(template, build);
-        build.setId(null);
-        build.setPublicId(template.getId());
-        couponMapper.update(build, new LambdaUpdateWrapper<CouponPO>()
-                .eq(CouponPO::getPublicId, template.getId()));
+        if (template == null) return;
+        updateById(template);
     }
 
     @Override
-    public  List<Coupon> findByIds(List<Long> cList) {
-        if(cList.isEmpty())return List.of();
-        List<CouponPO> couponPOS = couponMapper.selectList(new LambdaQueryWrapper<CouponPO>()
-                .in(CouponPO::getPublicId, cList));
-        return couponPOS.stream().map(this::toModel).toList();
+    public List<Coupon> findByIds(List<Long> cList) {
+        return findListIn(cList, CouponPO::getId);
     }
-    private Coupon toModel(CouponPO couponPO) {
-        // 获取可用范围实体ID列表
+
+    @Override
+    public Page<Coupon> list(String keyword, Integer status, Integer page, Integer pageSize) {
+        Page<CouponPO> poPage = new Page<>(page,pageSize);
+        Page<Coupon> res = new Page<>();
+        LambdaQueryWrapper<CouponPO> queryWrapper = new LambdaQueryWrapper<>();
+        if(StrUtil.isNotBlank(keyword))queryWrapper.likeRight(CouponPO::getName, keyword);
+        if(status != null)queryWrapper.eq(CouponPO::getStatus, status);
+        poPage = getBaseMapper().selectPage(poPage, queryWrapper);
+        return res.setTotal(poPage.getTotal()).setRecords(poPage.getRecords().stream().map(this::toModel).toList()).setCurrent(poPage.getCurrent());
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        delete(id, CouponPO::getId);
+    }
+
+    @Override
+    protected CouponPO toPO(Coupon domain) {
+        if (domain == null) return null;
+        CouponPO po = CouponPO.builder().build();
+        BeanUtil.copyProperties(domain, po);
+        po.setId(domain.getId());
+        po.setTimeType(domain.getTimeType() != null ? domain.getTimeType().getCode() : null);
+        po.setScopeType(domain.getScopeType() != null ? domain.getScopeType().getCode() : null);
+        return po;
+    }
+
+    @Override
+    protected Coupon toModel(CouponPO couponPO) {
+        if (couponPO == null) return null;
         return Coupon.builder()
-                .id(couponPO.getPublicId())
+                .id(couponPO.getId())
                 .name(couponPO.getName())
                 .amount(couponPO.getAmount())
                 .discount(couponPO.getDiscount())
                 .status(couponPO.getStatus())
-                .timeType(Coupon.CouponDateType.getByCode(couponPO.getTimeType()))
+                .timeType(couponPO.getTimeType() != null ? Coupon.CouponDateType.getByCode(couponPO.getTimeType()) : null)
                 .description(couponPO.getDescription())
                 .validDays(couponPO.getValidDays())
                 .validHours(couponPO.getValidHours())
-                .scopeType(Coupon.CouponScopeType.fromCode(couponPO.getScopeType()))
+                .scopeType(couponPO.getScopeType() != null ? Coupon.CouponScopeType.fromCode(couponPO.getScopeType()) : null)
                 .build();
     }
-
-
-
 }
+

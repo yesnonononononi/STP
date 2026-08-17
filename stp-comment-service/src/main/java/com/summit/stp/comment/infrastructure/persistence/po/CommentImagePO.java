@@ -16,8 +16,6 @@ public class CommentImagePO {
     @TableId(type = IdType.AUTO)
     @ApiModelProperty(value = "自增主键")
     private Long id;
-    @TableField(fill = FieldFill.INSERT )
-    private Long publicId;
 
     private String name;
 

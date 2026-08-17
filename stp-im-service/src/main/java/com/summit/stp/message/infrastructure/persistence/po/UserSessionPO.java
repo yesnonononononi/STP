@@ -2,20 +2,22 @@ package com.summit.stp.message.infrastructure.persistence.po;
 
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
-@Getter
+@Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @TableName("user_session")
 public class UserSessionPO {
     @ApiModelProperty(notes = "自增主键")
     @TableId(type = IdType.AUTO)
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
     @ApiModelProperty(notes = "当前用户id")
     private Long userId;
     @ApiModelProperty(notes = "当前会话对象id")

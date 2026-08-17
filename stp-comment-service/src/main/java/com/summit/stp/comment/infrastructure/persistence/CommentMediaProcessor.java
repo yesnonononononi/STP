@@ -45,7 +45,7 @@ public class CommentMediaProcessor {
         commentImageMapper.insert(
                 imageMoments.stream()
                         .map(imageMoment -> CommentImagePO.builder()
-                                .commentId(po.getPublicId())
+                                .commentId(po.getId())
                                 .name(imageMoment.getImageName())
                                 .imageUrl(imageMoment.getImageUrl())
                                 .width(imageMoment.getWidth())

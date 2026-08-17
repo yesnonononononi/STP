@@ -1,6 +1,6 @@
 package com.summit.stp.order.application.service;
 
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 
 public interface OrderReconciliationAppService {
     /**

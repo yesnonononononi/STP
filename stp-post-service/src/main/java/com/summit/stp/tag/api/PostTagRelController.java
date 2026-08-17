@@ -1,7 +1,7 @@
 package com.summit.stp.tag.api;
 
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.tag.application.service.PostTagRelAppService;
 import com.summit.stp.tag.application.vo.PostTagRelVO;
 import com.summit.stp.tag.domain.model.Tag;

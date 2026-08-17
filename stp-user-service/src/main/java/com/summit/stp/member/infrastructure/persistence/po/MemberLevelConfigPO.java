@@ -14,7 +14,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @TableName("member_level_config")
 public class MemberLevelConfigPO {
-  @TableId(type = IdType.INPUT)
+  @TableId(type = IdType.AUTO)
+  private Long id;
   private Long level;
   private String levelName;
   private double minRecharge;

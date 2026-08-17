@@ -7,12 +7,12 @@ import com.summit.stp.activity.application.service.CouponActivityCacheProvider;
 import com.summit.stp.activity.application.vo.CouponActivityQueryVO;
 import com.summit.stp.activity.domain.model.CouponActivity;
 import com.summit.stp.activity.domain.repository.CouponActivityRepository;
-import com.summit.stp.common.ThreadContext.UserHolder;
-import com.summit.stp.common.application.api.vo.MemberTypeVO;
-import com.summit.stp.common.application.api.vo.MemberVO;
+import com.summit.stp.common.auth.UserHolder;
+import com.summit.stp.user.api.vo.MemberTypeVO;
+import com.summit.stp.user.api.vo.MemberVO;
 import com.summit.stp.common.application.domain.exception.BusinessException;
 import com.summit.stp.common.application.domain.exception.UnPermissionException;
-import com.summit.stp.common.feign.MemberFeignClient;
+import com.summit.stp.user.api.client.MemberFeignClient;
 import com.summit.stp.coupon.domain.exception.NoSuchCouponException;
 import com.summit.stp.coupon.domain.model.Coupon;
 import com.summit.stp.coupon.domain.model.CouponUseScope;
@@ -105,10 +105,8 @@ public class CouponActivityAppServiceImpl implements CouponActivityAppService {
     public void receiveActivityCoupon(Long activityId) {
         Long currentUserId = UserHolder.getUser().getId();
 
-        CouponActivity activity = couponActivityRepository.findById(activityId);
-        if (activity == null) {
-            throw new BusinessException("该优惠券活动不存在！");
-        }
+        CouponActivity activity = couponActivityRepository.findById(activityId)
+                .orElseThrow(() -> new BusinessException("该优惠券活动不存在！"));
         LocalDateTime now = LocalDateTime.now();
         if (!activity.isAvailable(now)) {
             throw new BusinessException("当前活动未开始或者已经结束");
@@ -280,3 +278,4 @@ public class CouponActivityAppServiceImpl implements CouponActivityAppService {
         return values == null ? Map.of() : values;
     }
 }
+

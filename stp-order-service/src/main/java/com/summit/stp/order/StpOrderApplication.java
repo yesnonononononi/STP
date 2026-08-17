@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableScheduling
-@EnableFeignClients(basePackages = "com.summit.stp.common.feign")
+@EnableFeignClients(basePackages = {"com.summit.stp.coupon.api","com.summit.stp.payment.api","com.summit.stp.user.api"})
 @ComponentScan(basePackages = {"com.summit.stp.common","com.summit.stp.order"})
 @MapperScan("com.summit.stp.order.infrastructure.persistence.mapper")
 public class StpOrderApplication {

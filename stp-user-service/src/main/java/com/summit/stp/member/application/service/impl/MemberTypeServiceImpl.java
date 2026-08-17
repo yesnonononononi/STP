@@ -1,8 +1,8 @@
 package com.summit.stp.member.application.service.impl;
 
-import com.summit.stp.common.application.api.dto.MemberTypeUpdateRequest;
-import com.summit.stp.common.application.api.vo.MemberTypeVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.member.api.dto.MemberTypeUpdateRequest;
+import com.summit.stp.user.api.vo.MemberTypeVO;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.member.application.service.MemberTypeService;
 import com.summit.stp.member.domain.model.MemberType;
 import lombok.RequiredArgsConstructor;
@@ -48,3 +48,4 @@ public class MemberTypeServiceImpl implements MemberTypeService {
                 .build());
     }
 }
+

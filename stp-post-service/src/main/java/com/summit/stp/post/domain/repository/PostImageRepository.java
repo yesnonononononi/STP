@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface PostImageRepository {
-    PostImageVO findById(Long id);
+    PostImageVO findVOById(Long id);
     List<PostImageVO> findByPostId(Long postId);
     void save(PostImage postImage);
     void delete(Long id);

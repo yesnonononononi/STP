@@ -16,8 +16,6 @@ import java.time.LocalDateTime;
 public class CouponActivityPO {
     @TableId(type = IdType.AUTO)
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
     private Long couponId;
     private String name;
     private Integer stock;

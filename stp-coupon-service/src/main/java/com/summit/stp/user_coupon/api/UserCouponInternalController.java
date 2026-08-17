@@ -1,7 +1,7 @@
 package com.summit.stp.user_coupon.api;
 
-import com.summit.stp.common.application.api.vo.CouponQueryVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.coupon.api.vo.CouponQueryVO;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.user_coupon.application.service.UserCouponAppService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -57,3 +57,4 @@ public class UserCouponInternalController {
         return Result.success(userCouponAppService.queryByIds(cList));
     }
 }
+

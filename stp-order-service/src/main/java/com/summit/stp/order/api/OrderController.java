@@ -1,9 +1,9 @@
 package com.summit.stp.order.api;
 
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.application.api.vo.OrderQueryVO;
-import com.summit.stp.common.application.api.vo.PayVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.order.api.vo.OrderQueryVO;
+import com.summit.stp.payment.api.vo.PayVO;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.order.api.dto.OrderCreateRequest;
 import com.summit.stp.order.application.service.OrderAppService;
 import com.summit.stp.order.application.service.OrderReconciliationAppService;
@@ -68,3 +68,4 @@ public class OrderController {
         return orderAppService.createOrder(orderCreateRequest);
     }
 }
+

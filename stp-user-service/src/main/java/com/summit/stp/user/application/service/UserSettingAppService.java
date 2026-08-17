@@ -1,6 +1,6 @@
 package com.summit.stp.user.application.service;
 
-import com.summit.stp.common.application.api.vo.UserSettingVO;
+import com.summit.stp.user.api.vo.UserSettingVO;
 import com.summit.stp.user.application.command.UpdateUserSettingCommand;
 
 public interface UserSettingAppService {
@@ -14,3 +14,4 @@ public interface UserSettingAppService {
      */
     void updateSetting(UpdateUserSettingCommand command);
 }
+

@@ -22,8 +22,8 @@ import java.sql.Timestamp;
 public class MemberPayEventListener {
 
     private final UserMemberRepository userMemberRepository;
-    private final MemberRepository memberRepository;
-    private final MemberLevelConfigRepository memberLevelConfigRepository;
+    private final MemberRepository<Member> memberRepository;
+    private final MemberLevelConfigRepository<MemberLevelConfig> memberLevelConfigRepository;
 
     @Transactional(rollbackFor = Exception.class)
     public void onEvent(OrderPaidEvent event) {
@@ -62,8 +62,6 @@ public class MemberPayEventListener {
     }
 
 
-    private Member queryMemberInfo(Long memberId){
-        return memberRepository.findMemberById(memberId);
-    }
+
 
 }

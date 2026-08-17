@@ -110,7 +110,7 @@ public class PostQueryZSetCacheOps {
             String key = PostConstants.Cache.QUERY_NEWEST;
             redisTemplate.delete(key);
             if (pos != null && !pos.isEmpty()) {
-                pos.forEach(po -> zSetOps.add(key, po.getPublicId(), (double) po.getCreateTime().getTime()));
+                pos.forEach(po -> zSetOps.add(key, po.getId(), (double) po.getCreateTime().getTime()));
                 trimZSet(key);
             }
         } catch (Exception e) {

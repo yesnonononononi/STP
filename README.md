@@ -10,7 +10,7 @@ STP论坛用到了以下框架和组件:
 
 __前端__: __Element-Plus,Vue3,Tailwinds,TypeScript,PiniaStore,Socket.IO Client__
 
-__后端__: __SpringBoot,SpringCloud alibaba,MySQL,Redis,RabbitMQ,Socket.IO Server,Mybatis-Plus,MinIO,Reddison__
+__后端__: __SpringBoot,SpringCloud alibaba,MySQL,Redis,RabbitMQ,Socket.IO Server,Mybatis-Plus,MinIO,Reddison,ElasticSearch__
 
 
 
@@ -227,7 +227,13 @@ docker logs stp-nacos
 - 进入项目根目录,启动前端
 
   ```shell
-  cd ./frontend
+  # 启动 C 端前端客户端
+  cd ./frontend-client
+  npm install
+  npm run dev
+
+  # 启动管理员后台前端
+  cd ./frontend-admin
   npm install
   npm run dev
   ```

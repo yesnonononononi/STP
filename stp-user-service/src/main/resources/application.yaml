@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: stp-user-service
+  elasticsearch:
+    uris: http://${HOST}:9200
   config:
     import:
       - optional:nacos:jdbc.yaml

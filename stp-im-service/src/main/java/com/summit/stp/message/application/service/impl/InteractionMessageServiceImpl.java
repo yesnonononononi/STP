@@ -1,9 +1,9 @@
 package com.summit.stp.message.application.service.impl;
 
-import com.summit.stp.common.ThreadContext.UserHolder;
-import com.summit.stp.common.application.api.vo.CommentSimpleVO;
-import com.summit.stp.common.feign.CommentFeignClient;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.auth.UserHolder;
+import com.summit.stp.comment.api.vo.CommentSimpleVO;
+import com.summit.stp.comment.api.client.CommentFeignClient;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.message.application.service.InteractionMessageService;
 import com.summit.stp.message.application.vo.InteractionMessageVO;
 import com.summit.stp.message.domain.model.InteractionMessage;
@@ -108,7 +108,7 @@ public class InteractionMessageServiceImpl implements InteractionMessageService 
 
     private InteractionMessageVO buildVo(InteractionMessage msg, String associateContentTitle, Long realPostId) {
         return InteractionMessageVO.builder()
-                .publicId(msg.getPublicId())
+                .id(msg.getId())
                 .senderId(msg.getSenderId())
                 .senderAvatar(msg.getSenderAvatar())
                 .senderName(msg.getSenderName())
@@ -123,8 +123,9 @@ public class InteractionMessageServiceImpl implements InteractionMessageService 
     }
 
     @Override
-    public void deleteInteractionMessage(Long publicId) {
+    public void deleteInteractionMessage(Long id) {
         Long currentUserId = UserHolder.getUser().getId();
-        interactionMessageRepository.deleteByUuid(publicId, currentUserId);
+        interactionMessageRepository.deleteByUuid(id, currentUserId);
     }
 }
+

@@ -4,7 +4,7 @@ import com.summit.stp.activity.application.dto.CouponActivityDTO;
 import com.summit.stp.activity.application.service.CouponActivityAppService;
 import com.summit.stp.activity.application.vo.CouponActivityQueryVO;
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;

@@ -3,7 +3,7 @@ package com.summit.stp.activity.application.service.impl;
 import com.summit.stp.activity.application.service.CouponActivityCacheProvider;
 import com.summit.stp.activity.domain.model.CouponActivity;
 import com.summit.stp.activity.domain.repository.CouponActivityRepository;
-import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.common.application.domain.exception.BusinessException;
 import com.summit.stp.common.application.domain.exception.DisTributeLockAcquireException;
 import com.summit.stp.common.util.DistributedLockUtil;
@@ -52,7 +52,7 @@ public class CouponActivityCacheProviderImpl implements CouponActivityCacheProvi
             case -3 -> {
                 try {
                     distributedLockUtil.executeWithLock(CouponConstants.Cache.PREWARM_LOCK + couponId + ":" + activityId, () -> {
-                        CouponActivity byId = couponActivityRepository.findById(activityId);
+                        CouponActivity byId = couponActivityRepository.findById(activityId).orElse(null);
                         if (byId != null) {
                             byId.deductStock();
                             this.preWarmStock(byId);

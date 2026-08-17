@@ -1,7 +1,7 @@
 package com.summit.stp.post.api;
 
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.post.api.dto.request.CreatePostImageRequest;
 import com.summit.stp.post.api.dto.request.UpdatePostImageRequest;
 import com.summit.stp.post.application.command.CreatePostImageCommand;

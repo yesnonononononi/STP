@@ -5,7 +5,7 @@ import com.summit.stp.common.api.dto.response.UploadVO;
 import com.summit.stp.common.application.domain.exception.FileUploadException;
 import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.stp.common.application.service.CommonAppService;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.common.util.FileUploadUtil;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
 import io.minio.MinioClient;

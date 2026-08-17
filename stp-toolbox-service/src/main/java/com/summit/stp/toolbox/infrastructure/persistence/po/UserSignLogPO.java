@@ -17,8 +17,6 @@ public class UserSignLogPO {
      */
     @TableId(type = IdType.AUTO)
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
 
     /**
      * 用户ID

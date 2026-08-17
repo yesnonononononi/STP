@@ -1,14 +1,13 @@
 package com.summit.stp.tag.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.summit.stp.common.ThreadContext.UserHolder;
-import com.summit.stp.common.application.service.SearchSuggest.AbstractSuggest;
-import com.summit.stp.common.application.service.SearchSuggest.SuggestDto;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.common.application.service.SearchSuggest.SuggestListVO;
 import com.summit.stp.common.application.service.SearchSuggest.SuggestVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.auth.UserHolder;
+import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import com.summit.stp.post.infrastructure.persistence.mapper.PostsMapper;
 import com.summit.stp.post.infrastructure.persistence.po.PostsPO;
 import com.summit.stp.tag.domain.model.Tag;
@@ -17,7 +16,6 @@ import com.summit.stp.tag.infrastructure.persistence.mapper.PostTagRelMapper;
 import com.summit.stp.tag.infrastructure.persistence.mapper.TagMapper;
 import com.summit.stp.tag.infrastructure.persistence.po.PostTagRelPO;
 import com.summit.stp.tag.infrastructure.persistence.po.TagPO;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collections;
@@ -27,27 +25,21 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Repository
-@RequiredArgsConstructor
-public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepository {
+public class TagRepositoryImpl extends AbstractRepository<Tag, TagPO> implements TagRepository {
     private final TagMapper tagMapper;
     private final PostsMapper postsMapper;
     private final PostTagRelMapper postTagRelMapper;
 
-    @Override
-    public Tag findById(Long id) {
-        TagPO tagPO = tagMapper.selectOne(new LambdaQueryWrapper<TagPO>()
-                .eq(TagPO::getPublicId, id));
-        return toDomain(tagPO);
+    public TagRepositoryImpl(TagMapper tagMapper, PostsMapper postsMapper, PostTagRelMapper postTagRelMapper) {
+        super(tagMapper);
+        this.tagMapper = tagMapper;
+        this.postsMapper = postsMapper;
+        this.postTagRelMapper = postTagRelMapper;
     }
-
-
 
     @Override
     public Tag findByName(String name) {
-        TagPO tagPO = tagMapper.selectOne(
-                new LambdaQueryWrapper<TagPO>().eq(TagPO::getTagName, name)
-        );
-        return toDomain(tagPO);
+        return findBy(name, TagPO::getTagName).orElse(null);
     }
 
     @Override
@@ -55,37 +47,27 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
         if (tag == null) {
             return;
         }
-        TagPO po = toPO(tag);
-        if (po.getPublicId() == null || po.getPublicId() == 0) {
-            tagMapper.insert(po);
+        if (tag.getId() != null && findById(tag.getId()).isPresent()) {
+            super.updateById(tag);
         } else {
-            TagPO existing = tagMapper.selectOne(new LambdaQueryWrapper<TagPO>()
-                    .eq(TagPO::getPublicId, po.getPublicId()));
-            if (existing == null) {
-                tagMapper.insert(po);
-            } else {
-                po.setId(existing.getId());
-                po.setPublicId(existing.getPublicId());
-                tagMapper.updateById(po);
-            }
+            super.save(tag);
         }
     }
 
     @Override
     public void delete(Long id) {
-        tagMapper.delete(new LambdaQueryWrapper<TagPO>()
-                .eq(TagPO::getPublicId, id));
+        delete(id, TagPO::getId);
     }
 
     @Override
     public Page<Tag> queryByPage(long page, long pageSize) {
-        Page<TagPO> poPage = tagMapper.selectPage(
+        Page<TagPO> poPage = getBaseMapper().selectPage(
                 new Page<>(page, pageSize),
                 new LambdaQueryWrapper<TagPO>().orderByDesc(TagPO::getUseCount)
         );
         Page<Tag> domainPage = new Page<>(poPage.getCurrent(), poPage.getSize(), poPage.getTotal());
         List<Tag> domainRecords = poPage.getRecords().stream()
-                .map(this::toDomain)
+                .map(this::toModel)
                 .collect(Collectors.toList());
         domainPage.setRecords(domainRecords);
         return domainPage;
@@ -93,23 +75,23 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
 
     @Override
     public List<Tag> findByIds(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<TagPO> pos = tagMapper.selectList(new LambdaQueryWrapper<TagPO>()
-                .in(TagPO::getPublicId, ids));
-        return pos.stream().map(this::toDomain).collect(Collectors.toList());
+        return findListIn(ids, TagPO::getId);
     }
 
     @Override
     public Result<SuggestVO> searchTag(String keyword, Integer limit) {
-        SuggestVO suggestList = getSuggestList(
-                SuggestDto.builder()
-                        .keyword(keyword)
-                        .limit(limit)
-                        .build()
-                , TagPO::getTagName, TagPO::getPublicId
-                , TagPO::getUseCount);
+        String kw = keyword != null ? keyword.trim() : "";
+        LambdaQueryWrapper<TagPO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(StringUtils.isNotBlank(kw), TagPO::getTagName, kw).last("limit " + limit);
+        List<TagPO> res = getBaseMapper().selectList(wrapper);
+
+        SuggestVO suggestList = SuggestVO.builder()
+                .limit(limit)
+                .suggestList(res.stream().map(item -> new SuggestListVO(item.getId(), item.getTagName(), item.getUseCount())).toList())
+                .keyword(kw)
+                .total(res.size())
+                .build();
+
         List<SuggestListVO> list = suggestList.getSuggestList()
                 .stream()
                 .filter(item -> item.getExtra() != null)
@@ -117,7 +99,6 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
                 .toList();
 
         suggestList.setSuggestList(list);
-
         return Result.success(suggestList);
     }
 
@@ -131,20 +112,18 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
 
     @Override
     public List<Tag> getRecentTag(Integer limit) {
-        // 1. 查询当前用户最新的帖子列表
         LambdaQueryWrapper<PostsPO> postWrapper = new LambdaQueryWrapper<PostsPO>()
                 .eq(PostsPO::getCreatorId, UserHolder.getUser().getId())
                 .orderByDesc(PostsPO::getCreateTime);
         postWrapper.last("limit " + limit);
 
         List<Long> postIds = postsMapper.selectList(postWrapper).stream()
-                .map(PostsPO::getPublicId)
+                .map(PostsPO::getId)
                 .toList();
         if (postIds.isEmpty()) {
             return Collections.emptyList();
         }
 
-        // 2. 根据帖子 ID 列表，从关系表中找出关联的 tagId 列表
         List<Long> tagIds = postTagRelMapper.selectList(
                         new LambdaQueryWrapper<PostTagRelPO>()
                                 .in(PostTagRelPO::getPostId, postIds)
@@ -159,39 +138,32 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
             return Collections.emptyList();
         }
 
-        // 3. 批量查询标签并转换为领域实体 (保持时序)
-        LambdaQueryWrapper<TagPO> tagWrapper = new LambdaQueryWrapper<TagPO>().in(TagPO::getPublicId, tagIds).orderByDesc(TagPO::getUseCount);
-        List<TagPO> tagPOs = tagMapper.selectList(tagWrapper);
+        LambdaQueryWrapper<TagPO> tagWrapper = new LambdaQueryWrapper<TagPO>().in(TagPO::getId, tagIds).orderByDesc(TagPO::getUseCount);
+        List<TagPO> tagPOs = getBaseMapper().selectList(tagWrapper);
         Map<Long, TagPO> tagPOMap = tagPOs.stream()
-                .collect(Collectors.toMap(TagPO::getPublicId, po -> po));
+                .collect(Collectors.toMap(TagPO::getId, po -> po));
 
         return tagIds.stream()
                 .map(tagPOMap::get)
                 .filter(Objects::nonNull)
-                .map(this::toDomain)
+                .map(this::toModel)
                 .toList();
     }
 
     @Override
     public List<Tag> queryTagByUseCount(Integer limit) {
         LambdaQueryWrapper<TagPO> wrapper = new LambdaQueryWrapper<TagPO>().eq(TagPO::getStatus, 1).orderByDesc(TagPO::getUseCount).last("limit " + limit);
-        List<TagPO> tagPOS = tagMapper.selectList(wrapper);
-        return tagPOS.stream().map(this::toDomain).toList();
+        List<TagPO> tagPOS = getBaseMapper().selectList(wrapper);
+        return tagPOS.stream().map(this::toModel).toList();
     }
-
-
 
     @Override
-    protected BaseMapper<TagPO> getBaseMapper() {
-        return tagMapper;
-    }
-
-    private Tag toDomain(TagPO po) {
+    protected Tag toModel(TagPO po) {
         if (po == null) {
             return null;
         }
         return Tag.builder()
-                .id(po.getPublicId())
+                .id(po.getId())
                 .tagName(po.getTagName())
                 .sort(po.getSort())
                 .useCount(po.getUseCount())
@@ -200,12 +172,13 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
                 .build();
     }
 
-    private TagPO toPO(Tag tag) {
+    @Override
+    protected TagPO toPO(Tag tag) {
         if (tag == null) {
             return null;
         }
         TagPO po = new TagPO();
-        po.setPublicId(tag.getId());
+        po.setId(tag.getId());
         po.setTagName(tag.getTagName());
         po.setSort(tag.getSort());
         po.setUseCount(tag.getUseCount());
@@ -214,3 +187,4 @@ public class TagRepositoryImpl extends AbstractSuggest<TagPO> implements TagRepo
         return po;
     }
 }
+

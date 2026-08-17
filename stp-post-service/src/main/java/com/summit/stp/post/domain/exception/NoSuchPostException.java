@@ -8,4 +8,8 @@ public class NoSuchPostException extends BusinessException {
     public NoSuchPostException(Serializable message) {
         super(String.format("帖子不存在: %s", message));
     }
+
+    public NoSuchPostException() {
+        super("帖子不存在");
+    }
 }

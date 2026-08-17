@@ -4,11 +4,11 @@ import cn.hutool.core.util.IdUtil;
 import com.rabbitmq.client.Channel;
 import com.summit.stp.common.application.domain.event.PostInteractionEvent;
 import com.summit.stp.common.application.service.TextSafe.TextSafeServiceProvider;
-import com.summit.stp.common.application.api.vo.PostSimpleVO;
-import com.summit.stp.common.application.api.vo.UserSimpleVO;
+import com.summit.stp.post.api.vo.PostSimpleVO;
+import com.summit.stp.user.api.vo.UserSimpleVO;
 import com.summit.stp.common.constants.MqConstants;
-import com.summit.stp.common.feign.PostFeignClient;
-import com.summit.stp.common.feign.UserFeignClient;
+import com.summit.stp.post.api.client.PostFeignClient;
+import com.summit.stp.user.api.client.UserFeignClient;
 import com.summit.stp.message.domain.model.InteractionMessage;
 import com.summit.stp.message.domain.model.InteractionMessageType;
 import com.summit.stp.message.domain.repository.InteractionMessageRepository;
@@ -75,7 +75,7 @@ public class PostInteractionListener {
                     : InteractionMessageType.COLLECT.getCode();
 
             InteractionMessage interactMsg = InteractionMessage.builder()
-                    .publicId(IdUtil.getSnowflakeNextId())
+                    .id(IdUtil.getSnowflakeNextId())
                     .senderId(userId)
                     .senderAvatar(avatar)
                     .senderName(safeNickname)
@@ -88,7 +88,7 @@ public class PostInteractionListener {
                     .build();
 
             interactionMessageRepository.save(interactMsg);
-            log.info("【消息模块】保存互动消息：publicId={}", interactMsg.getPublicId());
+            log.info("【消息模块】保存互动消息：id={}", interactMsg.getId());
 
             channel.basicAck(deliveryTag, false);
         } catch (Exception e) {
@@ -101,3 +101,4 @@ public class PostInteractionListener {
         }
     }
 }
+

@@ -1,6 +1,6 @@
 package com.summit.stp.payment.api;
 
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.payment.api.dto.PayCallbackRequest;
 import com.summit.stp.payment.application.command.PayCallbackCheckCommand;
 import com.summit.stp.payment.application.service.PayAppService;

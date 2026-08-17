@@ -20,8 +20,6 @@ public class PostCollectPO {
     @TableId(type = IdType.AUTO)
     @ApiModelProperty(value = "主键ID")
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
 
     @ApiModelProperty(value = "帖子ID")
     private Long postId;

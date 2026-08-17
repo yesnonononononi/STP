@@ -7,7 +7,7 @@ import com.summit.stp.comment.application.command.UpdateCommentImageCommand;
 import com.summit.stp.comment.application.service.CommentImageAppService;
 import com.summit.stp.comment.application.vo.CommentImageVO;
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;

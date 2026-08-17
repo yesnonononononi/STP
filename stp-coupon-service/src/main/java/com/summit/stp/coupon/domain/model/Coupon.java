@@ -21,7 +21,9 @@ public class Coupon {
     private final BigDecimal discount;
     private final BigDecimal amount;
     private  int status;
+    private Integer type;   // 0 折扣 1金额
     private String description;
+    private String image;
     /**
      * 可用范围类型：1-全场通用，2-指定商品分类，3-指定商品
      */

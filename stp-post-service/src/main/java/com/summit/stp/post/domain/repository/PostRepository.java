@@ -1,20 +1,23 @@
 package com.summit.stp.post.domain.repository;
 
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.post.application.vo.PostVO;
 import com.summit.stp.post.domain.model.Post;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface PostRepository {
 
-    Post save(Post post);
+    void save(Post post);
     void update(Post post);
 
     List<PostVO> queryByPostIds(List<Long> posts,Integer status,Long userId);
+
     List<Post> findByIds(List<Long> ids);
-    Post findById(Long id);
+    Optional<Post> findById(Long id);
 
     /**
      * 查询最热门的帖子
@@ -22,10 +25,6 @@ public interface PostRepository {
      * @return
      */
     List<Post> queryMostHotPost(int limit);
-
-    List<Post> queryPostsByDay(LocalDateTime sevenDaysAgo);
-
-    void updateBatchById(List<Post> list);
 
     /**
      * 分页查询帖子（游标分页降级用）

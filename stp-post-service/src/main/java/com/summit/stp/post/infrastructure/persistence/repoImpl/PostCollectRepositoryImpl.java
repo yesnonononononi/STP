@@ -1,14 +1,13 @@
 package com.summit.stp.post.infrastructure.persistence.repoImpl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import com.summit.stp.post.domain.repository.PostCollectRepository;
+import com.summit.stp.post.infrastructure.constants.PostConstants;
 import com.summit.stp.post.infrastructure.persistence.mapper.PostCollectMapper;
 import com.summit.stp.post.infrastructure.persistence.po.PostCollectPO;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Repository;
-
-import com.summit.stp.post.infrastructure.constants.PostConstants;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,38 +16,29 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Repository
-@RequiredArgsConstructor
-public class PostCollectRepositoryImpl implements PostCollectRepository {
+public class PostCollectRepositoryImpl extends AbstractRepository<PostCollectPO, PostCollectPO> implements PostCollectRepository {
     private final PostCollectMapper postCollectMapper;
     private final RedisTemplate<String, Object> redisTemplate;
 
+    public PostCollectRepositoryImpl(PostCollectMapper postCollectMapper, RedisTemplate<String, Object> redisTemplate) {
+        super(postCollectMapper);
+        this.postCollectMapper = postCollectMapper;
+        this.redisTemplate = redisTemplate;
+    }
 
     @Override
     public void save(PostCollectPO postCollect) {
-        PostCollectPO existing = findExisting(postCollect);
-        if (existing == null) {
-            postCollectMapper.insert(postCollect);
-            return;
+        if (postCollect == null) return;
+        if (postCollect.getId() != null && findById(postCollect.getId()).isPresent()) {
+            super.updateById(postCollect);
+        } else {
+            super.save(postCollect);
         }
-        postCollect.setId(existing.getId());
-        postCollect.setPublicId(existing.getPublicId());
-        postCollectMapper.updateById(postCollect);
-    }
-
-    private PostCollectPO findExisting(PostCollectPO postCollect) {
-        if (postCollect.getPublicId() != null) {
-            return postCollectMapper.selectOne(new LambdaQueryWrapper<PostCollectPO>()
-                    .eq(PostCollectPO::getPublicId, postCollect.getPublicId()));
-        }
-        if (postCollect.getId() != null && postCollect.getId() != 0) {
-            return postCollect;
-        }
-        return null;
     }
 
     @Override
     public void delete(Long postId, Long userId) {
-        postCollectMapper.delete(
+        getBaseMapper().delete(
                 new LambdaQueryWrapper<PostCollectPO>()
                         .eq(PostCollectPO::getPostId, postId)
                         .eq(PostCollectPO::getUserId, userId)
@@ -57,7 +47,7 @@ public class PostCollectRepositoryImpl implements PostCollectRepository {
 
     @Override
     public boolean exists(Long postId, Long userId) {
-        return postCollectMapper.selectCount(
+        return getBaseMapper().selectCount(
                 new LambdaQueryWrapper<PostCollectPO>()
                         .eq(PostCollectPO::getPostId, postId)
                         .eq(PostCollectPO::getUserId, userId)
@@ -66,7 +56,7 @@ public class PostCollectRepositoryImpl implements PostCollectRepository {
 
     @Override
     public long countByPostId(Long postId) {
-        return postCollectMapper.selectCount(
+        return getBaseMapper().selectCount(
                 new LambdaQueryWrapper<PostCollectPO>()
                         .eq(PostCollectPO::getPostId, postId)
         );
@@ -74,7 +64,7 @@ public class PostCollectRepositoryImpl implements PostCollectRepository {
 
     @Override
     public List<Long> findUserIdsByPostId(Long postId) {
-        return postCollectMapper.selectList(
+        return getBaseMapper().selectList(
                 new LambdaQueryWrapper<PostCollectPO>()
                         .select(PostCollectPO::getUserId)
                         .eq(PostCollectPO::getPostId, postId)
@@ -86,7 +76,7 @@ public class PostCollectRepositoryImpl implements PostCollectRepository {
         if (postIds == null || postIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        List<PostCollectPO> list = postCollectMapper.selectList(
+        List<PostCollectPO> list = getBaseMapper().selectList(
                 new LambdaQueryWrapper<PostCollectPO>()
                         .select(PostCollectPO::getPostId, PostCollectPO::getUserId)
                         .in(PostCollectPO::getPostId, postIds)
@@ -109,7 +99,7 @@ public class PostCollectRepositoryImpl implements PostCollectRepository {
             } catch (Exception ignored) {
             }
         }
-        List<Long> dbPostIds = postCollectMapper.selectList(eq).stream().map(PostCollectPO::getPostId).toList();
+        List<Long> dbPostIds = getBaseMapper().selectList(eq).stream().map(PostCollectPO::getPostId).toList();
         if (dbPostIds.isEmpty() || userId == null) {
             return dbPostIds;
         }
@@ -129,10 +119,10 @@ public class PostCollectRepositoryImpl implements PostCollectRepository {
         return validPostIds;
     }
 
-
     @Override
     public void batchSave(List<PostCollectPO> toAddList) {
-        postCollectMapper.insert(toAddList);
+        if (toAddList == null || toAddList.isEmpty()) return;
+        getBaseMapper().insert(toAddList);
     }
 
     @Override
@@ -151,7 +141,18 @@ public class PostCollectRepositoryImpl implements PostCollectRepository {
                 }
                 queryWrapper.eq(PostCollectPO::getPostId, pair[0]).eq(PostCollectPO::getUserId, pair[1]);
             }
-            postCollectMapper.delete(queryWrapper);
+            getBaseMapper().delete(queryWrapper);
         }
     }
+
+    @Override
+    protected PostCollectPO toPO(PostCollectPO entity) {
+        return entity;
+    }
+
+    @Override
+    protected PostCollectPO toModel(PostCollectPO po) {
+        return po;
+    }
 }
+

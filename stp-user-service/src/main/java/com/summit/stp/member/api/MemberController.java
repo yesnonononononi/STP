@@ -1,8 +1,8 @@
 package com.summit.stp.member.api;
 
-import com.summit.stp.common.application.api.vo.MemberTypeVO;
-import com.summit.stp.common.application.api.vo.MemberVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.user.api.vo.MemberTypeVO;
+import com.summit.stp.user.api.vo.MemberVO;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.member.application.service.MemberAppService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -58,3 +58,4 @@ public class MemberController {
         return memberAppService.queryMemberTypeByIds(ids);
     }
 }
+

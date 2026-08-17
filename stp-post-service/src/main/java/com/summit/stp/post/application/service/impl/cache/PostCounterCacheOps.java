@@ -1,6 +1,6 @@
 package com.summit.stp.post.application.service.impl.cache;
 
-import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.common.constants.CacheFieldConstants;
 import com.summit.stp.common.util.IpUtil;
 import com.summit.stp.post.infrastructure.constants.PostConstants;

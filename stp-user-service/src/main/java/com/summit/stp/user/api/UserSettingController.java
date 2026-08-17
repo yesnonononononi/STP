@@ -1,9 +1,9 @@
 package com.summit.stp.user.api;
 
-import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.application.api.vo.UserSettingVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.user.api.vo.UserSettingVO;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.user.api.dto.request.UpdateUserSettingRequest;
 import com.summit.stp.user.application.command.UpdateUserSettingCommand;
 import com.summit.stp.user.application.service.UserSettingAppService;
@@ -43,3 +43,4 @@ public class UserSettingController {
         return Result.success();
     }
 }
+

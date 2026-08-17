@@ -1,6 +1,6 @@
 package com.summit.stp.member.application.converter;
 
-import com.summit.stp.common.application.api.vo.MemberVO;
+import com.summit.stp.user.api.vo.MemberVO;
 import com.summit.stp.member.domain.model.Member;
 
 import java.util.Collections;
@@ -45,3 +45,4 @@ public class MemberVOConverter {
                 .collect(Collectors.toList());
     }
 }
+

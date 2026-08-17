@@ -12,18 +12,13 @@ import lombok.Setter;
 @Builder
 @EqualsAndHashCode
 public class AuthUser {
-    private final Long id;
+    private final Long userId;
     private final Username username;
     private  Password password;
     @Setter
     private Integer statusCode;
     private final PhoneNumber phoneNumber;
 
-
-
-    public void updatePassword(Password password) {
-        this.password = password;
-    }
     public boolean isActive() {
         return statusCode == null || statusCode == 1;
     }

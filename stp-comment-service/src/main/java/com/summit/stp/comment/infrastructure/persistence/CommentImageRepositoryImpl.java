@@ -1,11 +1,11 @@
 package com.summit.stp.comment.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.summit.stp.comment.domain.model.CommentImage;
 import com.summit.stp.comment.domain.repository.CommentImageRepository;
-import com.summit.stp.comment.infrastructure.persistence.mapper.CommentImageMapper;
 import com.summit.stp.comment.infrastructure.persistence.po.CommentImagePO;
-import lombok.RequiredArgsConstructor;
+import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -14,19 +14,20 @@ import java.util.List;
 import java.util.Map;
 
 @Repository
-@RequiredArgsConstructor
-public class CommentImageRepositoryImpl implements CommentImageRepository {
-    private final CommentImageMapper commentImageMapper;
+public class CommentImageRepositoryImpl extends AbstractRepository<CommentImagePO, CommentImagePO> implements CommentImageRepository<CommentImagePO> {
+
+    public CommentImageRepositoryImpl(BaseMapper<CommentImagePO> baseMapper) {
+        super(baseMapper);
+    }
 
     @Override
-    public CommentImagePO findById(Long id) {
-        return commentImageMapper.selectOne(new LambdaQueryWrapper<CommentImagePO>()
-                .eq(CommentImagePO::getPublicId, id));
+    public CommentImagePO findPOById(Long id) {
+        return findBy(id, CommentImagePO::getId).orElse(null);
     }
 
     @Override
     public List<CommentImagePO> findByCommentId(Long commentId) {
-        return commentImageMapper.selectList(
+        return getBaseMapper().selectList(
                 new LambdaQueryWrapper<CommentImagePO>()
                         .eq(CommentImagePO::getCommentId, commentId)
                         .orderByAsc(CommentImagePO::getSortOrder)
@@ -35,26 +36,22 @@ public class CommentImageRepositoryImpl implements CommentImageRepository {
 
     @Override
     public void save(CommentImagePO commentImage) {
-        CommentImagePO existing = commentImage.getPublicId() == null ? null : commentImageMapper.selectOne(
-                new LambdaQueryWrapper<CommentImagePO>().eq(CommentImagePO::getPublicId, commentImage.getPublicId()));
-        if (existing == null) {
-            commentImageMapper.insert(commentImage);
-            return;
+        if (commentImage == null) return;
+        if (commentImage.getId() != null && findById(commentImage.getId()).isPresent()) {
+            super.updateById(commentImage);
+        } else {
+            super.save(commentImage);
         }
-        commentImage.setId(existing.getId());
-        commentImage.setPublicId(existing.getPublicId());
-        commentImageMapper.updateById(commentImage);
     }
 
     @Override
     public void delete(Long id) {
-        commentImageMapper.delete(new LambdaQueryWrapper<CommentImagePO>()
-                .eq(CommentImagePO::getPublicId, id));
+        delete(id, CommentImagePO::getId);
     }
 
     @Override
     public void deleteByCommentId(Long commentId) {
-        commentImageMapper.delete(
+        getBaseMapper().delete(
                 new LambdaQueryWrapper<CommentImagePO>()
                         .eq(CommentImagePO::getCommentId, commentId)
         );
@@ -68,7 +65,7 @@ public class CommentImageRepositoryImpl implements CommentImageRepository {
         }
         commentIds.forEach(id -> resultMap.put(id, new ArrayList<>()));
 
-        List<CommentImagePO> images = commentImageMapper.selectList(
+        List<CommentImagePO> images = getBaseMapper().selectList(
                 new LambdaQueryWrapper<CommentImagePO>()
                         .in(CommentImagePO::getCommentId, commentIds)
                         .eq(CommentImagePO::getStatus, 1)
@@ -90,4 +87,15 @@ public class CommentImageRepositoryImpl implements CommentImageRepository {
         }
         return resultMap;
     }
+
+    @Override
+    protected CommentImagePO toPO(CommentImagePO entity) {
+        return entity;
+    }
+
+    @Override
+    protected CommentImagePO toModel(CommentImagePO po) {
+        return po;
+    }
 }
+

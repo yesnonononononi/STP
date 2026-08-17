@@ -1,6 +1,7 @@
 package com.summit.stp.member.infrastructure.listener;
 
 import com.rabbitmq.client.Channel;
+import com.summit.stp.admin.domain.exception.NoMemberPackageException;
 import com.summit.stp.common.application.domain.event.OrderPaidEvent;
 import com.summit.stp.common.application.domain.exception.BusinessException;
 import com.summit.stp.common.constants.MqConstants;
@@ -38,8 +39,8 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class MemberPayEventQueueListener {
     private final UserMemberRepository userMemberRepository;
-    private final MemberRepository memberRepository;
-    private final MemberLevelConfigRepository memberLevelConfigRepository;
+    private final MemberRepository<Member> memberRepository;
+    private final MemberLevelConfigRepository<MemberLevelConfig> memberLevelConfigRepository;
     private final TransactionTemplate transactionTemplate;
     private final StringRedisTemplate stringRedisTemplate;
     private final DistributedLockUtil distributedLockUtil;
@@ -153,11 +154,7 @@ public class MemberPayEventQueueListener {
 
 
     private Member queryMemberInfo(Long memberId) {
-        Member memberById = memberRepository.findMemberById(memberId);
-        if(memberById == null){
-            throw new NoSuchMemberPackageException("没有该会员套餐");
-        }
-        return memberById;
+        return memberRepository.findMemberById(memberId).orElseThrow(NoMemberPackageException::new);
     }
 
     private void updateVipCache(UserMember userMember) {

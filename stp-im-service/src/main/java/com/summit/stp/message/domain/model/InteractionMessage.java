@@ -9,7 +9,6 @@ import java.time.Instant;
 @Getter
 public class InteractionMessage {
     private final Long id;
-    private final Long publicId;
     private final Long senderId;
     private String senderAvatar;
     private String senderName;

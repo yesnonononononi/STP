@@ -7,5 +7,5 @@ import java.util.List;
 public interface InteractionMessageRepository {
     void save(InteractionMessage message);
     List<InteractionMessage> getInteractionMessages(Long receiverId, Long lastPublicId, int limit);
-    void deleteByUuid(Long publicId, Long receiverId);
+    void deleteByUuid(Long id, Long receiverId);
 }

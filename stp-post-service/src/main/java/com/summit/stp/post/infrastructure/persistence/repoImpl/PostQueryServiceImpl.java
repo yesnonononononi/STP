@@ -1,16 +1,17 @@
 package com.summit.stp.post.infrastructure.persistence.repoImpl;
 
 import cn.hutool.core.util.StrUtil;
-import com.summit.stp.common.ThreadContext.UserHolder;
-import com.summit.stp.common.application.api.vo.UserSettingVO;
-import com.summit.stp.common.application.api.vo.UserSimpleVO;
+import com.summit.stp.common.auth.UserHolder;
+import com.summit.stp.elasticsearch.service.PostQuerySupport;
+import com.summit.stp.post.api.vo.PostSimpleVO;
+import com.summit.stp.post.domain.model.Post;
+import com.summit.stp.user.api.vo.UserSettingVO;
+import com.summit.stp.user.api.vo.UserSimpleVO;
 import com.summit.stp.common.constants.CacheFieldConstants;
-import com.summit.stp.common.feign.UserFeignClient;
+import com.summit.stp.user.api.client.UserFeignClient;
 import com.summit.stp.elasticsearch.document.PostDocument;
-import com.summit.stp.elasticsearch.service.QueryService;
 import com.summit.stp.post.api.dto.request.QueryPostListPageRequest;
 import com.summit.stp.post.application.service.PostCacheProvider;
-import com.summit.stp.post.application.service.PostQueryService;
 import com.summit.stp.post.application.vo.PostImageVO;
 import com.summit.stp.post.application.vo.PostVO;
 import com.summit.stp.post.domain.model.PostStatus;
@@ -24,11 +25,6 @@ import com.summit.stp.tag.domain.repository.PostTagRelRepository;
 import com.summit.stp.tag.domain.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.elasticsearch.client.elc.NativeQuery;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.SearchHit;
-import org.springframework.data.elasticsearch.core.SearchHits;
-import org.springframework.data.elasticsearch.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -42,7 +38,7 @@ import java.util.function.BiFunction;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PostQueryServiceImpl implements PostQueryService {
+public class PostQueryServiceImpl implements com.summit.stp.post.application.service.PostQueryService {
     private final PostImageRepository postImageRepository;
     private final PostTagRelRepository postTagRelRepository;
     private final TagRepository tagRepository;
@@ -53,7 +49,7 @@ public class PostQueryServiceImpl implements PostQueryService {
     private final PostRepository postRepository;
     private final UserFeignClient userFeignClient;
     private final PostMetadataAssembler metadataAssembler;
-    private final QueryService queryService;
+    private final PostQuerySupport postQuerySupport;
 
     @Override
     public List<PostVO> getPostPage(Long cursor, Boolean self, Long creatorId, Integer status, String orderType, Integer limit) {
@@ -65,8 +61,8 @@ public class PostQueryServiceImpl implements PostQueryService {
 
         if (isGlobalQuery) {
             try {
-               return globalCacheQuery(cursor, orderType, limit);
-            }catch (Exception e){
+                return globalCacheQuery(cursor, orderType, limit);
+            } catch (Exception e) {
                 log.warn("【帖子模块】分页获取帖子失败，动作：查询Redis缓存降级读库", e);
             }
         }
@@ -138,9 +134,9 @@ public class PostQueryServiceImpl implements PostQueryService {
     }
 
     @Override
-    public List<PostVO> searchPost(String keyWord) {
+    public List<PostVO> searchPost(String keyWord, Integer page) {
         if (StrUtil.isBlank(keyWord)) return List.of();
-        List<Long> list = queryService.findByKeyWords(keyWord).stream().map(PostDocument::getId).toList();
+        List<Long> list = postQuerySupport.findByKeyWords(keyWord,Objects.requireNonNullElse(page,1)).stream().map(PostDocument::getId).toList();
         List<PostVO> byPostIds = this.getByPostIds(list);
         return Objects.requireNonNullElse(byPostIds, List.of());
     }
@@ -504,4 +500,20 @@ public class PostQueryServiceImpl implements PostQueryService {
         }
         return sorted;
     }
+
+    @Override
+    public PostSimpleVO findSimplePostById(Long id) {
+        Post post = postRepository.findById(id).orElse(null);
+        if (post == null) {
+            return null;
+        }
+        return PostSimpleVO.builder()
+                .id(post.getId())
+                .creatorId(post.getCreatorId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .status(post.getStatus() != null ? post.getStatus().getCode() : null)
+                .build();
+    }
 }
+

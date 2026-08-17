@@ -1,6 +1,6 @@
 package com.summit.stp.order.domain.repository;
 
-import com.summit.stp.common.application.api.vo.OrderQueryVO;
+import com.summit.stp.order.api.vo.OrderQueryVO;
 import com.summit.stp.order.domain.model.Order;
 
 import java.sql.Timestamp;
@@ -38,3 +38,4 @@ public interface OrderRepository {
 
     void batchUpdate(List<Order> changedOrders);
 }
+

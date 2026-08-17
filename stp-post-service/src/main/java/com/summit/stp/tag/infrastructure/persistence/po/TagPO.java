@@ -14,8 +14,6 @@ public class TagPO {
     @TableId(type = IdType.AUTO)
     @ApiModelProperty(value = "标签ID")
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
 
     @ApiModelProperty(value = "标签名")
     private String tagName;

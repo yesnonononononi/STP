@@ -1,6 +1,6 @@
 package com.summit.stp.coupon.application.service;
 
-import com.summit.stp.common.application.api.vo.CouponQueryVO;
+import com.summit.stp.coupon.api.vo.CouponQueryVO;
 
 import java.util.List;
 import java.util.Map;
@@ -16,3 +16,4 @@ public interface CouponAppService {
      */
     Map<Long, CouponQueryVO> queryByIds(List<Long> ids);
 }
+

@@ -7,6 +7,8 @@ public enum PostStatus {
     NORMAL(1, "正常"),
     DELETED(2, "删除"),
     BLOCKED(3, "封禁"),
+    CHECK(7,"审核"),
+    UNPASS(8,"审核未通过"),
     REPORTED(4, "举报"),
     UNKNOWN(5, "未知"),
     DRAFT(6, "草稿");

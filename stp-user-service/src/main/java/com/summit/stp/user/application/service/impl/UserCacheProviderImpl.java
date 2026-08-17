@@ -3,7 +3,7 @@ package com.summit.stp.user.application.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
-import com.summit.stp.common.application.api.vo.UserSimpleVO;
+import com.summit.stp.user.api.vo.UserSimpleVO;
 import com.summit.stp.user.application.service.UserCacheProvider;
 import com.summit.stp.user.infrastructure.constants.UserConstants;
 import lombok.RequiredArgsConstructor;
@@ -74,3 +74,4 @@ public class UserCacheProviderImpl implements UserCacheProvider {
         });
     }
 }
+

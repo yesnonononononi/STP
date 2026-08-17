@@ -3,16 +3,16 @@ package com.summit.stp.order.infrastructure.persistence;
 import cn.hutool.core.lang.generator.SnowflakeGenerator;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.summit.stp.common.ThreadContext.UserHolder;
 import com.summit.stp.common.application.domain.model.PayType;
-import com.summit.stp.common.application.api.vo.OrderQueryVO;
+import com.summit.stp.common.auth.UserHolder;
+import com.summit.devframeworkdddstarter.repo.AbstractRepository;
+import com.summit.stp.order.api.vo.OrderQueryVO;
 import com.summit.stp.order.domain.model.Order;
 import com.summit.stp.order.domain.model.OrderStatus;
 import com.summit.stp.order.domain.repository.OrderRepository;
-import com.summit.stp.order.infrastructure.persistence.mapper.OrderMapper;
 import com.summit.stp.order.infrastructure.persistence.po.OrderPO;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
@@ -24,9 +24,11 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
-@RequiredArgsConstructor
-public class OrderRepositoryImpl implements OrderRepository {
-    private final OrderMapper orderMapper;
+public class OrderRepositoryImpl extends AbstractRepository<Order, OrderPO> implements OrderRepository {
+
+    public OrderRepositoryImpl(BaseMapper<OrderPO> baseMapper) {
+        super(baseMapper);
+    }
 
     @Override
     public Long generateOrderId() {
@@ -35,13 +37,11 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     @Override
     public void save(Order order) {
-        OrderPO po = toPO(order);
-        log.info("【保存订单】订单id:{}",order.getId());
-        if (order.getStatus() == OrderStatus.PENDING) {
-            orderMapper.insert(po);
+        if (order == null) return;
+        if (order.getId() != null && findById(order.getId()).isPresent()) {
+            super.updateById(order);
         } else {
-            orderMapper.update(po, new LambdaUpdateWrapper<OrderPO>()
-                    .eq(OrderPO::getPublicId, order.getId()));
+            super.save(order);
         }
     }
 
@@ -51,57 +51,45 @@ public class OrderRepositoryImpl implements OrderRepository {
         LambdaQueryWrapper<OrderPO> eq = new LambdaQueryWrapper<OrderPO>()
                 .eq(OrderPO::getCreatorId, uid)
                 .orderByDesc(OrderPO::getId);
-        Page<OrderPO> orderPOPage = orderMapper.selectPage(new Page<>(page, pageSize), eq);
+        Page<OrderPO> orderPOPage = getBaseMapper().selectPage(new Page<>(page, pageSize), eq);
         List<OrderPO> records = orderPOPage.getRecords();
         if (records.isEmpty()) {
             return List.of();
         }
-
         return records.stream()
-                .map(this::toDomain)
+                .map(this::toModel)
                 .collect(Collectors.toList());
     }
 
     @Override
     public Order findOrderById(Long orderId) {
-        OrderPO po = orderMapper.selectOne(new LambdaQueryWrapper<OrderPO>()
-                .eq(OrderPO::getPublicId, orderId));
-        if (po == null) {
-            return null;
-        }
-
-        //查询套餐
-        return toDomain(po);
+        return findBy(orderId, OrderPO::getId).orElse(null);
     }
 
     @Override
     public void deleteById(Long orderId) {
-        orderMapper.delete(new LambdaQueryWrapper<OrderPO>()
-                .eq(OrderPO::getPublicId, orderId));
+        delete(orderId, OrderPO::getId);
     }
 
     @Override
     public Map<Long, OrderQueryVO> findOrderByCouponIds(Long currentUserId, List<Long> ids) {
-        LambdaQueryWrapper<OrderPO> wrapper = new LambdaQueryWrapper<OrderPO>().in(OrderPO::getCouponId, ids).eq(OrderPO::getCreatorId, currentUserId).in(OrderPO::getStatus, OrderStatus.PAID.getCode(), OrderStatus.COMPLETED.getCode());
-        List<OrderPO> orderPOS = orderMapper.selectList(wrapper);
-        return orderPOS.stream().collect(Collectors.toMap(OrderPO::getCouponId,po->
-            OrderQueryVO.builder()
-                    .orderId(po.getPublicId())
-                    .memberId(po.getPackageId())
-                    .build()
+        if (ids == null || ids.isEmpty()) return Map.of();
+        LambdaQueryWrapper<OrderPO> wrapper = new LambdaQueryWrapper<OrderPO>()
+                .in(OrderPO::getCouponId, ids)
+                .eq(OrderPO::getCreatorId, currentUserId)
+                .in(OrderPO::getStatus, OrderStatus.PAID.getCode(), OrderStatus.COMPLETED.getCode());
+        List<OrderPO> orderPOS = getBaseMapper().selectList(wrapper);
+        return orderPOS.stream().collect(Collectors.toMap(OrderPO::getCouponId, po ->
+                OrderQueryVO.builder()
+                        .orderId(po.getId())
+                        .memberId(po.getPackageId())
+                        .build()
         ));
-
     }
 
     @Override
     public List<Order> findOrderByIds(Collection<Long> orderIds) {
-        if (orderIds == null || orderIds.isEmpty()) {
-            return List.of();
-        }
-        return orderMapper.selectList(new LambdaQueryWrapper<OrderPO>()
-                        .in(OrderPO::getPublicId, orderIds)).stream()
-                .map(this::toDomain)
-                .toList();
+        return findListIn(orderIds, OrderPO::getId);
     }
 
     @Override
@@ -115,8 +103,8 @@ public class OrderRepositoryImpl implements OrderRepository {
                 .orderByAsc(OrderPO::getTimeoutTime)
                 .orderByAsc(OrderPO::getId);
         Page<OrderPO> page = new Page<>(1, limit, false);
-        return orderMapper.selectPage(page, wrapper).getRecords().stream()
-                .map(this::toDomain)
+        return getBaseMapper().selectPage(page, wrapper).getRecords().stream()
+                .map(this::toModel)
                 .toList();
     }
 
@@ -132,19 +120,21 @@ public class OrderRepositoryImpl implements OrderRepository {
         update.setStatus(OrderStatus.CANCELLED.getCode());
         update.setUpdateTime(new Timestamp(System.currentTimeMillis()));
         LambdaUpdateWrapper<OrderPO> wrapper = new LambdaUpdateWrapper<OrderPO>()
-                .in(OrderPO::getPublicId, orderIds)
+                .in(OrderPO::getId, orderIds)
                 .eq(OrderPO::getStatus, OrderStatus.PENDING.getCode());
-        orderMapper.update(update, wrapper);
+        getBaseMapper().update(update, wrapper);
     }
 
-    private Order toDomain(OrderPO po) {
+    @Override
+    protected Order toModel(OrderPO po) {
+        if (po == null) return null;
         return Order.builder()
-                .id(po.getPublicId())
+                .id(po.getId())
                 .payType(po.getPayType() != null ? PayType.fromCode(po.getPayType()) : null)
                 .updateTime(po.getUpdateTime())
                 .to(po.getToName())
                 .amount(po.getAmount())
-                .status( OrderStatus.fromCode(po.getStatus()))
+                .status(OrderStatus.fromCode(po.getStatus()))
                 .creatorId(po.getCreatorId())
                 .sign(po.getSign())
                 .packageId(po.getPackageId())
@@ -158,14 +148,16 @@ public class OrderRepositoryImpl implements OrderRepository {
                 .build();
     }
 
-    private OrderPO toPO(Order order) {
+    @Override
+    protected OrderPO toPO(Order order) {
+        if (order == null) return null;
         return OrderPO.builder()
-                .publicId(order.getId())
+                .id(order.getId())
                 .payType(order.getPayType() != null ? order.getPayType().getCode() : null)
                 .updateTime(order.getUpdateTime())
                 .toName(order.getTo())
                 .amount(order.getAmount())
-                .status(order.getStatus().getCode())
+                .status(order.getStatus() != null ? order.getStatus().getCode() : null)
                 .creatorId(order.getCreatorId())
                 .sign(order.getSign())
                 .packageId(order.getPackageId())
@@ -179,3 +171,5 @@ public class OrderRepositoryImpl implements OrderRepository {
                 .build();
     }
 }
+
+

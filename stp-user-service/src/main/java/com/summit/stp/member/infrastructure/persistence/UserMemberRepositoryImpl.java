@@ -1,6 +1,9 @@
 package com.summit.stp.member.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import com.summit.stp.member.domain.model.MemberLevelConfig;
 import com.summit.stp.member.domain.model.MemberType;
 import com.summit.stp.member.domain.model.UserMember;
@@ -8,7 +11,7 @@ import com.summit.stp.member.domain.repository.MemberLevelConfigRepository;
 import com.summit.stp.member.domain.repository.UserMemberRepository;
 import com.summit.stp.member.infrastructure.persistence.mapper.UserMemberMapper;
 import com.summit.stp.member.infrastructure.persistence.po.UserMemberPO;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
@@ -17,24 +20,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-
 @Repository
-@RequiredArgsConstructor
-public class UserMemberRepositoryImpl implements UserMemberRepository {
-    private final UserMemberMapper userMemberMapper;
-    private final MemberLevelConfigRepository memberLevelConfigRepository;
+
+public class UserMemberRepositoryImpl extends AbstractRepository<UserMember, UserMemberPO> implements UserMemberRepository {
+    @Autowired
+    private UserMemberMapper userMemberMapper;
+    @Autowired
+    private MemberLevelConfigRepository<MemberLevelConfig> memberLevelConfigRepository;
+
+    public UserMemberRepositoryImpl(BaseMapper<UserMemberPO> baseMapper) {
+        super(baseMapper);
+    }
+
+
     @Override
     public UserMember queryUserMemberByUserId(long creatorId) {
-        LambdaQueryWrapper<UserMemberPO> wrapper = new LambdaQueryWrapper<UserMemberPO>().eq(UserMemberPO::getUserId, creatorId);
-        UserMemberPO userMemberPO = userMemberMapper.selectOne(wrapper);
-        if (userMemberPO == null)  return null;
-        MemberLevelConfig level = memberLevelConfigRepository.findByLevel(userMemberPO.getVipLevel());
-        return convertToDomain(userMemberPO,level);
+        UserMemberPO po = getBaseMapper().selectOne(new LambdaQueryWrapper<UserMemberPO>().eq(UserMemberPO::getUserId, creatorId));
+        if (po == null) return null;
+        MemberLevelConfig level = memberLevelConfigRepository.findByLevel(po.getVipLevel()).orElse(null);
+        return convertToDomain(po, level);
     }
 
     @Override
     public void save(UserMember userMember) {
-        userMemberMapper.insertOrUpdate(convertToPO(userMember));
+        if (userMember == null) return;
+        if (findBy(userMember.getUserId(), UserMemberPO::getUserId).isPresent()) {
+            super.updateById(userMember);
+        } else {
+            super.save(userMember);
+        }
     }
 
     @Override
@@ -43,34 +57,7 @@ public class UserMemberRepositoryImpl implements UserMemberRepository {
         if (userMemberPO == null) {
             return null;
         }
-        return convertToDomain(userMemberPO, memberLevelConfigRepository.findByLevel(userMemberPO.getVipLevel()));
-    }
-
-    private UserMemberPO convertToPO(UserMember userMember) {
-        return UserMemberPO.builder()
-                .userId(userMember.getUserId())
-                .totalRecharge(userMember.getTotalRecharge())
-                .vipLevel(userMember.getLevel().getLevel())
-                .packageTypeId(userMember.getPackageTypeId())
-                .levelUpgradeTime(userMember.getLevelUpgradeTime())
-                .updateTime(userMember.getUpdateTime())
-                .expireTime(userMember.getExpireTime())
-                .dailyRate(userMember.getDailyRate())
-                .build();
-    }
-    private UserMember convertToDomain(UserMemberPO po,MemberLevelConfig memberLevelConfig) {
-        MemberType memberType = po.getPackageTypeId() != null ? MemberType.getById(po.getPackageTypeId()) : null;
-        return UserMember.builder()
-                .userId(po.getUserId())
-                .totalRecharge(po.getTotalRecharge())
-                .level(memberLevelConfig)
-                .packageTypeId(po.getPackageTypeId())
-                .memberType(memberType)
-                .levelUpgradeTime(po.getLevelUpgradeTime())
-                .updateTime(po.getUpdateTime())
-                .expireTime(po.getExpireTime())
-                .dailyRate(po.getDailyRate())
-                .build();
+        return convertToDomain(userMemberPO, memberLevelConfigRepository.findByLevel(userMemberPO.getVipLevel()).orElse(null));
     }
 
     @Override
@@ -78,9 +65,9 @@ public class UserMemberRepositoryImpl implements UserMemberRepository {
         if (userIds == null || userIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        LambdaQueryWrapper<UserMemberPO> wrapper = new LambdaQueryWrapper<UserMemberPO>()
-                .in(UserMemberPO::getUserId, userIds);
-        List<UserMemberPO> poList = userMemberMapper.selectList(wrapper);
+        List<UserMemberPO> poList = getBaseMapper().selectList(
+                new LambdaQueryWrapper<UserMemberPO>().in(UserMemberPO::getUserId, userIds)
+        );
         if (poList == null || poList.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -97,4 +84,60 @@ public class UserMemberRepositoryImpl implements UserMemberRepository {
                         (v1, v2) -> v1
                 ));
     }
+
+    @Override
+    public void update(UserMember userMember) {
+        super.updateById(userMember);
+    }
+
+    @Override
+    public Page<UserMember> queryPage(Integer page, Integer pageSize) {
+        int currentPage = (page == null || page < 1) ? 1 : page;
+        int currentSize = (pageSize == null || pageSize < 1) ? 10 : pageSize;
+        Page<UserMember> res = new Page<>();
+        Page<UserMemberPO> p = new Page<>(currentPage, currentSize);
+        Page<UserMemberPO> pages = getBaseMapper().selectPage(p, new LambdaQueryWrapper<>());
+        List<UserMember> list = pages.getRecords().stream().map(this::toModel).toList();
+        res.setTotal(pages.getTotal());
+        res.setCurrent(pages.getCurrent());
+        res.setRecords(list);
+        return res;
+    }
+
+    @Override
+    protected UserMemberPO toPO(UserMember userMember) {
+        if (userMember == null) return null;
+        return UserMemberPO.builder()
+                .userId(userMember.getUserId())
+                .totalRecharge(userMember.getTotalRecharge())
+                .vipLevel(userMember.getLevel() != null ? userMember.getLevel().getLevel() : null)
+                .packageTypeId(userMember.getPackageTypeId())
+                .levelUpgradeTime(userMember.getLevelUpgradeTime())
+                .updateTime(userMember.getUpdateTime())
+                .expireTime(userMember.getExpireTime())
+                .dailyRate(userMember.getDailyRate())
+                .build();
+    }
+
+    @Override
+    protected UserMember toModel(UserMemberPO po) {
+        if (po == null) return null;
+        return convertToDomain(po, null);
+    }
+
+    private UserMember convertToDomain(UserMemberPO po, MemberLevelConfig memberLevelConfig) {
+        MemberType memberType = po.getPackageTypeId() != null ? MemberType.getById(po.getPackageTypeId()) : null;
+        return UserMember.builder()
+                .userId(po.getUserId())
+                .totalRecharge(po.getTotalRecharge())
+                .level(memberLevelConfig)
+                .packageTypeId(po.getPackageTypeId())
+                .memberType(memberType)
+                .levelUpgradeTime(po.getLevelUpgradeTime())
+                .updateTime(po.getUpdateTime())
+                .expireTime(po.getExpireTime())
+                .dailyRate(po.getDailyRate())
+                .build();
+    }
 }
+

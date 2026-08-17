@@ -1,9 +1,9 @@
 package com.summit.stp.payment.application.service;
 
 
-import com.summit.stp.common.application.service.command.PayCommand;
-import com.summit.stp.common.application.api.vo.PayVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.payment.api.dto.PayCommand;
+import com.summit.stp.payment.api.vo.PayVO;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.payment.application.command.PayCallbackCheckCommand;
 
 import java.util.List;
@@ -28,3 +28,4 @@ public interface PayAppService {
      */
     Result<List<String>> getType();
 }
+

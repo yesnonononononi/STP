@@ -1,10 +1,11 @@
 package com.summit.stp.message.api;
 
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.application.api.vo.MessageVO;
-import com.summit.stp.common.application.api.vo.SysMessageVO;
+import com.summit.stp.common.annotation.PublicId;
+import com.summit.stp.im.api.vo.MessageVO;
+import com.summit.stp.im.api.vo.SysMessageVO;
 import com.summit.stp.common.infrastructure.websocket.Event;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.message.api.dto.request.SendMessageRequest;
 import com.summit.stp.message.application.command.CreateMessageCommand;
 import com.summit.stp.message.application.service.InteractionMessageService;
@@ -34,14 +35,14 @@ public class MessageController {
     @GetMapping("/interaction/list")
     @Operation(summary = "获取互动消息列表")
     public Result<List<InteractionMessageVO>> interactionList(
-            @RequestParam(required = false) Long lastPublicId,
+            @PublicId @RequestParam(required = false) Long lastPublicId,
             @RequestParam(defaultValue = "10") Integer limit) {
         return Result.success(interactionMessageService.getInteractionList(lastPublicId, limit));
     }
 
     @DeleteMapping("/interaction/delete/{publicId}")
     @Operation(summary = "删除单个互动消息")
-    public Result<Void> deleteInteraction(@PathVariable Long publicId) {
+    public Result<Void> deleteInteraction(@PublicId @PathVariable("publicId") Long publicId) {
         interactionMessageService.deleteInteractionMessage(publicId);
         return Result.success();
     }
@@ -114,3 +115,4 @@ public class MessageController {
         return Result.success();
     }
 }
+

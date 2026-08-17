@@ -19,6 +19,10 @@ spring:
       config:
         group: DEFAULT_GROUP
       server-addr: ${HOST}:8848
+stp:
+  auth:
+    jwt:
+      secret-key: ${STP_AUTH_JWT_SECRET_KEY}
 
 logging:
   level:

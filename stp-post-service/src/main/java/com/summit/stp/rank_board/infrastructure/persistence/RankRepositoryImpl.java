@@ -1,6 +1,7 @@
 package com.summit.stp.rank_board.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import com.summit.stp.rank_board.domain.model.BoardType;
 import com.summit.stp.rank_board.domain.model.RankBoard;
 import com.summit.stp.rank_board.domain.repository.RankRepository;
@@ -10,7 +11,6 @@ import com.summit.stp.rank_board.infrastructure.persistence.mapper.TopicRankMapp
 import com.summit.stp.rank_board.infrastructure.persistence.po.CreatorRankPO;
 import com.summit.stp.rank_board.infrastructure.persistence.po.PostRankPO;
 import com.summit.stp.rank_board.infrastructure.persistence.po.TopicRankPO;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,11 +20,17 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-@RequiredArgsConstructor
-public class RankRepositoryImpl implements RankRepository {
+public class RankRepositoryImpl extends AbstractRepository<RankBoard, PostRankPO> implements RankRepository {
     private final CreatorRankMapper creatorRankMapper;
     private final PostRankMapper postRankMapper;
     private final TopicRankMapper topicRankMapper;
+
+    public RankRepositoryImpl(PostRankMapper postRankMapper, CreatorRankMapper creatorRankMapper, TopicRankMapper topicRankMapper) {
+        super(postRankMapper);
+        this.postRankMapper = postRankMapper;
+        this.creatorRankMapper = creatorRankMapper;
+        this.topicRankMapper = topicRankMapper;
+    }
 
     @Override
     public List<RankBoard> queryCreatorRank(Integer size, LocalDate dateBack) {
@@ -111,6 +117,16 @@ public class RankRepositoryImpl implements RankRepository {
                 .forEach(topicRankMapper::insert);
     }
 
+    @Override
+    protected PostRankPO toPO(RankBoard entity) {
+        return toPostPO(entity);
+    }
+
+    @Override
+    protected RankBoard toModel(PostRankPO po) {
+        return toDomain(po);
+    }
+
     private CreatorRankPO toCreatorPO(RankBoard rankBoard) {
         return CreatorRankPO.builder()
                 .userId(rankBoard.getEntityId())
@@ -146,7 +162,7 @@ public class RankRepositoryImpl implements RankRepository {
 
     private RankBoard toDomain(CreatorRankPO entry) {
         return RankBoard.builder()
-                .id(entry.getPublicId())
+                .id(entry.getId())
                 .name("创作者周榜")
                 .entityId(entry.getUserId())
                 .score(entry.getScore() == null ? 0D : entry.getScore().doubleValue())
@@ -160,7 +176,7 @@ public class RankRepositoryImpl implements RankRepository {
 
     private RankBoard toDomain(PostRankPO entry) {
         return RankBoard.builder()
-                .id(entry.getPublicId())
+                .id(entry.getId())
                 .name("热点榜")
                 .entityId(entry.getPostId())
                 .score(entry.getScore() == null ? 0D : entry.getScore().doubleValue())
@@ -174,7 +190,7 @@ public class RankRepositoryImpl implements RankRepository {
 
     private RankBoard toDomain(TopicRankPO entry) {
         return RankBoard.builder()
-                .id(entry.getPublicId())
+                .id(entry.getId())
                 .name("话题榜")
                 .entityId(entry.getTagId())
                 .score(entry.getScore() == null ? 0D : entry.getScore().doubleValue())
@@ -200,3 +216,4 @@ public class RankRepositoryImpl implements RankRepository {
         return Timestamp.valueOf(periodDate.atStartOfDay());
     }
 }
+

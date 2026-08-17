@@ -2,8 +2,8 @@ package com.summit.stp.relationship.api;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.application.api.vo.UserSimpleVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.user.api.vo.UserSimpleVO;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.relationship.application.vo.FriendVO;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -66,3 +66,4 @@ public class FriendController {
         return Result.success(pageResult);
     }
 }
+

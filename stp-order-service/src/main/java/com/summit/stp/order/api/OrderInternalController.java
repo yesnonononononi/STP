@@ -1,7 +1,7 @@
 package com.summit.stp.order.api;
 
-import com.summit.stp.common.application.api.vo.OrderQueryVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.order.api.vo.OrderQueryVO;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.order.domain.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,3 +38,4 @@ public class OrderInternalController {
         return Result.success(result);
     }
 }
+

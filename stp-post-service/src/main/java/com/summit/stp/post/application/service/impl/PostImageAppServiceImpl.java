@@ -30,7 +30,7 @@ public class PostImageAppServiceImpl implements PostImageAppService {
 
     @Override
     public PostImageVO getPostImageById(Long id) {
-        PostImageVO byId = postImageRepository.findById(id);
+        PostImageVO byId = postImageRepository.findVOById(id);
         if (byId != null) {
             checkPostActive(byId.getPostId());
         }
@@ -43,19 +43,7 @@ public class PostImageAppServiceImpl implements PostImageAppService {
         return postImageRepository.findByPostId(postId);
     }
 
-    public PostImage convertToDomain(PostImagePO po) {
-        return PostImage.builder()
-                .id(po.getPublicId())
-                .postId(po.getPostId())
-                .imageUrl(po.getImageUrl())
-                .width(po.getWidth())
-                .height(po.getHeight())
-                .size(po.getSize())
-                .sortOrder(po.getSortOrder())
-                .status(po.getStatus() == null ? null : PostStatus.fromCode(po.getStatus()))
-                .createTime(po.getCreateTime())
-                .build();
-    }
+
 
     /**
      * 增加帖子图片
@@ -89,7 +77,7 @@ public class PostImageAppServiceImpl implements PostImageAppService {
 
     @Override
     public void updatePostImage(UpdatePostImageCommand command) {
-        PostImageVO byId = postImageRepository.findById(command.getId());
+        PostImageVO byId = postImageRepository.findVOById(command.getId());
         if (byId == null) throw new NoSuchPostException(command.getId());
         PostImage postImage = convertToDomain(byId);
         postImage.updateImage(command.getImageUrl(), command.getWidth(), command.getHeight(), command.getSize());
@@ -100,7 +88,7 @@ public class PostImageAppServiceImpl implements PostImageAppService {
     @Override
     @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public void deletePostImage(Long id) {
-       PostImageVO imageVO = postImageRepository.findById(id);
+       PostImageVO imageVO = postImageRepository.findVOById(id);
        postImageRepository.delete(id);
        if (imageVO != null && imageVO.getImageUrl() != null) {
            applicationEventPublisher.publishEvent(new FileDeleteEvent(this, java.util.List.of(imageVO.getImageUrl())));
@@ -138,7 +126,7 @@ public class PostImageAppServiceImpl implements PostImageAppService {
     }
 
     private void checkPostActive(Long postId) {
-        Post post = postRepository.findById(postId);
+        Post post = postRepository.findById(postId).orElse(null);
         if (post == null || post.getStatus() != PostStatus.NORMAL) {
             throw new BusinessException("帖子已被删除!");
         }

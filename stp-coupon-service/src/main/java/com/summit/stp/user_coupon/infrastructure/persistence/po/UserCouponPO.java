@@ -10,8 +10,6 @@ import java.sql.Timestamp;
 public class UserCouponPO {
     @TableId(type = IdType.AUTO)
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
     private Long userId;
     private Long orderId;
     private Long couponId;

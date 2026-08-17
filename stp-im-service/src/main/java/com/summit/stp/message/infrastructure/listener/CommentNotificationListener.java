@@ -4,11 +4,11 @@ import cn.hutool.core.util.IdUtil;
 import com.rabbitmq.client.Channel;
 import com.summit.stp.common.application.domain.event.CommentNotificationMessage;
 import com.summit.stp.common.application.service.TextSafe.TextSafeServiceProvider;
-import com.summit.stp.common.application.api.vo.CommentSimpleVO;
-import com.summit.stp.common.application.api.vo.UserSimpleVO;
+import com.summit.stp.comment.api.vo.CommentSimpleVO;
+import com.summit.stp.user.api.vo.UserSimpleVO;
 import com.summit.stp.common.constants.MqConstants;
-import com.summit.stp.common.feign.CommentFeignClient;
-import com.summit.stp.common.feign.UserFeignClient;
+import com.summit.stp.comment.api.client.CommentFeignClient;
+import com.summit.stp.user.api.client.UserFeignClient;
 import com.summit.stp.message.domain.model.InteractionMessage;
 import com.summit.stp.message.domain.model.InteractionMessageType;
 import com.summit.stp.message.domain.repository.InteractionMessageRepository;
@@ -97,7 +97,7 @@ public class CommentNotificationListener {
         String associateTitle = buildContent(parentComment);
 
         InteractionMessage interactMsg = InteractionMessage.builder()
-                .publicId(IdUtil.getSnowflakeNextId())
+                .id(IdUtil.getSnowflakeNextId())
                 .senderId(currentUserId)
                 .senderAvatar(context.getAvatar())
                 .senderName(context.getSafeNickname())
@@ -140,7 +140,7 @@ public class CommentNotificationListener {
         }
 
         InteractionMessage interactMsg = InteractionMessage.builder()
-                .publicId(IdUtil.getSnowflakeNextId())
+                .id(IdUtil.getSnowflakeNextId())
                 .senderId(currentUserId)
                 .senderAvatar(context.getAvatar())
                 .senderName(context.getSafeNickname())
@@ -191,3 +191,4 @@ public class CommentNotificationListener {
         private String safePostTitle;
     }
 }
+

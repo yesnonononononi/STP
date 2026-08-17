@@ -1,46 +1,32 @@
 package com.summit.stp.member.infrastructure.persistence;
 
-import cn.hutool.cache.Cache;
-import cn.hutool.cache.CacheUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.summit.stp.common.application.domain.exception.NoSuchMemberException;
-import com.summit.stp.common.application.api.vo.MemberVO;
+import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import com.summit.stp.member.domain.model.Member;
 import com.summit.stp.member.domain.model.MemberType;
 import com.summit.stp.member.domain.repository.MemberRepository;
 import com.summit.stp.member.infrastructure.persistence.mapper.MemberMapper;
 import com.summit.stp.member.infrastructure.persistence.po.MemberPackagePO;
 import jakarta.annotation.Nullable;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Repository
-@RequiredArgsConstructor
-public class MemberRepositoryImpl implements MemberRepository {
-    private final MemberMapper memberMapper;
+public class MemberRepositoryImpl extends AbstractRepository<Member, MemberPackagePO> implements MemberRepository<Member> {
 
-    // 缓存会员详情，有效期 5 分钟 (300,000 毫秒)
-    private final Cache<Long, MemberPackagePO> memberCache = CacheUtil.newTimedCache(300000);
+
+    public MemberRepositoryImpl(MemberMapper memberMapper) {
+        super(memberMapper);
+    }
 
     @Override
-    public Member findMemberById(Long id) {
-        MemberPackagePO memberPO = memberCache.get(id, () -> {
-            MemberPackagePO temp = memberMapper.selectOne(new LambdaQueryWrapper<MemberPackagePO>()
-                    .eq(MemberPackagePO::getPublicId, id));
-            if (temp == null) {
-                throw new NoSuchMemberException();
-            }
-            return temp;
-        });
-
-        Long typeId = memberPO.getTypeId();
-        MemberType type = MemberType.getById(typeId);
-
-        return convertToDomain(memberPO, type);
+    public Optional<Member> findMemberById(Long id) {
+       return findById(id);
     }
 
     @Override
@@ -49,25 +35,49 @@ public class MemberRepositoryImpl implements MemberRepository {
         if (type == null || type.getStatus() != status) {
             return List.of();
         }
-        List<MemberPackagePO> membersWithType = memberMapper.findMemberByType(typeId);
-        return membersWithType.stream()
-                .map(po -> convertToDomain(po, type))
-                .toList();
+        return  findListBy(typeId,MemberPackagePO::getTypeId);
     }
 
     @Override
-    public Map<Long, MemberVO> findMemberByIds(List<Long> packageIds) {
-        List<MemberPackagePO> members = memberMapper.selectList(new LambdaQueryWrapper<MemberPackagePO>()
-                .in(MemberPackagePO::getPublicId, packageIds));
-        return members.stream().collect(Collectors.toMap(MemberPackagePO::getPublicId, po -> MemberVO.builder()
-                .id(po.getPublicId())
-                .name(po.getName())
-                .build()));
+    public Map<Long, Member> findMemberByIds(List<Long> packageIds) {
+        return findList(packageIds).stream().collect(Collectors.toMap(Member::getId, Function.identity()));
+    }
+
+    @Override
+    public List<Member> list() {
+        return getBaseMapper().selectList(new LambdaQueryWrapper<>()).stream().map(this::toModel).toList();
+    }
+
+
+    @Override
+    protected MemberPackagePO toPO(Member member) {
+        if (member == null) return null;
+        return MemberPackagePO.builder()
+                .id(member.getId())
+                .name(member.getName())
+                .price(member.getPrice())
+                .duration(member.getDuration())
+                .discount(member.getDiscount())
+                .description(member.getDescription())
+                .typeId(member.getTypeId())
+                .dailyRate(member.getDailyRate())
+                .priority(member.getPriority())
+                .stock(member.getStock())
+                .createTime(member.getCreateTime())
+                .build();
+    }
+
+    @Override
+    protected Member toModel(MemberPackagePO po) {
+        if (po == null) return null;
+        Long typeId = po.getTypeId();
+        MemberType type = typeId != null ? MemberType.getById(typeId) : null;
+        return convertToDomain(po, type);
     }
 
     private Member convertToDomain(MemberPackagePO po, @Nullable MemberType type) {
         return Member.builder()
-                .id(po.getPublicId())
+                .id(po.getId())
                 .name(po.getName())
                 .price(po.getPrice())
                 .duration(po.getDuration())
@@ -75,9 +85,12 @@ public class MemberRepositoryImpl implements MemberRepository {
                 .description(po.getDescription())
                 .type(type)
                 .typeId(po.getTypeId())
+                .createTime(po.getCreateTime())
                 .dailyRate(po.getDailyRate())
                 .priority(po.getPriority())
                 .stock(po.getStock())
                 .build();
     }
 }
+
+

@@ -1,6 +1,6 @@
 package com.summit.stp.post.infrastructure.persistence.scheduler;
 
-import com.summit.stp.common.application.domain.event.UserLikedChangeEvent;
+import com.summit.stp.common.application.domain.event.UserChangedEvent;
 import com.summit.stp.common.application.service.queue.QueueSender;
 import com.summit.stp.common.constants.MqConstants;
 import com.summit.stp.common.util.DistributedLockUtil;
@@ -194,11 +194,14 @@ public class PostSyncScheduler {
                 }
 
 
-                //2.2 点赞增量事件通知
+                //2.2 点赞增量事件通知：发送统一的 UserChangedEvent (携带创作者点赞积分增量与点赞数增量)
                 if (delta != null && creatorId != null) {
-                    queueSender.send(MqConstants.User.EXCHANGE, MqConstants.User.ROUTING_KEY_LIKED, UserLikedChangeEvent.builder()
+                    double scoreDelta = delta * PostConstants.Business.CREATOR_SCORE_LIKE;
+                    queueSender.send(MqConstants.User.EXCHANGE, MqConstants.User.ROUTING_KEY_CHANGE, UserChangedEvent.builder()
+                            .eventType(UserChangedEvent.EventType.UPDATE)
                             .userId(creatorId)
-                            .likedDelta(delta)
+                            .scoreDelta(scoreDelta)
+                            .data(delta)
                             .build());
                 }
             }

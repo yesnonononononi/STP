@@ -1,12 +1,12 @@
 package com.summit.stp.userAuth.api;
 
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.common.util.IpUtil;
 import com.summit.stp.userAuth.api.dto.request.ForgetRequest;
 import com.summit.stp.userAuth.api.dto.request.LoginRequest;
 import com.summit.stp.userAuth.api.dto.request.RegisterRequest;
-import com.summit.stp.userAuth.application.UserAuthApplicationService;
+import com.summit.stp.userAuth.application.service.UserAuthApplicationService;
 import com.summit.stp.userAuth.application.command.ForgetCommand;
 import com.summit.stp.userAuth.application.command.LoginCommand;
 import com.summit.stp.userAuth.application.command.RefreshTokenCommand;
@@ -88,8 +88,8 @@ public class UserAuthController {
                 .password(request.getPassword())
                 .verifyCode(request.getVerifyCode())
                 .build();
-        userAuthApplicationService.register(command);
-        return Result.success();
+        return userAuthApplicationService.register(command);
+
     }
 }
 

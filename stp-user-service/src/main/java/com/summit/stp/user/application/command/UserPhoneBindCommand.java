@@ -1,11 +1,15 @@
 package com.summit.stp.user.application.command;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Builder
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserPhoneBindCommand {
-    private final String phoneNumber;
-    private final Integer verifyCode;
+    private String phoneNumber;
+    private Integer verifyCode;
 }

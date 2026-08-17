@@ -1,10 +1,9 @@
 package com.summit.stp.post.api;
 
-import com.summit.stp.common.application.api.vo.PostSimpleVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
+import com.summit.stp.post.api.vo.PostSimpleVO;
 import com.summit.stp.post.application.service.PostCacheProvider;
-import com.summit.stp.post.domain.model.Post;
-import com.summit.stp.post.domain.repository.PostRepository;
+import com.summit.stp.post.application.service.PostQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/post/internal")
 public class PostInternalController {
 
-    private final PostRepository postRepository;
+    private final PostQueryService postQueryService;
     private final PostCacheProvider postCacheProvider;
 
     /**
@@ -26,17 +25,7 @@ public class PostInternalController {
      */
     @GetMapping("/simple/{id}")
     public Result<PostSimpleVO> findSimplePostById(@PathVariable Long id) {
-        Post post = postRepository.findById(id);
-        if (post == null) {
-            return Result.success(null);
-        }
-        return Result.success(PostSimpleVO.builder()
-                .id(post.getId())
-                .creatorId(post.getCreatorId())
-                .title(post.getTitle())
-                .content(post.getContent())
-                .status(post.getStatus() != null ? post.getStatus().getCode() : null)
-                .build());
+        return Result.success(postQueryService.findSimplePostById(id));
     }
 
     /**

@@ -1,9 +1,9 @@
 package com.summit.stp.post.api;
 
 
-import com.summit.stp.common.ThreadContext.UserHolder;
+import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.common.annotation.Login;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.post.api.dto.request.CreatePostRequest;
 import com.summit.stp.post.api.dto.request.QueryPostListPageRequest;
 import com.summit.stp.post.api.dto.request.UpdatePostRequest;
@@ -199,8 +199,8 @@ public class PostController {
 
     @GetMapping("/search/{keyWord}")
     @ApiOperation(value = "帖子搜索")
-    public Result<List<PostVO>> searchPost(@PathVariable String keyWord) {
-        return Result.success(postQueryService.searchPost(keyWord));
+    public Result<List<PostVO>> searchPost(@PathVariable String keyWord,Integer page) {
+        return Result.success(postQueryService.searchPost(keyWord, page));
     }
 
 

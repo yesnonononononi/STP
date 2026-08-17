@@ -1,8 +1,8 @@
 package com.summit.stp.comment.api;
 
 import com.summit.stp.comment.application.service.CommentQueryService;
-import com.summit.stp.common.application.api.vo.CommentSimpleVO;
-import com.summit.stp.common.result.Result;
+import com.summit.stp.comment.api.vo.CommentSimpleVO;
+import com.summit.stp.common.application.api.result.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -36,3 +36,4 @@ public class CommentInternalController {
         return Result.success(commentQueryService.querySimpleCommentsWithLikeStatus(ids));
     }
 }
+

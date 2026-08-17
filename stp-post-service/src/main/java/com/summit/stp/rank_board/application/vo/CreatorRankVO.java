@@ -1,7 +1,7 @@
 package com.summit.stp.rank_board.application.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.summit.stp.common.application.api.vo.UserSimpleVO;
+import com.summit.stp.user.api.vo.UserSimpleVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,3 +27,4 @@ public class CreatorRankVO {
     private String type;
     private String bgImg;
 }
+

@@ -11,13 +11,6 @@ public class UserMessageSender {
     private final QueueSender queueSender;
 
     /**
-     * 发送用户注册事件
-     */
-    public void sendUserRegister(Object event) {
-        queueSender.send(MqConstants.User.EXCHANGE, MqConstants.User.ROUTING_KEY_REGISTER, event);
-    }
-
-    /**
      * 发送粉丝统计更新事件
      */
     public void sendFansUpdate(Object event) {

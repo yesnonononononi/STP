@@ -96,7 +96,7 @@ public class CommentReplyCountScheduler {
             transactionTemplate.executeWithoutResult(status -> {
                 for (Long commentId : commentIds) {
                     LambdaUpdateWrapper<CommentsPO> updateWrapper = new LambdaUpdateWrapper<>();
-                    updateWrapper.eq(CommentsPO::getPublicId, commentId)
+                    updateWrapper.eq(CommentsPO::getId, commentId)
                             .set(CommentsPO::getReplyCount, replyCountMap.getOrDefault(commentId, 0L));
                     commentsMapper.update(null, updateWrapper);
                 }

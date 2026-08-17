@@ -16,11 +16,21 @@ public class CouponActivity {
     private final Long couponId;
     private final String name;
     private Integer stock;
-    private final LocalDateTime activityStartTime;
-    private final LocalDateTime activityEndTime;
+    private  LocalDateTime activityStartTime;
+    private  LocalDateTime activityEndTime;
     private Integer status;
     private final Type type;
     private final Integer limitQuantity;
+
+    public void start() {
+        this.status = 1;
+        this.activityStartTime = LocalDateTime.now();
+    }
+
+    public void stop() {
+        this.status = 0;
+        this.activityEndTime = LocalDateTime.now();
+    }
 
     @Getter
     public enum Type {

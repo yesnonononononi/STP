@@ -52,10 +52,14 @@ public class Post {
 
     private VisibleScope visibleScope;
 
+    private String unpassReason;
+
     public void updateScope(Integer visible) {
         this.visibleScope = VisibleScope.fromCode(visible);
         this.updateTime = new Timestamp(System.currentTimeMillis());
     }
+
+
 
     @Getter
     public enum VisibleScope{
@@ -101,7 +105,16 @@ public class Post {
         this.updateTime = new Timestamp(System.currentTimeMillis());
     }
 
-
+    public void unpass(String reason){
+        this.status = PostStatus.UNPASS;
+        this.unpassReason = reason;
+        this.updateTime = new Timestamp(System.currentTimeMillis());
+    }
+    public void pass(){
+        this.status = PostStatus.NORMAL;
+        this.unpassReason = null;
+        this.updateTime = new Timestamp(System.currentTimeMillis());
+    }
 
     public void ban(){
         this.status = PostStatus.BLOCKED;

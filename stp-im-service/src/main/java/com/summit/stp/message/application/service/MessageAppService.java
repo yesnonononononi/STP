@@ -1,7 +1,7 @@
 package com.summit.stp.message.application.service;
 
-import com.summit.stp.common.application.api.vo.MessageVO;
-import com.summit.stp.common.application.api.vo.SysMessageVO;
+import com.summit.stp.im.api.vo.MessageVO;
+import com.summit.stp.im.api.vo.SysMessageVO;
 import com.summit.stp.message.application.command.CreateMessageCommand;
 import com.summit.stp.message.application.vo.MessageListVO;
 
@@ -22,3 +22,4 @@ public interface MessageAppService {
 
 
 }
+

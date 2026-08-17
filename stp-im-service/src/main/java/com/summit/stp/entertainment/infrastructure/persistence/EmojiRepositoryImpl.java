@@ -1,37 +1,50 @@
 package com.summit.stp.entertainment.infrastructure.persistence;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import com.summit.stp.entertainment.domain.model.Emoji;
 import com.summit.stp.entertainment.domain.repository.EmojiRepository;
-import com.summit.stp.entertainment.infrastructure.persistence.mapper.EmojiMapper;
-import com.summit.stp.entertainment.infrastructure.persistence.mapper.EmojiPackageMapper;
 import com.summit.stp.entertainment.infrastructure.persistence.po.EmojiPO;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-@RequiredArgsConstructor
+
 @Repository
-public class EmojiRepositoryImpl implements EmojiRepository {
-    private final EmojiMapper emojiMapper;
-    private final EmojiPackageMapper emojiPackageMapper;
+public class EmojiRepositoryImpl extends AbstractRepository<Emoji, EmojiPO> implements EmojiRepository {
+
+    public EmojiRepositoryImpl(BaseMapper<EmojiPO> baseMapper) {
+        super(baseMapper);
+    }
 
     @Override
     public List<Emoji> queryList(Long packageId) {
-        List<EmojiPO> emojiPOS = emojiMapper.selectList(new LambdaQueryWrapper<EmojiPO>().eq(EmojiPO::getPackageId, packageId));
-        return emojiPOS.stream()
-                .map(this::toDomain)
-                .toList();
+        return findListBy(packageId, EmojiPO::getPackageId);
     }
 
-    private Emoji toDomain(EmojiPO po){
+    @Override
+    protected EmojiPO toPO(Emoji domain) {
+        if (domain == null) return null;
+        return EmojiPO.builder()
+                .id(domain.getId())
+                .packageId(domain.getPackageId())
+                .name(domain.getName())
+                .type(domain.getType() != null ? domain.getType().getVal() : null)
+                .url(domain.getUrl())
+                .tiny(domain.getTiny())
+                .build();
+    }
+
+    @Override
+    protected Emoji toModel(EmojiPO po) {
+        if (po == null) return null;
         return Emoji.builder()
-                .id(po.getPublicId())
+                .id(po.getId())
                 .packageId(po.getPackageId())
                 .name(po.getName())
-                .type(Emoji.Type.fromCode(po.getType()))
+                .type(po.getType() != null ? Emoji.Type.fromCode(po.getType()) : null)
                 .url(po.getUrl())
                 .tiny(po.getTiny())
                 .build();
     }
 }
+

@@ -20,8 +20,6 @@ public class CommentsPO {
     @TableId(type = IdType.AUTO)
     @ApiModelProperty("评论ID")
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
 
     @ApiModelProperty("所属帖子ID")
     private Long postId;

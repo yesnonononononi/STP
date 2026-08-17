@@ -1,5 +1,6 @@
 package com.summit.stp.member.domain.repository;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.member.domain.model.UserMember;
 
 import java.util.Collection;
@@ -13,8 +14,11 @@ public interface UserMemberRepository {
 
     void save(UserMember userMember);
 
-
     UserMember queryUserMemberByUserIdForUpdate(long creatorId);
 
     Map<Long, UserMember> queryUserMemberByUserIds(Collection<Long> userIds);
+
+    void update(UserMember userMember);
+
+    Page<UserMember> queryPage(Integer page, Integer pageSize);
 }

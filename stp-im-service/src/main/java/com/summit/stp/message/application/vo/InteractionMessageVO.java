@@ -1,5 +1,6 @@
 package com.summit.stp.message.application.vo;
 
+import com.summit.stp.common.annotation.PublicId;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Data;
@@ -9,8 +10,8 @@ import java.time.Instant;
 @Data
 @Builder
 public class InteractionMessageVO {
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Long publicId;
+    @PublicId
+    private Long id;
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long senderId;
     private String senderAvatar;

@@ -22,11 +22,8 @@
         <result column="extra" property="extra" javaType="com.summit.stp.comment.domain.model.Comment$Extra" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
     </resultMap>
 
-
-
-
     <select id="queryCommentByPostIdWithCursor" resultMap="voMap">
-        select c.public_id as commentId,
+        select c.id as commentId,
         c.root_id as rootId,
         c.parent_id as parentId,
         c.post_id as postId,
@@ -45,22 +42,22 @@
         c.user_id as publisherId,
         c.extra as extra
         from comments c
-        left join posts p on p.public_id = c.post_id
+        left join posts p on p.id = c.post_id
         <where>
             c.post_id = #{postId}
             <if test="lastCommentIdCursor != null and lastHotScoreCursor != null">
-                and ((c.hot_score &lt; #{lastHotScoreCursor}) or (c.hot_score = #{lastHotScoreCursor} and c.public_id &lt;  #{lastCommentIdCursor}))
+                and ((c.hot_score &lt; #{lastHotScoreCursor}) or (c.hot_score = #{lastHotScoreCursor} and c.id &lt;  #{lastCommentIdCursor}))
             </if>
         and c.root_id is null
             and c.parent_id is null
             and c.is_audit = 1
             and c.status = 1
         </where>
-        order by c.is_top desc, c.hot_score desc,c.public_id desc
+        order by c.is_top desc, c.hot_score desc,c.id desc
         limit #{limit}
     </select>
     <select id="queryReplyByCursor" resultMap="voMap">
-        select c.public_id as commentId,
+        select c.id as commentId,
         c.root_id as rootId,
         c.user_id as publisherId,
         c.parent_id as parentId,
@@ -78,17 +75,17 @@
         c.reply_count as replyCount,
         c.extra as extra
         from comments c
-        left join posts p on p.public_id = c.post_id
+        left join posts p on p.id = c.post_id
         <where>
             c.post_id = #{postId}
             <if test="cursor != null">
-                and c.public_id &lt; #{cursor}
+                and c.id &lt; #{cursor}
             </if>
             and c.root_id = #{rootId}
             and c.is_audit = 1
             and c.status = 1
         </where>
-        order by c.public_id desc
+        order by c.id desc
         limit #{limit}
     </select>
 
@@ -109,16 +106,16 @@
     </select>
     <select id="queryActiveComment"
             resultType="com.summit.stp.comment.infrastructure.persistence.po.CommentsPO">
-        SELECT c.public_id as id, c.hot_score AS hotScore, c.create_time as createTime, c.reply_count AS replyCount, c.like_count AS likeCount, c.update_time as updateTime
+        SELECT c.id as id, c.hot_score AS hotScore, c.create_time as createTime, c.reply_count AS replyCount, c.like_count AS likeCount, c.update_time as updateTime
         FROM comments c
         WHERE c.status = 1
           AND c.update_time >= #{deadLine}
           AND c.parent_id IS NULL
           AND c.root_id IS NULL
           <if test="lastUpdateTime != null and lastId != null">
-              AND (c.update_time, c.public_id) > (#{lastUpdateTime}, #{lastId})
+              AND (c.update_time, c.id) > (#{lastUpdateTime}, #{lastId})
           </if>
-        ORDER BY c.update_time , c.public_id
+        ORDER BY c.update_time , c.id
         LIMIT 1000;
     </select>
 

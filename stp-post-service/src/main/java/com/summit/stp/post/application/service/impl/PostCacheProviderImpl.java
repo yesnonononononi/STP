@@ -167,7 +167,7 @@ public class PostCacheProviderImpl implements PostCacheProvider {
         try {
             if (!contentCacheOps.exists(postId)) {
                 PostsPO po = postsMapper.selectOne(new LambdaQueryWrapper<PostsPO>()
-                        .eq(PostsPO::getPublicId, postId));
+                        .eq(PostsPO::getId, postId));
                 if (po == null) return;
                 List<Long> likedUserIds = postLikeRepository.findUserIdsByPostId(postId);
                 List<Long> collectedUserIds = postCollectRepository.findUserIdsByPostId(postId);
@@ -189,6 +189,7 @@ public class PostCacheProviderImpl implements PostCacheProvider {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void loadCache(List<Long> postIds) {
         if (postIds == null || postIds.isEmpty()) return;
@@ -227,7 +228,7 @@ public class PostCacheProviderImpl implements PostCacheProvider {
             // 3. 批量预热帖子主体 Hash（合并精准互动计数）
             if (!missingPostIds.isEmpty()) {
                 List<PostsPO> pos = postsMapper.selectList(new LambdaQueryWrapper<PostsPO>()
-                        .in(PostsPO::getPublicId, missingPostIds));
+                        .in(PostsPO::getId, missingPostIds));
                 if (pos != null && !pos.isEmpty()) {
                     List<PostTag> tagRels = postTagRelRepository.findByPostIds(missingPostIds);
                     Map<Long, List<Long>> tagIdsMap = tagRels == null ? Collections.emptyMap() :

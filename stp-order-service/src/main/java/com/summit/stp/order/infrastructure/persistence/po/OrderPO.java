@@ -17,8 +17,6 @@ import java.sql.Timestamp;
 public class OrderPO {
     @TableId(type = IdType.AUTO)
     private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private Long publicId;
     private BigDecimal amount;
     private long creatorId;
     private Integer payType;
