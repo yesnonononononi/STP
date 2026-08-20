@@ -3,6 +3,7 @@ package com.summit.stp.member.domain.repository;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.member.domain.model.UserMember;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 
@@ -21,4 +22,12 @@ public interface UserMemberRepository {
     void update(UserMember userMember);
 
     Page<UserMember> queryPage(Integer page, Integer pageSize);
+
+    long countActiveMembers();
+
+    long countNewMembersAfter(Instant startTime);
+
+    Map<Long, Long> countMemberLevelDistribution();
+
+    Map<Long, Long> countPackageUserDistribution();
 }

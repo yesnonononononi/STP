@@ -20,5 +20,7 @@ public interface MemberRepository<T> {
 
     List<T> list();
 
+    void updateById(T member);
+
 }
 

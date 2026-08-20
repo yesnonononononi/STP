@@ -28,6 +28,7 @@
         <module>stp-im-service</module>
         <module>stp-order-service</module>
         <module>stp-payment-service</module>
+        <module>stp-admin-service</module>
         <module>stp-coupon-service</module>
     </modules>
 
@@ -255,6 +256,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
         </dependency>
     </dependencies>
 

@@ -9,14 +9,15 @@ import com.summit.stp.activity.domain.model.CouponActivity;
 import com.summit.stp.activity.domain.repository.CouponActivityRepository;
 import com.summit.stp.activity.infrastructure.persistence.mapper.CouponActivityMapper;
 import com.summit.stp.activity.infrastructure.persistence.po.CouponActivityPO;
+import com.summit.stp.common.application.domain.exception.BusinessException;
 import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
@@ -76,6 +77,19 @@ public class CouponActivityRepositoryImpl extends AbstractRepository<CouponActiv
     }
 
     @Override
+    public void deductStockWithOptimisticLock(Long couponId) {
+        try {
+            int row = couponActivityMapper.deductStockWithOptimisticLock(couponId);
+            if(row == 0){
+                throw new BusinessException("优惠券库存不足");
+            }
+        }catch (Exception e){
+            log.error(" deduct stock with optimistic lock error ", e);
+            throw e;
+        }
+    }
+
+    @Override
     protected CouponActivity toModel(CouponActivityPO po) {
         if (po == null) return null;
         return CouponActivity.builder()
@@ -87,7 +101,7 @@ public class CouponActivityRepositoryImpl extends AbstractRepository<CouponActiv
                 .activityStartTime(po.getActivityStartTime())
                 .activityEndTime(po.getActivityEndTime())
                 .status(po.getStatus())
-                .limitQuantity(po.getLimitQuantity())
+                .createTime(po.getCreateTime())
                 .build();
     }
 
@@ -107,7 +121,7 @@ public class CouponActivityRepositoryImpl extends AbstractRepository<CouponActiv
                 .activityStartTime(model.getActivityStartTime())
                 .activityEndTime(model.getActivityEndTime())
                 .status(model.getStatus())
-                .limitQuantity(model.getLimitQuantity())
+                .createTime(model.getCreateTime())
                 .build();
     }
 }

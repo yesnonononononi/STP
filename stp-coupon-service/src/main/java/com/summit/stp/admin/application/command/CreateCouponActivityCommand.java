@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Builder
 @Data
 public class CreateCouponActivityCommand {
+    private final Long id;
     private final Long couponId;
     private final String name;
     private Integer stock;
@@ -16,5 +17,4 @@ public class CreateCouponActivityCommand {
     private  LocalDateTime activityEndTime;
     private Integer status;
     private final Integer type;
-    private final Integer limitQuantity;
 }

@@ -2,6 +2,7 @@ package com.summit.stp.coupon.application.service.impl;
 
 import com.summit.stp.coupon.api.vo.CouponQueryVO;
 import com.summit.stp.coupon.application.service.CouponAppService;
+import com.summit.stp.coupon.domain.exception.NoSuchCouponException;
 import com.summit.stp.coupon.domain.model.Coupon;
 import com.summit.stp.coupon.domain.repository.CouponRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,10 +21,7 @@ public class CouponAppServiceImpl implements CouponAppService {
 
     @Override
     public CouponQueryVO queryById(Long id) {
-        Coupon coupon = couponRepository.findCouponById(id);
-        if (coupon == null) {
-            return null;
-        }
+        Coupon coupon = couponRepository.findById(id).orElseThrow(NoSuchCouponException::new);
         return toVO(coupon);
     }
 

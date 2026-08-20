@@ -1,17 +1,16 @@
 package com.summit.stp.activity.application.service.impl;
 
-import cn.hutool.core.util.IdUtil;
-import com.summit.stp.activity.application.dto.CouponActivityDTO;
 import com.summit.stp.activity.application.service.CouponActivityAppService;
 import com.summit.stp.activity.application.service.CouponActivityCacheProvider;
 import com.summit.stp.activity.application.vo.CouponActivityQueryVO;
+import com.summit.stp.activity.domain.event.SeckillEvent;
 import com.summit.stp.activity.domain.model.CouponActivity;
 import com.summit.stp.activity.domain.repository.CouponActivityRepository;
+import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.user.api.vo.MemberTypeVO;
 import com.summit.stp.user.api.vo.MemberVO;
 import com.summit.stp.common.application.domain.exception.BusinessException;
-import com.summit.stp.common.application.domain.exception.UnPermissionException;
 import com.summit.stp.user.api.client.MemberFeignClient;
 import com.summit.stp.coupon.domain.exception.NoSuchCouponException;
 import com.summit.stp.coupon.domain.model.Coupon;
@@ -20,14 +19,15 @@ import com.summit.stp.coupon.domain.repository.CouponRepository;
 import com.summit.stp.coupon.domain.repository.CouponUseScopeRepository;
 import com.summit.stp.user_coupon.domain.model.CouponStatus;
 import com.summit.stp.user_coupon.domain.model.UserCoupon;
-import com.summit.stp.user_coupon.domain.repository.UserCouponRepository;
+import com.summit.stp.user_coupon.infrastructure.persistence.UserCouponRepositoryImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -42,9 +42,9 @@ public class CouponActivityAppServiceImpl implements CouponActivityAppService {
     private final CouponActivityCacheProvider couponActivityCacheProvider;
     private final CouponRepository couponRepository;
     private final CouponUseScopeRepository couponUseScopeRepository;
-    private final UserCouponRepository userCouponRepository;
     private final MemberFeignClient memberFeignClient;
-    private final TransactionTemplate transactionTemplate;
+    private final CouponQueueSender couponQueueSender;
+    private final UserCouponRepositoryImpl userCouponRepositoryImpl;
 
     @Override
     public List<CouponActivityQueryVO> queryAllActivitiesByScopeType(Integer scopeType) {
@@ -69,7 +69,7 @@ public class CouponActivityAppServiceImpl implements CouponActivityAppService {
                 .collect(Collectors.toMap(Coupon::getId, coupon -> coupon));
         Map<Long, CouponUseScope> scopes = couponUseScopeRepository.findByCouponIds(couponIds);
 
-        Long currentUserId = UserHolder.getUser() != null ? UserHolder.getUser().getId() : null;
+        Long currentUserId = UserHolder.getUser().getId();
         long maxDuration = activities.stream()
                 .mapToLong(a -> a.getDuration(now))
                 .max()
@@ -89,7 +89,7 @@ public class CouponActivityAppServiceImpl implements CouponActivityAppService {
                 : Map.of();
 
         return activities.stream()
-                .map(activity -> toActivityVO(activity, templates, scopes, receivedCounts, memberTypes, members))
+                .map(activity -> assembleVO(activity, templates, scopes, receivedCounts, memberTypes, members))
                 .toList();
     }
 
@@ -101,93 +101,55 @@ public class CouponActivityAppServiceImpl implements CouponActivityAppService {
         return couponActivityCacheProvider.batchGetUserReceivedCounts(userId, couponIds, maxDurationMs);
     }
 
-    @Override
-    public void receiveActivityCoupon(Long activityId) {
-        Long currentUserId = UserHolder.getUser().getId();
 
-        CouponActivity activity = couponActivityRepository.findById(activityId)
-                .orElseThrow(() -> new BusinessException("该优惠券活动不存在！"));
+    @Override
+    public Result<Void> receiveActivityCoupon(Long activityId) {
+        Long currentUserId = UserHolder.getUser().getId();
         LocalDateTime now = LocalDateTime.now();
+
+        //1, 查询优惠券营销活动并校验
+        CouponActivity activity = couponActivityRepository.findById(activityId).orElseThrow(() -> new BusinessException("该优惠券活动不存在！"));
+
         if (!activity.isAvailable(now)) {
             throw new BusinessException("当前活动未开始或者已经结束");
         }
-        Coupon coupon = couponRepository.findCouponById(activity.getCouponId());
-        if (coupon == null) {
-            throw new BusinessException("优惠券不存在！");
-        }
+        Coupon coupon = couponRepository.findById(activity.getCouponId()).orElseThrow(NoSuchCouponException::new);
+
         Long couponId = coupon.getId();
 
-        LocalDateTime endTime = getEndTime(now, coupon, activity);
-
+        //2, 确保缓存存在用户领取记录
+        couponActivityCacheProvider.cacheUserLimit(currentUserId, couponId, activity.getDuration(now));
         UserCoupon userCoupon = UserCoupon.builder()
-                .id(null)
                 .userId(currentUserId)
                 .couponTemplateId(couponId)
+                .endTime(getEndTime(now, coupon, activity))
+                .createTime(Timestamp.from(Instant.now()))
+                .orderId(null)
                 .status(CouponStatus.NOT_USE)
-                .createTime(new Timestamp(System.currentTimeMillis()))
-                .endTime(Timestamp.valueOf(endTime))
+                .template(coupon)
+                .updateTime(Timestamp.from(Instant.now()))
                 .build();
-
-        long limitQuantity = activity.getLimitQuantity() != null ? activity.getLimitQuantity() : Long.MAX_VALUE;
-        couponActivityCacheProvider.cacheUserLimit(currentUserId, couponId, activity.getDuration(now));
-        boolean isOk = couponActivityCacheProvider.deductStock(couponId, limitQuantity, activityId);
-        if (!isOk) {
-            throw new BusinessException("优惠券库存不足！");
-        }
-        transactionTemplate.executeWithoutResult(status -> {
-            try {
-                userCouponRepository.save(userCoupon);
-                log.info("【优惠券活动】领取成功 优惠券ID:{} 用户ID:{}", couponId, currentUserId);
-            } catch (Exception e) {
-                couponActivityCacheProvider.increaseStock(couponId, currentUserId, activityId);
-                log.error("【优惠券活动】领取失败 优惠券ID:{} 用户ID:{}", couponId, currentUserId, e);
-                throw e;
+        try {
+            //3, 原子秒杀优惠券(减库存, 且一人只可领 1 张)
+            if (!couponActivityCacheProvider.deductStock(couponId, activityId)) {
+                return Result.error("优惠券库存不足");
             }
-        });
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void saveActivity(CouponActivityDTO dto) {
-        if (UserHolder.getUser().getAdmin() == 0) {
-            throw new UnPermissionException("无权限操作");
+        } catch (Exception e) {
+            log.error("【优惠券秒杀】缓存服务暂不可用", e);
+            return Result.error("优惠券秒杀暂不可用,请稍后再试");
         }
-        Long couponId = dto.getCouponId();
-        CouponActivity activity = CouponActivity.builder()
-                .id(IdUtil.getSnowflakeNextId())
-                .couponId(couponId)
-                .name(dto.getName())
-                .type(CouponActivity.Type.fromCode(dto.getType()))
-                .stock(dto.getStock())
-                .activityStartTime(dto.getActivityStartTime())
-                .activityEndTime(dto.getActivityEndTime())
-                .status(dto.getStatus())
-                .limitQuantity(dto.getLimitQuantity())
-                .build();
-        couponActivityRepository.save(activity);
-        couponActivityCacheProvider.preWarmStock(activity);
+        try {
+            //4, 优惠券异步落库
+            couponQueueSender.send(SeckillEvent.builder().userCoupon(
+                    userCoupon
+            ).build());
+        } catch (Exception e) {
+            log.error("【优惠券秒杀-消息发送】mq消息发送失败,即将回滚", e);
+            return Result.error("优惠券领取失败,请过一会重试");
+        }
+        return Result.success();
     }
 
-    @Override
-    public void updateActivity(CouponActivityDTO dto) {
-        CouponActivity activity = CouponActivity.builder()
-                .id(dto.getId())
-                .couponId(dto.getCouponId())
-                .name(dto.getName())
-                .stock(dto.getStock())
-                .type(CouponActivity.Type.fromCode(dto.getType()))
-                .activityStartTime(dto.getActivityStartTime())
-                .activityEndTime(dto.getActivityEndTime())
-                .status(dto.getStatus())
-                .limitQuantity(dto.getLimitQuantity())
-                .build();
-        couponActivityRepository.update(activity);
-    }
-
-    @Override
-    public void deleteActivity(Long id) {
-        couponActivityRepository.delete(id);
-    }
 
     private Map<Long, MemberTypeVO> queryMemberTypes(List<Long> ids) {
         return ids.isEmpty() ? Map.of() : emptyIfNull(memberFeignClient.queryMemberTypeByIds(ids).getData());
@@ -197,22 +159,21 @@ public class CouponActivityAppServiceImpl implements CouponActivityAppService {
         return ids.isEmpty() ? Map.of() : emptyIfNull(memberFeignClient.queryMemberByIds(ids).getData());
     }
 
-    private CouponActivityQueryVO toActivityVO(CouponActivity activity,
-                                                Map<Long, Coupon> templates,
-                                                Map<Long, CouponUseScope> scopes,
-                                                Map<Long, Integer> receivedCounts,
-                                                Map<Long, MemberTypeVO> memberTypes,
-                                                Map<Long, MemberVO> members) {
+    private CouponActivityQueryVO assembleVO(CouponActivity activity,
+                                             Map<Long, Coupon> templates,
+                                             Map<Long, CouponUseScope> scopes,
+                                             Map<Long, Integer> receivedCounts,
+                                             Map<Long, MemberTypeVO> memberTypes,
+                                             Map<Long, MemberVO> members) {
         Coupon template = templates.get(activity.getCouponId());
         if (template == null) {
             throw new NoSuchCouponException("未找到优惠券信息");
         }
 
         CouponUseScope scope = scopes.get(activity.getCouponId());
-        Integer limitQuantity = activity.getLimitQuantity();
         int receivedCount = receivedCounts.getOrDefault(activity.getCouponId(), 0);
         LocalDateTime now = LocalDateTime.now();
-        boolean hasQualification = (limitQuantity == null || receivedCount < limitQuantity);
+        boolean hasQualification = (receivedCount < 1);
         boolean hasStock = (activity.getStock() == null || activity.getStock() > 0);
         boolean inActivityTime = activity.isAvailable(now);
 
@@ -229,7 +190,6 @@ public class CouponActivityAppServiceImpl implements CouponActivityAppService {
                 .validDays(template.getValidDays())
                 .validHours(template.getValidHours())
                 .scopeDescription(resolveScopeDescription(template, scope, memberTypes, members))
-                .limitQuantity(limitQuantity)
                 .amount(template.getAmount())
                 .timeType(template.getTimeType() == null ? null : template.getTimeType().getCode())
                 .isAvailable(hasQualification && hasStock && inActivityTime)
@@ -238,14 +198,15 @@ public class CouponActivityAppServiceImpl implements CouponActivityAppService {
                         ? Coupon.CouponScopeType.ALL_SCOPE.getCode()
                         : template.getScopeType().getCode())
                 .description(template.getDescription())
+                .image(template.getImage())
                 .type(activity.getType() == null ? null : activity.getType().getCode())
                 .build();
     }
 
     private String resolveScopeDescription(Coupon template,
-                                            CouponUseScope scope,
-                                            Map<Long, MemberTypeVO> memberTypes,
-                                            Map<Long, MemberVO> members) {
+                                           CouponUseScope scope,
+                                           Map<Long, MemberTypeVO> memberTypes,
+                                           Map<Long, MemberVO> members) {
         if (scope == null || scope.getRelationId() == null || template.getScopeType() == null) {
             return "";
         }
@@ -262,7 +223,7 @@ public class CouponActivityAppServiceImpl implements CouponActivityAppService {
         };
     }
 
-    private LocalDateTime getEndTime(LocalDateTime now, Coupon coupon, CouponActivity activity) {
+    private Timestamp getEndTime(LocalDateTime now, Coupon coupon, CouponActivity activity) {
         LocalDateTime endTime = now;
         if (coupon.getTimeType() == Coupon.CouponDateType.FIXED_TIME_PERIOD) {
             endTime = activity.getActivityEndTime();
@@ -271,11 +232,13 @@ public class CouponActivityAppServiceImpl implements CouponActivityAppService {
         } else if (coupon.getTimeType() == Coupon.CouponDateType.RECEIVE_EFFECT_TIME_PERIOD_BY_HOUR) {
             endTime = now.plusHours(coupon.getValidHours());
         }
-        return endTime;
+        return Timestamp.valueOf(endTime);
     }
 
     private <K, V> Map<K, V> emptyIfNull(Map<K, V> values) {
         return values == null ? Map.of() : values;
     }
+
+
 }
 

@@ -33,12 +33,5 @@ public class UserAuthDomainService {
         return user;
     }
 
-    /**
-     * 校验 Session 内用户名与请求用户名匹配 (领域校验规则)
-     */
-    public void verifySessionUsername(String sessionUsername, String requestUsername) {
-        if (sessionUsername == null || !sessionUsername.equals(requestUsername)) {
-            throw new RefreshTokenNoValidException();
-        }
-    }
+
 }

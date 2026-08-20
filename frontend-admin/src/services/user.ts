@@ -164,3 +164,38 @@ export interface UserSettingData {
   showDelPost: number
   customizationRecommend: number
 }
+
+export interface UserReportItem {
+  id: number
+  reporterId: number
+  reporterNick: string
+  reportedId: number
+  reportedNick: string
+  reason: string
+  status: number
+  statusDesc: string
+  createTime: string
+}
+
+export class AdminUserReportAPI {
+  /**
+   * 分页查询用户举报记录
+   */
+  static async queryReportPage(params: { status?: number; page: number; pageSize: number }): Promise<Result<{ page: number; total: number; data: UserReportItem[] }>> {
+    return await request.post('/a/user/report/list', null, { params })
+  }
+
+  /**
+   * 忽略用户举报
+   */
+  static async ignoreReport(id: number | string): Promise<Result<void>> {
+    return await request.post(`/a/user/report/ignore/${id}`)
+  }
+
+  /**
+   * 处理举报并封禁被举报用户
+   */
+  static async processAndBanReport(id: number | string): Promise<Result<void>> {
+    return await request.post(`/a/user/report/process/${id}`)
+  }
+}

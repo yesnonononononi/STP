@@ -23,20 +23,10 @@ public class PostImageRepositoryImpl extends AbstractRepository<PostImage, PostI
         this.postImageMapper = postImageMapper;
     }
 
-    @Override
-    public PostImageVO findVOById(Long id) {
-        PostImagePO postImagePO = getBaseMapper().selectOne(new LambdaQueryWrapper<PostImagePO>()
-                .eq(PostImagePO::getId, id));
-        return postImagePO == null ? null : convertToVO(postImagePO);
-    }
 
     @Override
-    public List<PostImageVO> findByPostId(Long postId) {
-        LambdaQueryWrapper<PostImagePO> queryWrapper = new LambdaQueryWrapper<PostImagePO>()
-                .eq(PostImagePO::getPostId, postId)
-                .orderByAsc(PostImagePO::getSortOrder);
-        List<PostImagePO> postImagePOS = getBaseMapper().selectList(queryWrapper);
-        return postImagePOS.stream().map(this::convertToVO).toList();
+    public List<PostImage> findByPostId(Long postId) {
+        return findListBy(postId, PostImagePO::getPostId);
     }
 
     @Override
@@ -113,18 +103,6 @@ public class PostImageRepositoryImpl extends AbstractRepository<PostImage, PostI
                 .build();
     }
 
-    public PostImageVO convertToVO(PostImagePO po) {
-        return PostImageVO.builder()
-                .id(po.getId())
-                .postId(po.getPostId())
-                .imageUrl(po.getImageUrl())
-                .width(po.getWidth())
-                .height(po.getHeight())
-                .size(po.getSize())
-                .sortOrder(po.getSortOrder())
-                .status(po.getStatus())
-                .createTime(po.getCreateTime())
-                .build();
-    }
+
 }
 

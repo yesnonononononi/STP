@@ -2,9 +2,7 @@ package com.summit.stp.post.infrastructure.constants;
 
 public interface PostConstants {
     interface Business {
-        int MAX_TITLE_LENGTH = 100;
-        int MAX_CONTENT_LENGTH = 5000;
-        int MAX_IMAGE_NUM = 6;
+
         String ORDER_TYPE_HOT = "hot";
         int MAX_POST_SCORE_UPDATE_ONCE = 1000;
         int TAG_POSTS_REBUILD_LIMIT = 5000;

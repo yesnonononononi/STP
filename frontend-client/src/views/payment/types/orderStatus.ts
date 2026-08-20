@@ -29,7 +29,15 @@ export namespace OrderStatus {
 
   export function fromCode(code: number | string | undefined | null): OrderStatus | undefined {
     if (code === undefined || code === null) return undefined
-    const num = typeof code === 'string' ? parseInt(code, 10) : code
+    if (typeof code === 'string') {
+      const upper = code.toUpperCase()
+      if (upper === 'PENDING') return OrderStatus.PENDING
+      if (upper === 'PAID') return OrderStatus.PAID
+      if (upper === 'COMPLETED') return OrderStatus.COMPLETED
+      if (upper === 'CANCELLED') return OrderStatus.CANCELLED
+    }
+    const num = typeof code === 'number' ? code : parseInt(String(code), 10)
+    if (isNaN(num)) return undefined
     const found = list.find((item) => item.code === num)
     return found ? found.code : undefined
   }

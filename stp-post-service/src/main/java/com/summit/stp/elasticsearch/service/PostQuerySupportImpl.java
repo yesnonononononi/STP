@@ -1,6 +1,5 @@
 package com.summit.stp.elasticsearch.service;
 
-
 import cn.hutool.core.util.StrUtil;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.DateRangeQuery;
@@ -33,10 +32,8 @@ public class PostQuerySupportImpl implements PostQuerySupport {
     public List<PostDocument> findByKeyWords(String keyword, Integer page) {
 
         NativeQuery query = NativeQuery.builder()
-                .withQuery(q ->
-                        q.multiMatch(
-                                m -> m.query(keyword).fields("title", "content")
-                        )
+                .withQuery(q -> q.multiMatch(
+                        m -> m.query(keyword).fields("title", "content"))
 
                 )
                 .withPageable(Pageable.ofSize(10).withPage(Math.max(page - 1, 0)))
@@ -49,7 +46,8 @@ public class PostQuerySupportImpl implements PostQuerySupport {
     public ESPageVO<Long> listBy(AdminPostQueryCommand command) {
         Query query = buildQuery(command);
         SearchHits<PostDocument> res = elasticsearchOperations.search(query, PostDocument.class);
-        return new ESPageVO<>(res.getTotalHits(), command.getPage(), res.get().map(SearchHit::getContent).map(PostDocument::getId).toList());
+        return new ESPageVO<>(res.getTotalHits(), command.getPage(),
+                res.get().map(SearchHit::getContent).map(PostDocument::getPostId).toList());
     }
 
     public Query buildQuery(AdminPostQueryCommand command) {
@@ -61,46 +59,62 @@ public class PostQuerySupportImpl implements PostQuerySupport {
         RangeDTO<Long> comment = command.getComment();
         RangeDTO<Long> like = command.getLikeCount();
         RangeDTO<Timestamp> updateTime = command.getUpdateTime();
+        Long postId = command.getPostId();
         Long creatorId = command.getCreatorId();
         BoolQuery.Builder builder = new BoolQuery.Builder();
         if (StrUtil.isNotBlank(keyword))
             builder.must(m -> m.multiMatch(mm -> mm.query(keyword).fields("title", "content")));
-        if (createTime != null) builder.filter(f -> f.range(r -> r.date(d -> {
-            DateRangeQuery.Builder body = d.field("createTime");
-            Timestamp max = createTime.getMax();
-            if (max != null) body.lte(String.valueOf(max));
-            Timestamp min = createTime.getMin();
-            if (min != null) body.gte(String.valueOf(min));
-            return body;
-        })));
-        if (status != null) builder.filter(f -> f.term(t -> t.field("status").value(status)));
-        if (comment != null) builder.filter(f -> f.range(r -> r.number(n -> {
-                    NumberRangeQuery.Builder body = n.field("comment");
-                    Long min = comment.getMin();
-                    if (min != null) body.gte(Double.valueOf(min));
-                    Long max = comment.getMax();
-                    if (max != null) body.lte(Double.valueOf(max));
-                    return body;
-                }
-
-        )));
-        if (like != null) builder.filter(f -> f.range(r -> r.number(n -> {
-            NumberRangeQuery.Builder body = n.field("like");
-            Long min = like.getMin();
-            if (min != null) body.gte(Double.valueOf(min));
-            Long max = like.getMax();
-            if (max != null) body.lte(Double.valueOf(max));
-            return body;
-        })));
-        if (updateTime != null) builder.filter(f -> f.range(r -> r.date(d -> {
-            DateRangeQuery.Builder body = d.field("updateTime");
-            Timestamp min = updateTime.getMin();
-            if (min != null) body.gte(String.valueOf(min));
-            Timestamp max = updateTime.getMax();
-            if (max != null) body.lte(String.valueOf(max));
-            return body;
-        })));
-        if (creatorId != null) builder.filter(f -> f.term(t -> t.field("creatorId").value(creatorId)));
+        if(postId != null)
+            builder.filter(m -> m.term(t->t.field("postId").value(postId)));
+        if (createTime != null)
+            builder.filter(f -> f.range(r -> r.date(d -> {
+                DateRangeQuery.Builder body = d.field("createTime");
+                Timestamp max = createTime.getMax();
+                if (max != null)
+                    body.lte(String.valueOf(max));
+                Timestamp min = createTime.getMin();
+                if (min != null)
+                    body.gte(String.valueOf(min));
+                return body;
+            })));
+        if (status != null)
+            builder.filter(f -> f.term(t -> t.field("status").value(status)));
+        if (comment != null)
+            builder.filter(f -> f.range(r -> r.number(n -> {
+                NumberRangeQuery.Builder body = n.field("comment");
+                Long min = comment.getMin();
+                if (min != null)
+                    body.gte(Double.valueOf(min));
+                Long max = comment.getMax();
+                if (max != null)
+                    body.lte(Double.valueOf(max));
+                return body;
+            }
+            )));
+        if (like != null)
+            builder.filter(f -> f.range(r -> r.number(n -> {
+                NumberRangeQuery.Builder body = n.field("like");
+                Long min = like.getMin();
+                if (min != null)
+                    body.gte(Double.valueOf(min));
+                Long max = like.getMax();
+                if (max != null)
+                    body.lte(Double.valueOf(max));
+                return body;
+            })));
+        if (updateTime != null)
+            builder.filter(f -> f.range(r -> r.date(d -> {
+                DateRangeQuery.Builder body = d.field("updateTime");
+                Timestamp min = updateTime.getMin();
+                if (min != null)
+                    body.gte(String.valueOf(min));
+                Timestamp max = updateTime.getMax();
+                if (max != null)
+                    body.lte(String.valueOf(max));
+                return body;
+            })));
+        if (creatorId != null)
+            builder.filter(f -> f.term(t -> t.field("creatorId").value(creatorId)));
         BoolQuery bq = builder.build();
         return NativeQuery.builder()
                 .withPageable(Pageable.ofSize(pageSize).withPage(Math.max(page - 1, 0)))

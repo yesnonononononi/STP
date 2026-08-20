@@ -17,17 +17,17 @@ public interface AuthFeignClient {
      * 根据用户名获取认证信息（包含密码）
      */
     @GetMapping("/user/internal/auth/by-username/{username}")
-    Result<UserAuthVO> getUserAuthByUsername(@PathVariable("username") String username);
+    Result<UserAuthVO> getUserAuthByUsername(@PathVariable String username);
 
     /**
      * 根据手机号获取认证信息（包含密码）
      */
     @GetMapping("/user/internal/auth/by-phone/{phone}")
-    Result<UserAuthVO> getUserAuthByPhone(@PathVariable("phone") String phone);
+    Result<UserAuthVO> getUserAuthByPhone(@PathVariable String phone);
 
     /**
      * 根据用户ID获取认证信息（包含密码）
      */
     @GetMapping("/user/internal/auth/by-id/{userId}")
-    Result<UserAuthVO> getUserAuthById(@PathVariable("userId") Long userId);
+    Result<UserAuthVO> getUserAuthById(@PathVariable Long userId);
 }

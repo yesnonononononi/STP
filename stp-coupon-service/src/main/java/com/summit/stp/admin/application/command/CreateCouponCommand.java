@@ -8,6 +8,7 @@ import java.util.List;
 @Data
 @Builder
 public class CreateCouponCommand {
+    private final Long id;
     private final String name;
     private final BigDecimal discount;
     private final BigDecimal amount;

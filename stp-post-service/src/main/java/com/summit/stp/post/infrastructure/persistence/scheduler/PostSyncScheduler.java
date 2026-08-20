@@ -9,9 +9,8 @@ import com.summit.stp.post.domain.model.Post;
 import com.summit.stp.post.domain.repository.PostCollectRepository;
 import com.summit.stp.post.domain.repository.PostLikeRepository;
 import com.summit.stp.common.constants.CacheFieldConstants;
+import com.summit.stp.post.domain.repository.PostRepository;
 import com.summit.stp.post.infrastructure.constants.PostConstants;
-import com.summit.stp.post.infrastructure.persistence.repoImpl.PostRepositoryImpl;
-
 import com.summit.stp.post.infrastructure.persistence.po.PostCollectPO;
 import com.summit.stp.post.infrastructure.persistence.po.PostLikePO;
 import lombok.RequiredArgsConstructor;
@@ -47,9 +46,7 @@ public class PostSyncScheduler {
     private final DistributedLockUtil distributedLockUtil;
     private final QueueSender queueSender;
     private final TransactionTemplate transactionTemplate;
-    private final PostRepositoryImpl postRepositoryImpl;
-
-
+    private final PostRepository postRepository;
 
 
     @Scheduled(cron = "0 0/3 * * * ?")
@@ -57,7 +54,6 @@ public class PostSyncScheduler {
         log.info("【帖子】统一同步定时任务开始执行");
         distributedLockUtil.executeWithLock(PostConstants.Cache.CHANGED_LOCK, this::conduct);
     }
-
 
 
     /**
@@ -119,16 +115,14 @@ public class PostSyncScheduler {
     ) {
         if (postIdList == null || postIdList.isEmpty()) return Collections.emptyMap();
 
-        Map<Long, Set<Long>> redisMap = redisReader.apply(postIdList);
-        Map<Long, List<Long>> dbMap = dbReader.apply(postIdList);
 
         List<PO> toAddList = new ArrayList<>();
         List<Long[]> toRemoveList = new ArrayList<>();
         Map<Long, Integer> deltas = new HashMap<>();
 
         for (Long postId : postIdList) {
-            Set<Long> cacheSet = redisMap.getOrDefault(postId, Collections.emptySet());
-            List<Long> dbList = dbMap.getOrDefault(postId, Collections.emptyList());
+            Set<Long> cacheSet = redisReader.apply(postIdList).getOrDefault(postId, Collections.emptySet());
+            List<Long> dbList = dbReader.apply(postIdList).getOrDefault(postId, Collections.emptyList());
 
             int added = 0, removed = 0;
             for (Long uid : dbList) {
@@ -155,14 +149,14 @@ public class PostSyncScheduler {
     }
 
 
-
     /**
      * 事务内合并更新 posts 表的 like_count、collect_count、view_count、reply_count，
      * 并发送点赞增量事件通知
      */
     private void batchUpdateCounts(List<Long> postIdList, Map<Long, Integer> likeDeltas) {
         Map<Long, Double> scoresMap = new HashMap<>();
-        //0, 从缓存读取权威最新计数（包含用户增减点赞与收藏的真实 Hash 计数）
+
+        //0, 从缓存读取最新计数（包含用户增减点赞与收藏的真实 Hash 计数）
         Map<Long, Map<String, Long>> countMap = postCacheProvider.getLikeAndCollectCount(postIdList);
         Map<Long, Long> viewCounts = postCacheProvider.getViewCounts(postIdList);
         Map<Long, Long> replyCounts = postCacheProvider.getReplyCounts(postIdList);
@@ -171,7 +165,8 @@ public class PostSyncScheduler {
         Map<Long, Post> postPoMap = batchSelectPost(postIdList);
 
         //2, 事务更新帖子db和缓存
-        transactionTemplate.executeWithoutResult(status -> {
+        List<UserChangedEvent> willList = transactionTemplate.execute(status -> {
+            ArrayList<UserChangedEvent> willSendEventList = new ArrayList<>();
             List<Post> willCachePosts = new ArrayList<>();
             for (Long postId : postIdList) {
                 Map<String, Long> postCounts = countMap.getOrDefault(postId, Collections.emptyMap());
@@ -188,7 +183,7 @@ public class PostSyncScheduler {
                     post.updateMeta(likeCount, viewCount, collectCount, replyCount);
                     double hotScore = post.calculateHotScore();
                     scoresMap.put(postId, hotScore);
-                    postRepositoryImpl.update(post);
+                    postRepository.update(post);
                     creatorId = post.getCreatorId();
                     willCachePosts.add(post);
                 }
@@ -197,7 +192,7 @@ public class PostSyncScheduler {
                 //2.2 点赞增量事件通知：发送统一的 UserChangedEvent (携带创作者点赞积分增量与点赞数增量)
                 if (delta != null && creatorId != null) {
                     double scoreDelta = delta * PostConstants.Business.CREATOR_SCORE_LIKE;
-                    queueSender.send(MqConstants.User.EXCHANGE, MqConstants.User.ROUTING_KEY_CHANGE, UserChangedEvent.builder()
+                    willSendEventList.add(UserChangedEvent.builder()
                             .eventType(UserChangedEvent.EventType.UPDATE)
                             .userId(creatorId)
                             .scoreDelta(scoreDelta)
@@ -207,6 +202,8 @@ public class PostSyncScheduler {
             }
             //2.3 同步写回 Redis detail 缓存
             postCacheProvider.batchCachePostDetail(willCachePosts);
+
+            return willSendEventList;
         });
 
         //3,  增量同步计算后的热度得分到 Redis 热门 ZSet
@@ -218,10 +215,17 @@ public class PostSyncScheduler {
             }
         }
 
+        for (UserChangedEvent event : willList) {
+            try {
+                queueSender.send(MqConstants.Post.EXCHANGE, MqConstants.Post.ROUTING_KEY_CHANGE, event);
+            } catch (Exception e) {
+                log.error("【帖子】发送change事件失败:{}", event, e);
+            }
+
+        }
 
         log.info("【帖子】已合并同步并更新热度 {} 个帖子状态至数据库", postIdList.size());
     }
-
 
 
     /**
@@ -277,11 +281,12 @@ public class PostSyncScheduler {
 
     /**
      * 批量获取帖子实体从db
+     *
      * @param postIdList 帖子Id集合
      * @return 帖子实体Map，key为帖子ID
      */
-    private  Map<Long, Post> batchSelectPost(Collection<Long> postIdList){
-        List<Post> postsList =  postRepositoryImpl.findByIds((List<Long>) postIdList);
+    private Map<Long, Post> batchSelectPost(Collection<Long> postIdList) {
+        List<Post> postsList = postRepository.findByIds((List<Long>) postIdList);
         return postsList == null ? Collections.emptyMap() :
                 postsList.stream().collect(Collectors.toMap(Post::getId, Function.identity()));
     }

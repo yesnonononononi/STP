@@ -91,7 +91,7 @@
                     <div class="left text-gray-500 mx-4 p-4 w-1/2 select-none">
                         {{ userInfo?.introduction || (isme ? '添加简介,让大家认识你' : '该用户暂无简介') }}
                     </div>
-                    <div class="right w-1/2 text-right flex justify-center items-center gap-12 mb-6" v-if="!isme">
+                    <div class="right w-1/2 text-right flex justify-center items-center gap-6 mb-6" v-if="!isme">
                         <button @click="handleFollow"
                             class="rounded-md shadow-md w-24 h-10 cursor-pointer hover:scale-[1.05] transition-all duration-300 font-semibold"
                             :class="userInfo?.followed
@@ -101,6 +101,10 @@
                         </button>
                         <button @click="handleMessage"
                             class="bg-linear-to-bl rounded-md shadow-md from-blue-100 to-blue-200 w-24 h-10 cursor-pointer hover:scale-[1.05]">私信</button>
+                        <button @click="showReportDialog = true"
+                            class="text-sm text-slate-400 hover:text-rose-500 transition-colors cursor-pointer font-medium px-2 py-1">
+                            举报
+                        </button>
                     </div>
                     <div v-else class="flex items-center gap-4 px-4 mb-6">
                         <span>个人信息完善度</span>
@@ -115,22 +119,81 @@
             <div class="flex-1 min-h-0 pb-3 bg-gay-100 rounded-md flex">
                 <div class="left p-2 pb-0 h-full transition-all duration-300" :class="isme ? 'w-[75%]' : 'w-full'">
                     <div
-                        class=" w-full h-[10%]  rounded-md bg-white p-3  flex gap-18 text-xl text-gray-500 font-semibold select-none">
-                        <span
-                            class="hover:text-blue-200 transition-all duration-300 cursor-pointer flex items-center justify-center"
-                            :class="curTab === 0 ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-200 to-blue-300' : ''"
-                            @click="handleTabClick(0)">帖子</span>
-                        <span
-                            class="hover:text-blue-200 transition-all duration-300 cursor-pointer flex items-center justify-center"
-                            :class="curTab === PostStatus.LIKED ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-200 to-blue-300' : ''"
-                            @click="handleTabClick(PostStatus.LIKED)">赞过</span>
-                        <span
-                            class="hover:text-blue-200 transition-all duration-300 cursor-pointer flex items-center justify-center"
-                            :class="curTab === PostStatus.COLLECTED ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-200 to-blue-300' : ''"
-                            @click="handleTabClick(PostStatus.COLLECTED)">收藏</span>
+                        class="w-full h-[10%] rounded-md bg-white p-3 px-4 flex items-center justify-between text-xl text-gray-500 font-semibold select-none">
+                        <div class="flex gap-12 items-center">
+                            <span
+                                class="hover:text-blue-400 transition-all duration-300 cursor-pointer flex items-center justify-center"
+                                :class="curTab === 0 ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-blue-600' : ''"
+                                @click="handleTabClick(0)">帖子</span>
+                            <span
+                                class="hover:text-blue-400 transition-all duration-300 cursor-pointer flex items-center justify-center"
+                                :class="curTab === PostStatus.LIKED ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-blue-600' : ''"
+                                @click="handleTabClick(PostStatus.LIKED)">赞过</span>
+                            <span
+                                class="hover:text-blue-400 transition-all duration-300 cursor-pointer flex items-center justify-center"
+                                :class="curTab === PostStatus.COLLECTED ? 'bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-blue-600' : ''"
+                                @click="handleTabClick(PostStatus.COLLECTED)">收藏</span>
+                        </div>
+
+                        <!-- 仅在查看自己且位于“帖子”Tab时显示审核状态筛选器 (简约风格动画下拉框) -->
+                        <div v-if="isme && curTab === 0" class="relative inline-block text-xs font-normal select-none" ref="dropdownRef">
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-400 font-medium">状态:</span>
+                                <button
+                                    @click.stop="isDropdownOpen = !isDropdownOpen"
+                                    class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100/90 border border-slate-200/80 text-slate-700 font-medium shadow-2xs transition-all duration-200 active:scale-95 cursor-pointer"
+                                >
+                                    <span class="size-2 rounded-full shrink-0" :class="activeOption.dotClass"></span>
+                                    <span>{{ activeOption.label }}</span>
+                                    <svg
+                                        class="size-3.5 text-slate-400 transition-transform duration-300"
+                                        :class="isDropdownOpen ? 'rotate-180 text-blue-500' : ''"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"
+                                    >
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                    </svg>
+                                </button>
+
+                                <span class="text-[10px] text-slate-400 font-medium bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 shrink-0">
+                                    仅自己可见
+                                </span>
+                            </div>
+
+                            <!-- 过渡动画下拉菜单列表 -->
+                            <Transition
+                                enter-active-class="transition duration-200 ease-out"
+                                enter-from-class="transform opacity-0 scale-95 -translate-y-2"
+                                enter-to-class="transform opacity-100 scale-100 translate-y-0"
+                                leave-active-class="transition duration-150 ease-in"
+                                leave-from-class="transform opacity-100 scale-100 translate-y-0"
+                                leave-to-class="transform opacity-0 scale-95 -translate-y-2"
+                            >
+                                <div
+                                    v-if="isDropdownOpen"
+                                    class="absolute right-12 top-full mt-2 w-48 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-100 shadow-2xl p-1.5 z-50 overflow-hidden"
+                                >
+                                    <div
+                                        v-for="opt in auditOptions"
+                                        :key="opt.value"
+                                        @click="selectAuditOption(opt.value)"
+                                        class="flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-xs font-medium transition-all duration-200"
+                                        :class="auditFilter === opt.value ? 'bg-blue-50/80 text-blue-600 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'"
+                                    >
+                                        <div class="flex items-center gap-2">
+                                            <span class="size-2 rounded-full shrink-0" :class="opt.dotClass"></span>
+                                            <span>{{ opt.label }}</span>
+                                        </div>
+                                        <svg v-if="auditFilter === opt.value" class="size-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </Transition>
+                        </div>
                     </div>
                     <div class="w-full mt-2 h-[90%] rounded-xl">
                         <UserProfileTabPublish ref="publishTabRef" :status="curTab" :creator-id="uid" :self="isme"
+                            :audit-filter="auditFilter"
                             @delete="handleDelete" />
                     </div>
                 </div>
@@ -455,10 +518,19 @@
             </div>
         </div>
     </Teleport>
+
+    <!-- 举报弹窗 -->
+    <UserReportDialog
+        v-if="userInfo && userInfo.id"
+        v-model="showReportDialog"
+        :reported-id="userInfo.id"
+        :target-nick="userInfo.nick"
+    />
 </template>
 
 <script lang="ts" setup>
-import {computed, onMounted, reactive, ref, watch} from 'vue';
+import {computed, onMounted, onUnmounted, reactive, ref, watch} from 'vue';
+import UserReportDialog from '@/presentation/components/UserReportDialog.vue';
 import {useUserInfoStore} from '@/stores/userInfo';
 import router from '@/router';
 import {useRoute} from 'vue-router';
@@ -486,7 +558,44 @@ const route = useRoute();
 const uid = computed(() => route.params.id as string);
 const userStore = useUserInfoStore();
 const showDailySignIn = ref(false);
+const showReportDialog = ref(false);
 const showMemberBuy = ref(false);
+const auditFilter = ref<number>(-1);
+const isDropdownOpen = ref(false);
+const dropdownRef = ref<HTMLElement | null>(null);
+
+const auditOptions = [
+    { value: -1, label: '全部动态', dotClass: 'bg-slate-400' },
+    { value: PostStatus.NORMAL, label: '正常发布', dotClass: 'bg-emerald-500' },
+    { value: PostStatus.CHECK, label: '待审核', dotClass: 'bg-amber-500' },
+    { value: PostStatus.UNPASS, label: '审核未通过', dotClass: 'bg-rose-500' },
+    { value: PostStatus.BLOCKED, label: '已被封禁', dotClass: 'bg-purple-500' },
+    { value: PostStatus.DRAFT, label: '草稿 / 私密', dotClass: 'bg-indigo-500' },
+    { value: PostStatus.DELETED, label: '已删除', dotClass: 'bg-zinc-400' },
+];
+
+const activeOption = computed(() => {
+    return auditOptions.find(o => o.value === auditFilter.value) || auditOptions[0]!;
+});
+
+const selectAuditOption = (val: number) => {
+    auditFilter.value = val;
+    isDropdownOpen.value = false;
+};
+
+const handleDocumentClick = (e: MouseEvent) => {
+    if (dropdownRef.value && !dropdownRef.value.contains(e.target as Node)) {
+        isDropdownOpen.value = false;
+    }
+};
+
+onMounted(() => {
+    document.addEventListener('click', handleDocumentClick);
+});
+
+onUnmounted(() => {
+    document.removeEventListener('click', handleDocumentClick);
+});
 const state = reactive({
     isSignIn: false
 })

@@ -63,8 +63,8 @@ const isAuthEndpoint = (config?: InternalAxiosRequestConfig) =>
 const invalidateAuth = (message: string) => {
   const authStore = useAuthStore()
   authStore.clearAuth()
-  if (!authStore.loginDialogVisible) {
-    authStore.showLoginDialog()
+  if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+    window.location.href = '/login'
   }
   return Promise.reject(new Error(message))
 }
@@ -73,7 +73,7 @@ const handleForbiddenAdmin = (message: string) => {
   ElMessage.error(message)
   const authStore = useAuthStore()
   authStore.clearAuth()
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
     window.location.href = '/login'
   }
   return Promise.reject(new Error(message))
@@ -110,8 +110,8 @@ const refreshAccessToken = (): Promise<string> => {
       return newData.token
     } catch (error) {
       authStore.clearAuth()
-      if (!authStore.loginDialogVisible) {
-        authStore.showLoginDialog()
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.href = '/login'
       }
       throw error
     } finally {

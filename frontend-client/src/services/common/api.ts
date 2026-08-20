@@ -103,7 +103,7 @@ export class CommonAPI {
     const workers = Array.from({ length: Math.min(concurrency, tasks.length) }, async () => {
       while (poolIndex < tasks.length) {
         const task = tasks[poolIndex++]
-        await task()
+        if (task) await task()
       }
     })
     await Promise.all(workers)

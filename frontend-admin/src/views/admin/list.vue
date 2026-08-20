@@ -248,7 +248,6 @@ const handleToggleBan = (row: AdminVO, attemptBan: boolean) => {
 
 // 等级升降操作
 const handleOrderChange = async (row: AdminVO, attemptAscend: boolean) => {
-  const actionText = attemptAscend ? '提升' : '降低'
   try {
     const path = attemptAscend ? '/u/admin/ascend' : '/u/admin/descend'
     const res: any = await request.post(path, null, {

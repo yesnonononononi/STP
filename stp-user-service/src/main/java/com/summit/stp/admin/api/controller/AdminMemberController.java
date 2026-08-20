@@ -61,6 +61,7 @@ public class AdminMemberController {
     public Result<Void> savePackage(@RequestBody MemberCreateRequest request) {
         MemberCreateCommand command = MemberCreateCommand
                 .builder()
+                .id(request.getId())
                 .name(request.getName())
                 .type(MemberType.fromName(request.getType()))
                 .price(request.getPrice())
@@ -72,9 +73,12 @@ public class AdminMemberController {
                 .typeId(request.getTypeId())
                 .isSuper(request.getIsSuper())
                 .stock(request.getStock())
+                .status(request.getStatus())
                 .build();
         return memberAppService.save(command);
     }
+
+
 
     @PostMapping("/package/delete/{id}")
     public Result<Void> deletePackage(@PathVariable Long id) {

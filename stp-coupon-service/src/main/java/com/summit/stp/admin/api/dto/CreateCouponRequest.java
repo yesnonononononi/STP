@@ -7,7 +7,8 @@ import java.math.BigDecimal;
 import java.util.List;
 @Data
 public class CreateCouponRequest {
-    private final String name;
+    private Long id;
+    private String name;
     private final BigDecimal discount;
     private final BigDecimal amount;
     private  int status;

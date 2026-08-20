@@ -27,5 +27,7 @@ public interface PayAppService {
      * @return
      */
     Result<List<String>> getType();
+
+    Result<String> toPay(Long orderNo);
 }
 

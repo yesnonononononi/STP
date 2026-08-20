@@ -10,8 +10,8 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = {"com.summit.stp.post.api","com.summit.stp.user.api"})
-@ComponentScan(basePackages = {"com.summit.stp.comment", "com.summit.stp.common"})
-@MapperScan("com.summit.stp.comment.infrastructure.persistence.mapper")
+@ComponentScan(basePackages = {"com.summit.stp.comment.comment","com.summit.stp.comment.admin", "com.summit.stp.common"})
+@MapperScan("com.summit.stp.comment.comment.infrastructure.persistence.mapper")
 public class StpCommentApplication {
     public static void main(String[] args) {
         SpringApplication.run(StpCommentApplication.class, args);

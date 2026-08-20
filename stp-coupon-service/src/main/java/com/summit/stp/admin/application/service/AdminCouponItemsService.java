@@ -23,4 +23,6 @@ public interface AdminCouponItemsService {
     void createActivity(CreateCouponActivityCommand command);
 
     void toggleActivityStatus(Long id, boolean attemptStart);
+
+    void deleteActivity(Long id);
 }

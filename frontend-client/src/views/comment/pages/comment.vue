@@ -91,7 +91,7 @@
                     comment.comment.isTop ? '取消置顶' : '置顶' }}</span>
             </div>
             <div class=" flex items-center gap-2" v-if="moreSelect">
-                <span class="text-red-400 cursor-pointer">举报</span>
+                <span class="text-red-400 cursor-pointer" @click="handleOpenReport">举报</span>
 
             </div>
         </div>
@@ -113,6 +113,13 @@
             </el-input>
         </div>
     </div>
+
+    <!-- 举报弹窗 -->
+    <CommentReportDialog
+        v-model:visible="reportDialogVisible"
+        :comment-id="comment.comment.id"
+        :comment-content="comment.comment.content"
+    />
 
     <!-- 视频放大预览弹窗 -->
     <Teleport to="body">
@@ -137,6 +144,21 @@ import {useUserInfoStore} from '@/stores/userInfo';
 import UserHoverCard from '@/presentation/components/UserHoverCard.vue';
 import {parseEmoji} from '@/utils/emoji';
 import Emoji from '@/presentation/components/emoji.vue';
+import CommentReportDialog from '@/presentation/components/CommentReportDialog.vue';
+import {useAuthStore} from '@/views/auth/store';
+import {log} from '@/utils/log';
+
+const reportDialogVisible = ref(false);
+
+function handleOpenReport() {
+    const authStore = useAuthStore();
+    if (!authStore.token) {
+        log.warning('请先登录后操作');
+        authStore.showLoginDialog();
+        return;
+    }
+    reportDialogVisible.value = true;
+}
 
 const errMsg = ref('');
 const moreSelect = ref(false)

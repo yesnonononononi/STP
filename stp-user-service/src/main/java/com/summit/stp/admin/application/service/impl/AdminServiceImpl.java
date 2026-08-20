@@ -14,7 +14,7 @@ import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.user.domain.model.User;
 import com.summit.stp.common.application.service.queue.QueueSender;
 import com.summit.stp.common.constants.MqConstants;
-import com.summit.stp.user.infrastructure.persistence.UserRepositoryImpl;
+import com.summit.stp.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,7 +27,7 @@ import java.util.Objects;
 @Slf4j
 public class AdminServiceImpl implements AdminService {
     private final AdminRepositoryImpl adminRepositoryImpl;
-    private final UserRepositoryImpl userRepositoryImpl;
+    private final UserRepository<User> userRepository;
     private final AdminEventSender adminEventSender;
     private final QueueSender queueSender;
 
@@ -80,7 +80,7 @@ public class AdminServiceImpl implements AdminService {
 
         //1, 查询用户信息
         Admin curAdmin = adminRepositoryImpl.findByUserId(user.getId());
-        User target = userRepositoryImpl.findUserById(uid).orElseThrow(() -> new BusinessException("用户不存在"));
+        User target = userRepository.findUserById(uid).orElseThrow(() -> new BusinessException("用户不存在"));
 
         //2, 检查用户信息
         //2.1 预构建Admin实体

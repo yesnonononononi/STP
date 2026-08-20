@@ -34,8 +34,10 @@ export enum PostStatus {
   REPORTED = 4,
   UNKNOWN = 5,
   DRAFT = 6,
-  COLLECTED = 7,
-  LIKED = 8,
+  CHECK = 7,   
+  UNPASS = 8, 
+  COLLECTED = 9,
+  LIKED = 10,
 }
 
 /**
@@ -48,6 +50,8 @@ export const PostStatusNames = {
   [PostStatus.REPORTED]: '举报',
   [PostStatus.UNKNOWN]: '未知',
   [PostStatus.DRAFT]: '草稿',
+  [PostStatus.CHECK]: '待审核',
+  [PostStatus.UNPASS]: '审核未通过',
 } as const
 
 /**

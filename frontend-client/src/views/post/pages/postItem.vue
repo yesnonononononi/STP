@@ -25,6 +25,20 @@
       <div class="title font-bold text-gray-900 text-base leading-snug flex items-center">
         <div v-if="props.self">
           <el-tag v-if="post.isTop === 1 && !props.hideTop" size="small" type="danger" effect="dark" class="mr-1">置顶</el-tag>
+          <el-tag v-if="self && Number(post.status) === PostStatus.CHECK" size="small" type="warning" effect="dark"
+            class="mr-1 bg-amber-500 border-amber-500">待审核</el-tag>
+          <div v-if="self && Number(post.status) === PostStatus.UNPASS" class="inline-flex items-center gap-1.5 mr-2.5">
+            <el-tag size="small" type="danger" effect="dark" class="bg-rose-600 border-rose-600">审核未通过</el-tag>
+            <Tooltip :content="unpassReasonMap[post.id] || '鼠标悬停或点击查看原因'" placement="top" theme="glass">
+              <button
+                @mouseenter="fetchUnpassReason(post.id)"
+                @click.stop="fetchUnpassReason(post.id)"
+                class="bg-transparent border-0 p-0 text-xs text-red-500 hover:text-red-600 font-medium underline underline-offset-2 cursor-pointer transition-colors"
+              >
+                详情
+              </button>
+            </Tooltip>
+          </div>
           <el-tag v-if="self && Number(post.status) === PostStatus.DRAFT" size="small" type="info" effect="dark"
             class="mr-1 bg-amber-500 border-amber-500">草稿</el-tag>
           <el-tag v-if="self && Number(post.status) === PostStatus.DELETED" size="small" type="info" effect="dark"
@@ -56,12 +70,21 @@
       <!-- 媒体展示 -->
       <div class="extra mt-2">
         <!-- 图片类型 -->
-        <div v-if="isImageType" class="img flex flex-wrap  gap-2 w-full">
-          <el-image v-for="(imgUrl, index) in getPostImages(post)" :key="index" :class="[
-            isCard ? 'max-w-32 max-h-32' : 'max-w-36 max-h-36',
-            'rounded-lg object-cover   transition-transform duration-200 hover:scale-[1.02] cursor-pointer'
-          ]" class="w-auto h-auto" :src="imgUrl" :preview-src-list="getPostImages(post)" :initial-index="index"
-            fit="cover" preview-teleported>
+        <div v-if="isImageType" class="img flex flex-wrap gap-2 w-full">
+          <el-image
+            v-for="(img, index) in getPostImageObjects(post)"
+            :key="index"
+            :class="[
+              (!img.width || !img.height) ? (isCard ? 'w-32 h-32 max-w-32 max-h-32' : 'w-36 h-36 max-w-36 max-h-36') : '',
+              'rounded-lg object-cover transition-transform duration-200 hover:scale-[1.02] cursor-pointer'
+            ]"
+            :style="getImageStyle(img)"
+            :src="img.url"
+            :preview-src-list="getPostImageObjects(post).map(i => i.url)"
+            :initial-index="index"
+            fit="cover"
+            preview-teleported
+          >
             <template #placeholder>
               <div
                 class="image-slot flex items-center justify-center bg-gray-100 h-full w-full text-gray-400 rounded-lg">
@@ -191,20 +214,38 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, reactive, ref} from 'vue'
 import {ChatDotRound, Picture, Share, Star} from '@element-plus/icons-vue'
 import {parseEmoji} from '@/utils/emoji'
 import PostVisibilitySettings from '@/views/post/components/PostVisibilitySettings.vue'
-import {PostStatus, PostType, type PostVO} from '@/services/post'
+import {PostAPI, PostStatus, PostType, type PostVO} from '@/services/post'
 import {TimeUtils} from '@/utils/time'
 import {formatNum} from '@/utils/page'
 import {parseMediaUrls, parseTag} from '@/utils/post'
 import UserHoverCard from '@/presentation/components/UserHoverCard.vue'
+import Tooltip from '@/presentation/components/Tooltip.vue'
 import router from '@/router'
 import {useUserInfoStore} from '@/stores/userInfo'
 
 const showSettingsModal = ref(false)
 const showShareTip = ref(false)
+
+const unpassReasonMap = reactive<Record<string | number, string>>({})
+
+async function fetchUnpassReason(postId: string | number) {
+  if (unpassReasonMap[postId] && unpassReasonMap[postId] !== '加载中...') return
+  unpassReasonMap[postId] = '加载中...'
+  try {
+    const res = await PostAPI.getUnpassReason(postId)
+    if (res.code === 1 && res.data) {
+      unpassReasonMap[postId] = res.data
+    } else {
+      unpassReasonMap[postId] = '暂未提供具体不通过原因。'
+    }
+  } catch {
+    unpassReasonMap[postId] = '获取失败原因失败。'
+  }
+}
 
 const handleShare = async () => {
   const title = props.post.title || ''
@@ -312,12 +353,53 @@ function onVideoMouseLeave(event: MouseEvent) {
   }
 }
 
+export interface PostImageMedia {
+  url: string
+  width?: number | null
+  height?: number | null
+}
+
 // 媒体解析辅助
 function getPostImages(item: PostVO): string[] {
   if (Array.isArray(item.mediaUrls)) {
     return item.mediaUrls.map((m) => m.imageUrl).filter(Boolean)
   }
   return parseMediaUrls(item.extraMediaUrl)
+}
+
+function getPostImageObjects(item: PostVO): PostImageMedia[] {
+  if (Array.isArray(item.mediaUrls) && item.mediaUrls.length > 0) {
+    return item.mediaUrls
+      .filter(m => !!m.imageUrl)
+      .map(m => ({
+        url: m.imageUrl,
+        width: m.width,
+        height: m.height
+      }))
+  }
+  return parseMediaUrls(item.extraMediaUrl).map(url => ({ url }))
+}
+
+function getImageStyle(img?: PostImageMedia | null) {
+  if (img && img.width && img.height && img.width > 0 && img.height > 0) {
+    const aspectRatio = img.width / img.height
+    let targetHeight = Math.min(img.height, 320)
+    let targetWidth = Math.min(img.width, targetHeight * aspectRatio)
+
+    if (targetWidth > 460) {
+      targetWidth = 460
+      targetHeight = targetWidth / aspectRatio
+    }
+
+    return {
+      width: `${Math.round(targetWidth)}px`,
+      height: `${Math.round(targetHeight)}px`,
+      maxWidth: '100%',
+      maxHeight: '320px',
+      objectFit: 'cover' as const
+    }
+  }
+  return {}
 }
 
 function getPostVideo(item: PostVO): string {

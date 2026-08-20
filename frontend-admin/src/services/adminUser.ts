@@ -1,17 +1,8 @@
 import request from '@/services/request'
-import type { Result } from '@/types/result'
+import type { Result, PageResult, RangeDTO } from '@/types/result'
 import type { UserProfileData } from '@/services/user'
 
-export interface PageResult<T> {
-  page: number
-  total: number
-  data: T
-}
-
-export interface RangeDTO<T> {
-  min?: T | null
-  max?: T | null
-}
+export type { RangeDTO }
 
 export interface AdminUserQueryPayload {
   page: number

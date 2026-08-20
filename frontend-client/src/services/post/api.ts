@@ -139,6 +139,13 @@ export class PostAPI {
   static async view(id: string | number): Promise<Result<void>> {
     return await request.post(`/post/view/${id}`)
   }
+
+  /**
+   * 获取帖子未审核通过的原因
+   */
+  static async getUnpassReason(id: string | number): Promise<Result<string>> {
+    return await request.get(`/post/unpass/reason/${id}`)
+  }
 }
 
 /**

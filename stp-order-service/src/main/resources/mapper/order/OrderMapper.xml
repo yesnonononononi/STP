@@ -1,5 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.summit.stp.order.infrastructure.persistence.mapper.OrderMapper">
+<mapper namespace="com.summit.stp.order.order.infrastructure.persistence.mapper.OrderMapper">
+
+    <select id="selectOrderOverviewStats" resultType="com.summit.stp.order.order.infrastructure.persistence.dto.OrderOverviewStatDTO">
+        SELECT 
+            IFNULL(SUM(amount), 0.0) AS totalGmv,
+            IFNULL(SUM(CASE WHEN create_time >= #{startOfToday} THEN amount ELSE 0.0 END), 0.0) AS todayGmv,
+            IFNULL(SUM(CASE WHEN create_time >= #{startOfYesterday} AND create_time &lt; #{startOfToday} THEN amount ELSE 0.0 END), 0.0) AS yesterdayGmv
+        FROM payment_order
+        <!-- status 1=PAID, 2=COMPLETED -->
+        WHERE status IN (1, 2)
+    </select>
+
+    <select id="selectOrderTrendsStats" resultType="com.summit.stp.order.order.infrastructure.persistence.dto.OrderTrendStatDTO">
+        SELECT 
+            DATE(create_time) AS dateStr,
+            IFNULL(SUM(amount), 0.0) AS dayGmv,
+            COUNT(*) AS dayCount
+        FROM payment_order
+        WHERE status IN (1, 2)
+          AND create_time >= #{startTimestamp}
+        GROUP BY DATE(create_time)
+    </select>
 
 </mapper>

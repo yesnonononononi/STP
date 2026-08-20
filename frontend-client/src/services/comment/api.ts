@@ -67,4 +67,14 @@ export class CommentAPI {
   static async top(commentId: string, postId: string): Promise<Result<void>> {
     return await request.get(`/post/comment/top/${postId}`, { params: { commentId } })
   }
+
+  /**
+   * 举报评论
+   * @param id 评论ID
+   * @param reason 举报原因
+   * @returns 操作结果
+   */
+  static async report(id: string | number, reason: string): Promise<Result<void>> {
+    return await request.post('/post/comment/report', null, { params: { id, reason } })
+  }
 }

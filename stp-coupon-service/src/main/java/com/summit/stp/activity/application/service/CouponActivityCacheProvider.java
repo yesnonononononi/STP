@@ -6,13 +6,12 @@ import java.util.Map;
 
 public interface CouponActivityCacheProvider {
     /**
-     * 优惠券库存扣减
+     * 优惠券库存扣减 (系统设定一人限领 1 张)
      * @param couponId 优惠券id
-     * @param limitCount 单人可领取优惠券上限
      * @param activityId 活动id
      * @return 是否成功
      */
-    boolean deductStock(Long couponId, Long limitCount, Long activityId);
+    boolean deductStock(Long couponId, Long activityId);
 
     /**
      * 优惠券库存回滚

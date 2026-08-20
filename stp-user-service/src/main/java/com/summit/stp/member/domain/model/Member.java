@@ -31,6 +31,7 @@ public class Member {
     private Long typeId;
     private Boolean isSuper;
     private Integer stock;
+    private Integer status;
     private Instant createTime;
 
     private static void validatePrice(BigDecimal price) {

@@ -2,6 +2,7 @@ package com.summit.stp.user_coupon.api;
 
 import com.summit.stp.coupon.api.vo.CouponQueryVO;
 import com.summit.stp.common.application.api.result.Result;
+import com.summit.stp.coupon.application.service.impl.CouponAppServiceImpl;
 import com.summit.stp.user_coupon.application.service.UserCouponAppService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -18,6 +19,7 @@ import java.util.Map;
 @Api(tags = "优惠券内部服务接口")
 public class UserCouponInternalController {
     private final UserCouponAppService userCouponAppService;
+    private final CouponAppServiceImpl couponAppServiceImpl;
 
     @GetMapping("/get/{id}")
     @ApiOperation(value = "根据ID查询用户优惠券详情")
@@ -54,7 +56,7 @@ public class UserCouponInternalController {
     @PostMapping("/batch")
     @ApiOperation(value = "批量查询优惠券信息")
     public Result<Map<Long, CouponQueryVO>> queryByIds(@RequestBody List<Long> cList) {
-        return Result.success(userCouponAppService.queryByIds(cList));
+        return Result.success(couponAppServiceImpl.queryByIds(cList));
     }
 }
 

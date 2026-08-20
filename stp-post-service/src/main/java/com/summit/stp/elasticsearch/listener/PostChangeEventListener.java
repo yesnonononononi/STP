@@ -32,6 +32,7 @@ public class PostChangeEventListener {
     ))
     public void consume(PostChangeEvent postD, Channel channel, Message message) {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
+        log.info("【ES模块】收到帖子更改事件: {}",postD);
         try {
             // 1. 条件判断
             if (postD == null || postD.getData() == null) {
@@ -61,8 +62,8 @@ public class PostChangeEventListener {
         switch (eventType) {
             case CREATE, UPDATE -> esPostRepository.save(doc);
             case DELETE -> {
-                if (doc.getId() != null) {
-                    esPostRepository.deleteById(doc.getId());
+                if (doc.getPostId() != null) {
+                    esPostRepository.deleteById(doc.getPostId());
                 }
             }
         }

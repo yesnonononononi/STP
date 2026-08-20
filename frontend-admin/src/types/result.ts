@@ -10,6 +10,11 @@ export interface PageResult<T = any> {
   data: T
 }
 
+export interface RangeDTO<T> {
+  min?: T | null
+  max?: T | null
+}
+
 export interface CursorPageResult<T> {
   list: T[]
   cursor: string

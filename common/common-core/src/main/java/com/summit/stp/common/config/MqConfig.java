@@ -35,8 +35,9 @@ public class MqConfig {
     private String password;
     @Value("${spring.rabbitmq.max-retries:3}")
     private int maxRetries;
+
     @Bean
-    public ConnectionFactory connectionFactory(){
+    public ConnectionFactory connectionFactory() {
         CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(rabbitmqHost);
         cachingConnectionFactory.setPort(rabbitmqPort);
         cachingConnectionFactory.setUsername(username);
@@ -57,13 +58,13 @@ public class MqConfig {
     }
 
     @Bean
-    public MessageConverter messageConverter(JsonMapper jsonMapper){
+    public MessageConverter messageConverter(JsonMapper jsonMapper) {
         return new ToolsJacksonMessageConverter(jsonMapper);
     }
 
 
     @Bean
-    public RabbitTemplate rabbitTemplate(MessageConverter messageConverter){
+    public RabbitTemplate rabbitTemplate(MessageConverter messageConverter) {
 
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory());
 
@@ -107,7 +108,7 @@ public class MqConfig {
 
     //监听器容器工厂
     @Bean
-    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(MessageConverter messageConverter, StatelessRetryOperationsInterceptor statelessRetryOperationsInterceptor){
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(MessageConverter messageConverter, StatelessRetryOperationsInterceptor statelessRetryOperationsInterceptor) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory());
         factory.setMessageConverter(messageConverter);
@@ -131,10 +132,10 @@ public class MqConfig {
 
     //重试拦截器
     @Bean
-    public StatelessRetryOperationsInterceptor statelessRetryOperationsInterceptor(RabbitTemplate rabbitTemplate){
+    public StatelessRetryOperationsInterceptor statelessRetryOperationsInterceptor(RabbitTemplate rabbitTemplate) {
         return RetryInterceptorBuilder.stateless()
                 .maxRetries(maxRetries)
-                .backOffOptions(1000,2.0,10000)
+                .backOffOptions(1000, 2.0, 10000)
                 .recoverer(new RepublishMessageRecoverer(
                         rabbitTemplate,
                         MqConstants.Pay.EXCHANGE,      // 指定用于转发失败消息的交换机名称
@@ -313,8 +314,50 @@ public class MqConfig {
     }
 
     @Bean
-    public Binding postChangeBinding(Queue postChangeQueue, TopicExchange topicExchange){
+    public Binding postChangeBinding(Queue postChangeQueue, TopicExchange topicExchange) {
         return BindingBuilder.bind(postChangeQueue).to(topicExchange).with(MqConstants.Post.ROUTING_KEY_CHANGE);
     }
 
+
+    // ==========================5, coupon ====================================
+    @Bean
+    public TopicExchange couponTopicExchange() {
+        return new TopicExchange(MqConstants.Coupon.EXCHANGE, true, false);
+    }
+
+    @Bean
+    public Queue couponSeckillQueue() {
+        return QueueBuilder.durable(MqConstants.Coupon.COUPON_SECKILL_QUEUE).build();
+    }
+
+    @Bean
+    public Binding couponSeckillBinding(Queue couponSeckillQueue, TopicExchange couponTopicExchange) {
+        return BindingBuilder.bind(couponSeckillQueue).to(couponTopicExchange).with(MqConstants.Coupon.COUPON_SECKILL_ROUTING_KEY);
+    }
+
+    // ========================== 6. 系统 ES 专用 Exchange, Queue & Binding ==========================
+    @Bean
+    public TopicExchange esTopicExchange() {
+        return new TopicExchange(MqConstants.Es.EXCHANGE, true, false);
+    }
+
+    @Bean
+    public Queue esPostUpdateQueue() {
+        return QueueBuilder.durable(MqConstants.Es.QUEUE_POST_UPDATE).build();
+    }
+
+    @Bean
+    public Binding esPostUpdateBinding(Queue esPostUpdateQueue, TopicExchange esTopicExchange) {
+        return BindingBuilder.bind(esPostUpdateQueue).to(esTopicExchange).with(MqConstants.Es.ROUTING_KEY_POST_UPDATE);
+    }
+
+    @Bean
+    public Queue esUserUpdateQueue() {
+        return QueueBuilder.durable(MqConstants.Es.QUEUE_USER_UPDATE).build();
+    }
+
+    @Bean
+    public Binding esUserUpdateBinding(Queue esUserUpdateQueue, TopicExchange esTopicExchange) {
+        return BindingBuilder.bind(esUserUpdateQueue).to(esTopicExchange).with(MqConstants.Es.ROUTING_KEY_USER_UPDATE);
+    }
 }

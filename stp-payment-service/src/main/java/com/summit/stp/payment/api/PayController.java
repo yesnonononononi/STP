@@ -1,7 +1,9 @@
 package com.summit.stp.payment.api;
 
 import com.summit.stp.common.application.api.result.Result;
+import com.summit.stp.common.application.domain.model.UserSession;
 import com.summit.stp.payment.api.dto.PayCallbackRequest;
+import com.summit.stp.payment.api.dto.PayCommand;
 import com.summit.stp.payment.application.command.PayCallbackCheckCommand;
 import com.summit.stp.payment.application.service.PayAppService;
 import io.swagger.annotations.Api;
@@ -11,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -40,6 +43,12 @@ public class PayController {
     @ApiOperation(value = "获取支持的支付渠道列表", notes = "获取系统当前支持的所有支付方式名称（如 alipay 等）")
     public Result<List<String>> getType(){
         return payAppService.getType();
+    }
+
+
+    @PostMapping("/toPay")
+    public Result<String> toPay(Long orderNo){
+        return payAppService.toPay(orderNo);
     }
 
 }

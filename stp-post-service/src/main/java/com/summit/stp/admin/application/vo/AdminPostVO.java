@@ -19,17 +19,17 @@ public class AdminPostVO {
 
     private String title;
 
-    private PostType type;
+    private Integer type;
 
     private String content;
 
     private String mediaUrls;
 
-    private List<PostImage> urls;
+    private List<String> urls;
 
     private Long replyCount;
 
-    private PostStatus status;
+    private Integer status;
 
     private final Timestamp createTime;
 
@@ -45,5 +45,5 @@ public class AdminPostVO {
 
     private Double hotScore;
 
-    private Post.VisibleScope visibleScope;
+    private Integer visibleScope;
 }

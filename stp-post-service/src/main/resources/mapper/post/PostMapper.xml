@@ -140,4 +140,15 @@
         </where>
     </select>
 
+    <select id="selectContentStats" resultType="com.summit.stp.post.infrastructure.persistence.dto.PostTrendStatDTO">
+        SELECT 
+            DATE(create_time) AS dateStr,
+            COUNT(*) AS postCnt,
+            IFNULL(SUM(reply_count), 0) AS commentCnt,
+            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) AS blockedCnt
+        FROM posts
+        WHERE create_time >= #{startTimestamp}
+        GROUP BY DATE(create_time)
+    </select>
+
 </mapper>

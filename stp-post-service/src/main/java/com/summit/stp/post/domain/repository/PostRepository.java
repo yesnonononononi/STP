@@ -4,6 +4,8 @@ package com.summit.stp.post.domain.repository;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.post.application.vo.PostVO;
 import com.summit.stp.post.domain.model.Post;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,7 +13,10 @@ import java.util.Optional;
 
 public interface PostRepository {
 
-    void save(Post post);
+
+
+    Long savePost(Post post);
+
     void update(Post post);
 
     List<PostVO> queryByPostIds(List<Long> posts,Integer status,Long userId);
@@ -41,4 +46,6 @@ public interface PostRepository {
     List<Long> getPostsByTag(Long tagId, String cursor, Integer limit);
 
     List<Long> getHotPostsByTag(Long tagId, String cursor, Integer limit);
+
+    com.summit.stp.post.domain.model.stats.PostContentStat countContentStats(int days);
 }

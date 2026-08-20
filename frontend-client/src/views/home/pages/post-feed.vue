@@ -202,6 +202,10 @@ const curPost = ref<PostVO | null>(null)
 const visible = ref(false)
 const topicList = ref<PostVO[]>([])
 
+const handlePublishClick = () => {
+  visible.value = true;
+};
+
 const {
   like,
   collect

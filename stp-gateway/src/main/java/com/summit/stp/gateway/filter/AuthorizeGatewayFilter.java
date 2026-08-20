@@ -55,42 +55,68 @@ public class AuthorizeGatewayFilter implements GlobalFilter, Ordered {
                 path.contains("/user-auth/forget")) {
             return chain.filter(exchange);
         }
-
-
+        // 获取 token
         String authHeader = request.getHeaders().getFirst("Authorization");
+        // 解析
+        return resolveToken(authHeader, exchange, chain);
+    }
 
+    /**
+     * resolve user Authentication token
+     */
+    private Mono<Void> resolveToken(String authHeader, ServerWebExchange exchange, GatewayFilterChain chain) {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            String key = UserAuthConstants.Cache.ACCESS_SESSION + token;
-
-            Object val = stringRedisTemplate.opsForValue().get(key);
-            if (val == null) {
-                return unauthorized(exchange, TOKEN_INVALID);
-            }
-            try {
-                UserSession session = objectMapper.readValue(val.toString(), UserSession.class);
-                if (session == null) return unauthorized(exchange, TOKEN_INVALID);
-                return putUser(session, request, chain, exchange);
-
-            } catch (Exception e) {
-                log.error("【网关】解析用户会话 Session 异常", e);
-                return unauthorized(exchange, TOKEN_INVALID);
-            }
+            return onToken(authHeader, exchange, chain);
 
         } else if (authHeader != null && authHeader.startsWith("fb_")) {
-            // jwt token
-            String token = authHeader.substring(3);
-            Result<UserSession> res = validateToken(token);
-            if (res.isSuccess()) {
-                return putUser(res.getData(), request, chain, exchange);
-            } else {
-                // 认证失败，直接返回 401
-                return unauthorized(exchange, StrUtil.isEmptyIfStr(res.getErrMsg()) ? TOKEN_INVALID : res.getErrMsg());
-            }
+            return onJwt(authHeader, exchange, chain);
         }
         return chain.filter(exchange);
     }
 
+    /**
+     * resolve Authentication token if token
+     */
+    private Mono<Void> onToken(String authHeader, ServerWebExchange exchange, GatewayFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        String token = authHeader.substring(7);
+        String key = UserAuthConstants.Cache.ACCESS_SESSION + token;
+
+        Object val = stringRedisTemplate.opsForValue().get(key);
+        if (val == null) {
+            return unauthorized(exchange, TOKEN_INVALID);
+        }
+        try {
+            UserSession session = objectMapper.readValue(val.toString(), UserSession.class);
+            if (session == null) return unauthorized(exchange, TOKEN_INVALID);
+            return putUser(session, request, chain, exchange);
+
+        } catch (Exception e) {
+            log.error("【网关】解析用户会话 Session 异常", e);
+            throw e;
+        }
+    }
+
+    /**
+     * resolve Authentication token if jwt
+     */
+    private Mono<Void> onJwt(String authHeader, ServerWebExchange exchange, GatewayFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        // jwt token
+        String token = authHeader.substring(3);
+        Result<UserSession> res = validateToken(token);
+        if (res.isSuccess()) {
+            return putUser(res.getData(), request, chain, exchange);
+        } else {
+            // 认证失败，直接返回 401
+            return unauthorized(exchange, StrUtil.isEmptyIfStr(res.getErrMsg()) ? TOKEN_INVALID : res.getErrMsg());
+        }
+    }
+
+
+    /**
+     * 未登录
+     */
     private Mono<Void> unauthorized(ServerWebExchange exchange, String errMsg) {
         ServerHttpResponse response = exchange.getResponse();
         if (response.isCommitted()) return Mono.empty();
@@ -103,9 +129,15 @@ public class AuthorizeGatewayFilter implements GlobalFilter, Ordered {
         return response.writeWith(Mono.just(buffer));
     }
 
+
+    /**
+     * put userinfo
+     */
     private Mono<Void> putUser(@NonNull UserSession session, @NonNull ServerHttpRequest request, @NonNull GatewayFilterChain chain, @NonNull ServerWebExchange exchange) {
+        Long id = session.getId();
+        if(id == null)return unauthorized(exchange,"未找到用户信息");
         ServerHttpRequest.Builder builder = request.mutate()
-                .header("X-User-Id", String.valueOf(session.getId()))
+                .header("X-User-Id", String.valueOf(id))
                 .header("X-User-Name", Objects.toString(session.getUsername(), ""))
                 .header("X-User-Admin", Objects.toString(session.getAdmin(), ""))
                 .header("X-User-Token-Type", Objects.toString(session.getTokenType(), ""))
@@ -113,6 +145,12 @@ public class AuthorizeGatewayFilter implements GlobalFilter, Ordered {
         return chain.filter(exchange.mutate().request(builder.build()).build());
     }
 
+    /**
+     * resolve jwt-token && validate it
+     *
+     * @param token jwt
+     * @return res
+     */
     private Result<UserSession> validateToken(String token) {
         try {
             // 1. 核心解析：只要这行抛出异常，后面的代码全都不执行

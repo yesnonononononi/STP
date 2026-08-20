@@ -19,7 +19,7 @@
             <!-- Status Tabs -->
             <div class="flex border-b border-slate-150 text-sm gap-8 mb-6">
                 <button v-for="tab in tabs" :key="tab.value" 
-                    @click="curStatusTab = tab.value"
+                    @click="switchTab(tab.value)"
                     class="pb-3 font-bold relative transition-all cursor-pointer"
                     :class="curStatusTab === tab.value ? 'text-slate-800' : 'text-slate-400 hover:text-slate-600'">
                     {{ tab.name }}
@@ -35,20 +35,21 @@
                 </div>
 
                 <!-- Empty State -->
-                <div v-else-if="filteredList.length === 0" class="flex flex-col items-center justify-center py-20 text-slate-450 gap-3">
+                <div v-else-if="orderList.length === 0" class="flex flex-col items-center justify-center py-20 text-slate-450 gap-3">
                     <svg class="w-12 h-12 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 022 2h2a2 2 0 022-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                     <span class="text-xs font-medium">暂无相关订单</span>
                 </div>
 
                 <!-- List Items -->
-                <div v-else v-for="order in filteredList" :key="order.orderId" 
+                <div v-else v-for="order in orderList" :key="order.orderId" 
                     class="border border-slate-200 border-l-4 rounded-lg p-5 bg-gradient-to-r from-slate-50/40 via-white to-white hover:border-slate-400 hover:shadow-xs transition-all flex flex-col gap-4 relative overflow-hidden"
                     :class="[
-                        Number(order.status) === 0 ? 'border-l-amber-500/80' : '',
-                        Number(order.status) === 1 || Number(order.status) === 2 ? 'border-l-emerald-500/80' : '',
-                        Number(order.status) === 3 ? 'border-l-slate-400/80' : ''
+                        OrderStatus.fromCode(order.status) === OrderStatus.PENDING ? 'border-l-amber-500/80' : '',
+                        OrderStatus.fromCode(order.status) === OrderStatus.PAID ? 'border-l-blue-500/80' : '',
+                        OrderStatus.fromCode(order.status) === OrderStatus.COMPLETED ? 'border-l-emerald-500/80' : '',
+                        OrderStatus.fromCode(order.status) === OrderStatus.CANCELLED ? 'border-l-slate-400/80' : ''
                     ]">
                     
                     <!-- Card Header -->
@@ -65,14 +66,24 @@
                                 </svg>
                             </button>
                         </div>
-                        <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-md"
-                            :class="[
-                                Number(order.status) === 0 ? 'bg-amber-50 text-amber-700 border border-amber-200/50' : '',
-                                Number(order.status) === 1 || Number(order.status) === 2 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/50' : '',
-                                Number(order.status) === 3 ? 'bg-slate-100 text-slate-600 border border-slate-200/50' : ''
-                            ]">
-                            {{ getStatusText(order.status) }}
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <span v-if="OrderStatus.fromCode(order.status) === OrderStatus.PENDING"
+                                class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 flex items-center gap-1">
+                                <svg class="w-3 h-3 text-amber-500 animate-spin" style="animation-duration: 3s;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                剩余 {{ getOrderCountdown(order) }}
+                            </span>
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-md"
+                                :class="[
+                                    OrderStatus.fromCode(order.status) === OrderStatus.PENDING ? 'bg-amber-50 text-amber-700 border border-amber-200/50' : '',
+                                    OrderStatus.fromCode(order.status) === OrderStatus.PAID ? 'bg-blue-50 text-blue-700 border border-blue-200/50' : '',
+                                    OrderStatus.fromCode(order.status) === OrderStatus.COMPLETED ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/50' : '',
+                                    OrderStatus.fromCode(order.status) === OrderStatus.CANCELLED ? 'bg-slate-100 text-slate-600 border border-slate-200/50' : ''
+                                ]">
+                                {{ getStatusText(order.status) }}
+                            </span>
+                        </div>
                     </div>
 
                     <!-- Card Body -->
@@ -89,19 +100,31 @@
                     <!-- Card Footer -->
                     <div class="flex justify-between items-center pt-3 border-t border-slate-100">
                         <div class="text-xs text-slate-400 font-medium">
-                            <span v-if="Number(order.status) === 1 || Number(order.status) === 2">支付方式: {{ PayType.getDescription(order.payTypeName) }}</span>
+                            <span v-if="OrderStatus.fromCode(order.status) === OrderStatus.PAID || OrderStatus.fromCode(order.status) === OrderStatus.COMPLETED">支付方式: {{ PayType.getDescription(order.payTypeName) }}</span>
                             <span v-else>待完成支付</span>
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 items-center">
+                            <!-- 订单详情按钮 -->
+                            <button @click="goToOrderDetail(order.orderId)" 
+                                class="px-3 py-1.5 text-xs font-bold rounded-md border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 active:scale-95 transition-all cursor-pointer">
+                                订单详情
+                            </button>
+
                             <!-- Action Buttons -->
-                            <template v-if="Number(order.status) === 0">
+                            <template v-if="OrderStatus.fromCode(order.status) === OrderStatus.PENDING">
                                 <button @click="cancelOrder(order.orderId)" 
                                     class="px-3 py-1.5 text-xs font-bold rounded-md border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 active:scale-95 transition-all cursor-pointer">
                                     取消订单
                                 </button>
-                                <button @click="reconcileOrder(order.orderId)" 
+                                <button @click="goToPay(order.orderId)" 
+                                    class="px-3 py-1.5 text-xs font-bold rounded-md bg-amber-500 text-white hover:bg-amber-600 active:scale-95 transition-all cursor-pointer">
+                                    去支付
+                                </button>
+                            </template>
+                            <template v-else-if="OrderStatus.fromCode(order.status) === OrderStatus.PAID">
+                                <button @click="ackOrder(order.orderId)" 
                                     class="px-3 py-1.5 text-xs font-bold rounded-md bg-slate-800 text-white hover:bg-slate-700 active:scale-95 transition-all cursor-pointer">
-                                    手动对账
+                                    确认订单
                                 </button>
                             </template>
                             <template v-else>
@@ -133,8 +156,10 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted, ref, watch} from 'vue';
+import {computed, onMounted, onUnmounted, ref, watch} from 'vue';
 import {OrderAPI, type OrderQueryVO} from '@/services/order';
+import {PayAPI} from '@/services/payment';
+import {PayFormBuilder} from '@/views/payment/utils/PayFormBuilder';
 import {OrderStatus} from '@/views/payment/types/orderStatus';
 import Loading from '@/presentation/components/loading.vue';
 import {log} from '@/utils/log';
@@ -146,30 +171,47 @@ const loading = ref<boolean>(false);
 const page = ref<number>(1);
 const pageSize = 10;
 const orderList = ref<OrderQueryVO[]>([]);
+const nowTick = ref<number>(Date.now());
+let countdownTimer: any = null;
 
 const tabs: { name: string; value: number | 'all' }[] = [
     { name: '全部订单', value: 'all' },
     { name: '待支付', value: OrderStatus.PENDING },
     { name: '已支付', value: OrderStatus.PAID },
+    { name: '已完成', value: OrderStatus.COMPLETED },
     { name: '已取消', value: OrderStatus.CANCELLED }
 ];
 const curStatusTab = ref<number | 'all'>('all');
 
-// Simple client-side filtering matching the requested tab filters
-const filteredList = computed(() => {
-    if (curStatusTab.value === 'all') {
-        return orderList.value;
-    }
-    if (curStatusTab.value === OrderStatus.PAID) {
-        // Aligns with PAID (1) and COMPLETED (2) statuses
-        return orderList.value.filter(o => Number(o.status) === OrderStatus.PAID || Number(o.status) === OrderStatus.COMPLETED);
-    }
-    return orderList.value.filter(o => Number(o.status) === curStatusTab.value);
-});
-
 const hasMore = computed(() => {
     return orderList.value.length === pageSize;
 });
+
+function getOrderCountdown(order: OrderQueryVO): string {
+    let targetMs = 0;
+    if (order.timeoutTime) {
+        targetMs = new Date(order.timeoutTime).getTime();
+    } else if (order.createTime) {
+        targetMs = new Date(order.createTime).getTime() + 15 * 60 * 1000;
+    } else {
+        return '15:00';
+    }
+
+    const diffMs = targetMs - nowTick.value;
+    if (diffMs <= 0) return '已超时';
+
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function switchTab(statusVal: number | 'all') {
+    if (curStatusTab.value === statusVal) return;
+    curStatusTab.value = statusVal;
+    page.value = 1;
+    loadOrders();
+}
 
 watch(page, () => {
     loadOrders();
@@ -177,21 +219,34 @@ watch(page, () => {
 
 onMounted(() => {
     loadOrders();
+    countdownTimer = setInterval(() => {
+        nowTick.value = Date.now();
+    }, 1000);
+});
+
+onUnmounted(() => {
+    if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+    }
 });
 
 async function loadOrders() {
     if (loading.value) return;
     loading.value = true;
     try {
-        const res = await OrderAPI.queryHistory(page.value, pageSize);
-        if (res.code === 1) {
-            orderList.value = res.data || [];
-        }
-    } catch (e) {
-        console.error('获取订单列表异常:', e);
+        const statusParam = curStatusTab.value === 'all' ? undefined : Number(curStatusTab.value);
+        const res = await OrderAPI.queryHistory(page.value, pageSize, statusParam);
+        orderList.value = res.data || [];
+    } catch {
+        // 响应拦截器统一提示错误
     } finally {
         loading.value = false;
     }
+}
+
+function goToOrderDetail(orderId: string | number) {
+    router.push({ name: 'payment', query: { orderId: String(orderId) } });
 }
 
 function getStatusText(status: any): string {
@@ -212,29 +267,42 @@ function getStatusText(status: any): string {
 
 async function cancelOrder(orderId: string | number) {
     try {
-        const res = await OrderAPI.deleteOrder(orderId);
-        if (res.code === 1) {
-            log.success('订单已成功取消');
-            await loadOrders();
-        }
-    } catch (e) {
-        console.error('取消订单异常:', e);
+        await OrderAPI.deleteOrder(orderId);
+        log.success('订单已成功取消');
+        await loadOrders();
+    } catch {
+        // 响应拦截器统一提示错误
     }
 }
 
-async function reconcileOrder(orderId: string | number) {
+async function goToPay(orderId: string | number) {
     try {
         loading.value = true;
-        const res = await OrderAPI.reconcileOrder(orderId);
-        if (res.code === 1) {
-            const target = orderList.value.find(o => String(o.orderId) === String(orderId));
-            if (target && target.status !== OrderStatus.PAID) {
-                target.status = OrderStatus.PAID;
+        const res = await PayAPI.toPay(orderId);
+        if (res && res.data) {
+            if (typeof res.data === 'string') {
+                if (res.data.startsWith('http://') || res.data.startsWith('https://') || res.data.startsWith('/')) {
+                    window.location.href = res.data;
+                } else {
+                    PayFormBuilder.submitPayment(res.data);
+                }
             }
-            await loadOrders();
         }
-    } catch (e) {
-        console.error('对账执行异常:', e);
+    } catch {
+        // 响应拦截器统一提示错误
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function ackOrder(orderId: string | number) {
+    try {
+        loading.value = true;
+        await OrderAPI.ackOrder(orderId);
+        log.success('订单已确认');
+        await loadOrders();
+    } catch {
+        // 响应拦截器统一提示错误
     } finally {
         loading.value = false;
     }
@@ -242,13 +310,11 @@ async function reconcileOrder(orderId: string | number) {
 
 async function deleteOrderRecord(orderId: string | number) {
     try {
-        const res = await OrderAPI.deleteOrder(orderId);
-        if (res.code === 1) {
-            log.success('订单记录已删除');
-            await loadOrders();
-        }
-    } catch (e) {
-        console.error('删除订单异常:', e);
+        await OrderAPI.deleteOrder(orderId);
+        log.success('订单记录已删除');
+        await loadOrders();
+    } catch {
+        // 响应拦截器统一提示错误
     }
 }
 

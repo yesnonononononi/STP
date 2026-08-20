@@ -30,6 +30,7 @@ public class AdminCouponController {
     @PostMapping("/save")
     public Result<Void> save(@RequestBody CreateCouponRequest request){
         CreateCouponCommand command = CreateCouponCommand.builder()
+                .id(request.getId())
                 .name(request.getName())
                 .discount(request.getDiscount())
                 .amount(request.getAmount())

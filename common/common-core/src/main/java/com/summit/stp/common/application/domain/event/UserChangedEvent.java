@@ -1,9 +1,6 @@
 package com.summit.stp.common.application.domain.event;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -15,6 +12,7 @@ import java.sql.Timestamp;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class UserChangedEvent implements Serializable {
     private static final long serialVersionUID = 1L;
     public enum EventType {

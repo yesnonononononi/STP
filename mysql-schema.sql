@@ -182,3 +182,32 @@ CREATE TABLE `permissions` (
                                UNIQUE INDEX `uk_role_permission` (`role`,`resource`,`action`) USING BTREE
 );
 
+CREATE TABLE IF NOT EXISTS `user_report` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `reporter_id` bigint NOT NULL COMMENT '举报用户ID',
+  `reported_id` bigint NOT NULL COMMENT '被举报用户ID',
+  `reason` varchar(500) NOT NULL COMMENT '举报原因',
+  `status` tinyint NOT NULL DEFAULT '0' COMMENT '状态: 0-待处理, 1-已忽略, 2-已处置',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '举报时间',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_reporter_id` (`reporter_id`),
+  KEY `idx_reported_id` (`reported_id`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户举报记录表';
+
+CREATE TABLE IF NOT EXISTS `system_activity` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `type` varchar(32) NOT NULL COMMENT '活动类型: WARN-预警, INFO-日志, ORDER-交易, AUDIT-审核',
+  `module` varchar(64) DEFAULT NULL COMMENT '业务模块: USER, POST, ORDER, SYSTEM',
+  `title` varchar(128) NOT NULL COMMENT '活动标题',
+  `content` varchar(500) NOT NULL COMMENT '活动详细说明',
+  `target_url` varchar(256) DEFAULT NULL COMMENT '目标路由地址',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_type` (`type`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统活动与预警日志表';
+
+
+

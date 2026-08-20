@@ -2,12 +2,14 @@ package com.summit.stp.post.infrastructure.persistence.repoImpl;
 
 import cn.hutool.core.util.StrUtil;
 import com.summit.stp.common.auth.UserHolder;
+import com.summit.stp.common.wf.WorkFlow;
 import com.summit.stp.elasticsearch.service.PostQuerySupport;
 import com.summit.stp.post.api.vo.PostSimpleVO;
+import com.summit.stp.post.application.service.PostQueryService;
+import com.summit.stp.post.application.service.impl.PostMediaInfoAssembler;
 import com.summit.stp.post.domain.model.Post;
 import com.summit.stp.user.api.vo.UserSettingVO;
 import com.summit.stp.user.api.vo.UserSimpleVO;
-import com.summit.stp.common.constants.CacheFieldConstants;
 import com.summit.stp.user.api.client.UserFeignClient;
 import com.summit.stp.elasticsearch.document.PostDocument;
 import com.summit.stp.post.api.dto.request.QueryPostListPageRequest;
@@ -38,7 +40,7 @@ import java.util.function.BiFunction;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PostQueryServiceImpl implements com.summit.stp.post.application.service.PostQueryService {
+public class PostQueryServiceImpl implements PostQueryService {
     private final PostImageRepository postImageRepository;
     private final PostTagRelRepository postTagRelRepository;
     private final TagRepository tagRepository;
@@ -50,11 +52,13 @@ public class PostQueryServiceImpl implements com.summit.stp.post.application.ser
     private final UserFeignClient userFeignClient;
     private final PostMetadataAssembler metadataAssembler;
     private final PostQuerySupport postQuerySupport;
+    private final PostMediaInfoAssembler postMediaInfoAssembler;
 
     @Override
     public List<PostVO> getPostPage(Long cursor, Boolean self, Long creatorId, Integer status, String orderType, Integer limit) {
         Long currentUserId = UserHolder.getUser().getId();
         Long resolvedCreatorId = resolveCreatorId(self, creatorId, status != null ? status : PostStatus.NORMAL.getCode(), currentUserId);
+
 
         // 判定是否可以使用 Redis 缓存的全局公开分页：非自己查询，非指定作者查询，状态为 NORMAL (或空)
         boolean isGlobalQuery = resolvedCreatorId == null && (status == null || status == PostStatus.NORMAL.getCode());
@@ -84,7 +88,7 @@ public class PostQueryServiceImpl implements com.summit.stp.post.application.ser
 
 
     @Override
-    public List<PostVO> getByPostIds(List<Long> ids) {
+    public List<PostVO> findAllOfPostsInfo(List<Long> ids) {
         List<PostVO> postVOS = fetchPostsByIdsFromCache(ids);
         return resolveExtraInfo(postVOS);
 
@@ -101,11 +105,6 @@ public class PostQueryServiceImpl implements com.summit.stp.post.application.ser
         return getInteractPostList(targetUserId, cursor, postLikeRepository::findByUserId);
     }
 
-
-    @Override
-    public List<PostVO> getFollowPostList(QueryPostListPageRequest request) {
-        return List.of();
-    }
 
 
     @Override
@@ -136,11 +135,32 @@ public class PostQueryServiceImpl implements com.summit.stp.post.application.ser
     @Override
     public List<PostVO> searchPost(String keyWord, Integer page) {
         if (StrUtil.isBlank(keyWord)) return List.of();
-        List<Long> list = postQuerySupport.findByKeyWords(keyWord,Objects.requireNonNullElse(page,1)).stream().map(PostDocument::getId).toList();
-        List<PostVO> byPostIds = this.getByPostIds(list);
+        List<Long> list = postQuerySupport.findByKeyWords(keyWord,Objects.requireNonNullElse(page,1)).stream().map(PostDocument::getPostId).toList();
+        List<PostVO> byPostIds = this.findAllOfPostsInfo(list);
         return Objects.requireNonNullElse(byPostIds, List.of());
     }
 
+    /**
+     * 填充剩余帖子缺失信息(帖子相关图片,标签,缓存预热,点赞,收藏等)
+     */
+    @Override
+    public List<PostVO> resolveExtraInfo(List<PostVO> postVOList) {
+        if (postVOList == null || postVOList.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Long> postIds = postVOList.stream().map(PostVO::getId).toList();
+        Map<Long, List<PostImageVO>> imageMap = batchGetImages(postIds);
+        Map<Long, List<TagVO>> tagMap = batchGetTags(postIds);
+        Long uid = UserHolder.getUser().getId();
+
+        // 步骤1: 获取附加数据（优先缓存，降级 DB）
+        PostMetadataAssembler.PostExtraData extraData = postMediaInfoAssembler.fetchExtraData(postIds, uid);
+        // 步骤2: 统一装配
+        metadataAssembler.assemble(postVOList, extraData, imageMap, tagMap);
+        // 步骤3: 填充发布者信息
+        fillPublishers(postVOList);
+        return postVOList;
+    }
 
     private List<PostVO> globalCacheQuery(Long cursor, String orderType, Integer limit) {
 
@@ -232,113 +252,7 @@ public class PostQueryServiceImpl implements com.summit.stp.post.application.ser
         return resolveExtraInfo(list);
     }
 
-    /**
-     * 填充剩余帖子缺失信息(帖子相关图片,标签,缓存预热,点赞,收藏等)
-     */
-    private List<PostVO> resolveExtraInfo(List<PostVO> postVOList) {
-        if (postVOList == null || postVOList.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<Long> postIds = postVOList.stream().map(PostVO::getId).toList();
-        Map<Long, List<PostImageVO>> imageMap = batchGetImages(postIds);
-        Map<Long, List<TagVO>> tagMap = batchGetTags(postIds);
-        Long uid = UserHolder.getUser().getId();
 
-        // 步骤1: 获取附加数据（优先缓存，降级 DB）
-        PostMetadataAssembler.PostExtraData extraData = fetchExtraData(postIds, uid);
-        // 步骤2: 统一装配
-        metadataAssembler.assemble(postVOList, extraData, imageMap, tagMap);
-        // 步骤3: 填充发布者信息
-        fillPublishers(postVOList);
-        return postVOList;
-    }
-
-    /**
-     * 从 Redis 缓存批量获取帖子附加数据，异常时降级查 DB
-     */
-    private PostMetadataAssembler.PostExtraData fetchExtraData(List<Long> postIds, Long uid) {
-        try {
-            postCacheProvider.loadCache(postIds);
-            Map<Long, Map<String, Long>> countMap = postCacheProvider.getLikeAndCollectCount(postIds);
-            Map<Long, Map<String, Boolean>> statusMap = postCacheProvider.getIsCollectedOrLiked(postIds, uid);
-            Map<Long, Long> replyCountMap = postCacheProvider.getReplyCounts(postIds);
-            Map<Long, Long> viewCountMap = postCacheProvider.getViewCounts(postIds);
-
-            Map<Long, Long> likeCounts = new HashMap<>(postIds.size());
-            Map<Long, Long> collectCounts = new HashMap<>(postIds.size());
-            for (Map.Entry<Long, Map<String, Long>> e : countMap.entrySet()) {
-                likeCounts.put(e.getKey(), e.getValue().getOrDefault(CacheFieldConstants.LIKE_COUNT, 0L));
-                collectCounts.put(e.getKey(), e.getValue().getOrDefault(CacheFieldConstants.COLLECT_COUNT, 0L));
-            }
-
-            Map<Long, Boolean> likeStatus = new HashMap<>(postIds.size());
-            Map<Long, Boolean> collectStatus = new HashMap<>(postIds.size());
-            for (Map.Entry<Long, Map<String, Boolean>> e : statusMap.entrySet()) {
-                likeStatus.put(e.getKey(), e.getValue().getOrDefault(CacheFieldConstants.INTERACTION_LIKE, false));
-                collectStatus.put(e.getKey(), e.getValue().getOrDefault(CacheFieldConstants.INTERACTION_COLLECT, false));
-            }
-
-            return new PostMetadataAssembler.PostExtraData(
-                    likeCounts, collectCounts, likeStatus, collectStatus, replyCountMap, viewCountMap
-            );
-        } catch (Exception e) {
-            log.warn("【帖子模块】读取帖子数据缓存异常触发降级，动作：读取Redis计数降级查DB", e);
-            return fetchExtraDataFromDb(postIds, uid);
-        }
-    }
-
-    /**
-     * Redis 不可用时，从数据库降级获取帖子附加数据
-     */
-    private PostMetadataAssembler.PostExtraData fetchExtraDataFromDb(List<Long> postIds, Long uid) {
-        try {
-            Map<Long, List<Long>> likesMap = postLikeRepository.findUserIdsByPostIds(postIds);
-            Map<Long, List<Long>> collectsMap = postCollectRepository.findUserIdsByPostIds(postIds);
-            List<PostVO> dbPosts = postRepository.queryByPostIds(postIds, null, uid);
-
-            Map<Long, Long> likeCounts = new HashMap<>(postIds.size());
-            Map<Long, Long> collectCounts = new HashMap<>(postIds.size());
-            Map<Long, Boolean> likeStatus = new HashMap<>(postIds.size());
-            Map<Long, Boolean> collectStatus = new HashMap<>(postIds.size());
-
-            Map<Long, PostVO> dbPostMap = dbPosts == null ? Collections.emptyMap() :
-                    dbPosts.stream().collect(Collectors.toMap(PostVO::getId, vo -> vo, (v1, v2) -> v1));
-
-            for (Long postId : postIds) {
-                PostVO postVO = dbPostMap.get(postId);
-                long likeCount = postVO != null && postVO.getLikeCount() != null ? postVO.getLikeCount() : 0L;
-                long collectCount = postVO != null && postVO.getCollectCount() != null ? postVO.getCollectCount() : 0L;
-
-                List<Long> likeUsers = likesMap.getOrDefault(postId, Collections.emptyList());
-                List<Long> collectUsers = collectsMap.getOrDefault(postId, Collections.emptyList());
-
-                likeCounts.put(postId, likeCount);
-                collectCounts.put(postId, collectCount);
-                likeStatus.put(postId, likeUsers.contains(uid));
-                collectStatus.put(postId, collectUsers.contains(uid));
-            }
-
-            Map<Long, Long> replyCountMap = dbPosts == null ? Collections.emptyMap() :
-                    dbPosts.stream().collect(Collectors.toMap(
-                            PostVO::getId,
-                            vo -> vo.getReplyCount() != null ? vo.getReplyCount() : 0L,
-                            (v1, v2) -> v1
-                    ));
-            Map<Long, Long> viewCountMap = dbPosts == null ? Collections.emptyMap() :
-                    dbPosts.stream().collect(Collectors.toMap(
-                            PostVO::getId,
-                            vo -> vo.getViewCount() != null ? vo.getViewCount() : 0L,
-                            (v1, v2) -> v1
-                    ));
-
-            return new PostMetadataAssembler.PostExtraData(
-                    likeCounts, collectCounts, likeStatus, collectStatus, replyCountMap, viewCountMap
-            );
-        } catch (Exception ex) {
-            log.error("【帖子模块】数据库降级查询失败，动作：组装帖子附加数据", ex);
-            return PostMetadataAssembler.PostExtraData.empty();
-        }
-    }
 
     /**
      * 批量填充发帖人用户信息

@@ -36,7 +36,7 @@ public enum PayType {
             return null;
         }
         for (PayType payType : values()) {
-            if (payType.type.equalsIgnoreCase(type)) {
+            if (payType.type.equalsIgnoreCase(type) || String.valueOf(payType.code).equals(type)) {
                 return payType;
             }
         }

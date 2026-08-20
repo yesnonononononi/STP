@@ -24,6 +24,7 @@ public class AdminCouponActivityController {
     @PostMapping("/save")
     public Result<Void> save(@RequestBody CreateCouponActivityRequest request){
         CreateCouponActivityCommand command = CreateCouponActivityCommand.builder()
+                .id(request.getId())
                 .couponId(request.getCouponId())
                 .name(request.getName())
                 .stock(request.getStock())
@@ -31,7 +32,6 @@ public class AdminCouponActivityController {
                 .activityEndTime(request.getActivityEndTime())
                 .status(request.getStatus())
                 .type(request.getType())
-                .limitQuantity(request.getLimitQuantity())
                 .build();
         adminCouponActivityService.createActivity(command);
         return Result.success();
@@ -44,6 +44,11 @@ public class AdminCouponActivityController {
     @PostMapping("/close")
     public Result<Void> close(Long id){
         adminCouponActivityService.toggleActivityStatus(id,false);
+        return Result.success();
+    }
+    @PostMapping("/delete/{id}")
+    public Result<Void> delete(@PathVariable Long id){
+        adminCouponActivityService.deleteActivity(id);
         return Result.success();
     }
 }

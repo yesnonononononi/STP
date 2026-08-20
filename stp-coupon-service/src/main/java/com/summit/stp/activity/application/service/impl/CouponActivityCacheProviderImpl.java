@@ -37,14 +37,13 @@ public class CouponActivityCacheProviderImpl implements CouponActivityCacheProvi
     private final DistributedLockUtil distributedLockUtil;
 
     @Override
-    public boolean deductStock(Long couponId, Long limitCount, Long activityId) {
+    public boolean deductStock(Long couponId, Long activityId) {
         Long uid = UserHolder.getUser().getId();
         int execute = Math.toIntExact(stringRedisTemplate.execute(
                 couponDeductStockScript,
                 Arrays.asList(CouponConstants.Cache.STOCK, CouponConstants.Cache.USER_LIMITED_HASH + uid),
-                String.valueOf(limitCount),   // ARGV[1]
-                String.valueOf(activityId),   // ARGV[2]
-                String.valueOf(couponId)      // ARGV[3]
+                String.valueOf(activityId),   // ARGV[1]
+                String.valueOf(couponId)      // ARGV[2]
         ));
         switch (execute) {
             case (-1) -> throw new BusinessException("库存不足");
@@ -136,7 +135,7 @@ public class CouponActivityCacheProviderImpl implements CouponActivityCacheProvi
             rebuildCacheWithLock(userId, userLimitKey, missingIds, resultMap, defaultDuration);
             return resultMap;
         } catch (Exception e) {
-            return fallbackFromDb(userId, couponIds, e.getMessage());
+            return fallbackFromDb(userId, couponIds, e);
         }
     }
 
@@ -220,8 +219,8 @@ public class CouponActivityCacheProviderImpl implements CouponActivityCacheProvi
         }
     }
 
-    private Map<Long, Integer> fallbackFromDb(Long userId, Collection<Long> couponIds, String reason) {
-        log.warn("【优惠券活动】Redis不可用，触发降级直接从数据库查询已领限额 用户ID:{} 异常:{}", userId, reason);
+    private Map<Long, Integer> fallbackFromDb(Long userId, Collection<Long> couponIds, Exception reason) {
+        log.warn("【优惠券活动】Redis不可用，触发降级直接从数据库查询已领限额 用户ID:{}", userId, reason);
         return userCouponRepository.countByUserIdAndCouponIds(userId, couponIds);
     }
 

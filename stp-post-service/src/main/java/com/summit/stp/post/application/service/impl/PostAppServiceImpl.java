@@ -3,45 +3,46 @@ package com.summit.stp.post.application.service.impl;
 
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.summit.stp.common.application.api.result.Result;
+import com.summit.stp.common.application.domain.exception.ParameterException;
+import com.summit.stp.common.application.service.TextSafe.TextSafeServiceProvider;
 import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.common.application.domain.event.PostChangeEvent;
 import com.summit.stp.common.application.domain.event.PostInteractionEvent;
 import com.summit.stp.common.application.domain.exception.BusinessException;
-import com.summit.stp.common.application.domain.exception.ParameterException;
-import com.summit.stp.common.application.service.TextSafe.TextSafeServiceProvider;
-import com.summit.stp.common.application.api.result.Result;
-
-
+import com.summit.stp.common.application.domain.event.EsPostUpdateEvent;
+import com.summit.stp.common.application.domain.event.PostChangeEvent;
 import com.summit.stp.elasticsearch.document.PostDocument;
 import com.summit.stp.post.api.dto.request.ImageInfo;
 import com.summit.stp.post.application.command.CreatePostCommand;
 import com.summit.stp.post.application.command.QueryPostListByCursorCommand;
-import com.summit.stp.post.application.command.UpdatePostCommand;
 import com.summit.stp.post.application.service.*;
 import com.summit.stp.post.application.service.impl.cache.InteractionType;
 import com.summit.stp.post.application.vo.PostVO;
+import com.summit.stp.post.domain.exception.NoSuchPostException;
 import com.summit.stp.post.domain.model.*;
 import com.summit.stp.post.domain.repository.*;
-import com.summit.stp.post.infrastructure.constants.PostConstants;
 import com.summit.stp.post.infrastructure.persistence.mapper.PostsMapper;
 import com.summit.stp.post.infrastructure.persistence.po.PostCollectPO;
 import com.summit.stp.post.infrastructure.persistence.po.PostLikePO;
 import com.summit.stp.post.infrastructure.persistence.po.PostsPO;
-import com.summit.stp.tag.application.service.PostTagRelAppService;
 import com.summit.stp.tag.application.service.TagCacheProvider;
 import com.summit.stp.tag.domain.model.PostTag;
 import com.summit.stp.tag.domain.model.Tag;
 import com.summit.stp.tag.domain.repository.PostTagRelRepository;
 import com.summit.stp.tag.domain.repository.TagRepository;
+
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.transaction.support.TransactionTemplate;
 
 
 @Slf4j
@@ -52,7 +53,6 @@ public class PostAppServiceImpl implements PostAppService {
     private final PostImageRepository postImageRepository;
     private final TextSafeServiceProvider textSafeServiceProvider;
     private final PostQueryService postQueryService;
-    private final PostTagRelAppService postTagRelAppService;
     private final PostCacheProvider postCacheProvider;
     private final PostMessageSender postMessageSender;
     private final PostLikeRepository postLikeRepository;
@@ -61,6 +61,7 @@ public class PostAppServiceImpl implements PostAppService {
     private final TagRepository tagRepository;
     private final PostTagRelRepository postTagRelRepository;
     private final TagCacheProvider tagCacheProvider;
+    private final TransactionTemplate transactionTemplate;
 
     @Override
     public PostVO getPostById(Long id) {
@@ -68,50 +69,202 @@ public class PostAppServiceImpl implements PostAppService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public Result<Void> createPost(CreatePostCommand command) {
         validatePostForCreate(command);
+        AtomicReference<Long> postId = new AtomicReference<>();
 
-        // 1. 构建并保存帖子主体
-        Post post = buildNewPost(command);
-        postRepository.save(post);
-
-        Long postId = post.getId();
-
-        // 2. 保存帖子图片关联
-        savePostImages(post, command.getMediaUrls());
-
-        // 3. 绑定帖子标签
         List<Long> actualTagIds = tagRepository.findByIds(command.getTagIds()).stream().map(Tag::getId).toList();
-        bindPostTags(postId, actualTagIds);
-
-
-
-
-        // 4. 初始化帖子缓存
-        initPostCache(post);
-
-        // 5. 发布帖子发布事件
+        Post post = transactionTemplate.execute(status -> {
+            // 1. 构建并保存帖子主体
+            Post p = buildNewPost(command);
+            Long newValue = postRepository.savePost(p);
+            postId.set(newValue);
+            // 2. 保存帖子图片关联
+            savePostImages(newValue, p, command.getMediaUrls());
+            // 3. 绑定帖子标签
+            postTagRelRepository.batchSave(postId.get(), actualTagIds);
+            return p;
+        });
+        // 4. 发布帖子发布事件与系统 ES 更新事件
         try {
-            publishPostEvent(post, PostChangeEvent.EventType.CREATE, actualTagIds);
+            EsPostUpdateEvent esEvent = EsPostUpdateEvent.builder()
+                    .postId(postId.get())
+                    .eventType(EsPostUpdateEvent.EventType.CREATE)
+                    .status(post != null && post.getStatus() != null ? post.getStatus().getCode() : 1)
+                    .timestamp(System.currentTimeMillis())
+                    .build();
+            postMessageSender.sendEsPostUpdateEvent(esEvent);
         } catch (Exception e) {
-            log.warn("【帖子模块】发送发帖事件异常，postId={}", postId, e);
+            log.warn("【帖子模块】发送发帖或系统ES更新事件异常，postId={}", postId, e);
         }
-
 
         return Result.success();
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void likePost(Long postId) {
+        toggleInteraction(postId, InteractionType.LIKE);
+    }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void collectPost(Long postId) {
+        toggleInteraction(postId, InteractionType.COLLECT);
+    }
+
+
+    @Override
+    public boolean isCollected(Long postId) {
+        return postCacheProvider.isCollected(postId, UserHolder.getUser().getId());
+    }
+
+    @Override
+    public void initPostCache(Post post) {
+        Long postId = post.getId();
+        try {
+            postCacheProvider.loadCache(postId);
+            if (post.getStatus().equals(PostStatus.NORMAL)) {
+                postCacheProvider.addToNewestZSet(postId);
+                postCacheProvider.addToHotZSet(postId, post.calculateHotScore());
+            }
+        } catch (Exception e) {
+            log.warn("【帖子模块】PostId:{} Redis服务异常，跳过预热，动作：加载帖子缓存", postId, e);
+        }
+    }
+
+    @Override
+    public void publishPostEvent(Post post, PostChangeEvent.EventType eventType, List<Long> tagIds, Long postId) {
+        if (post == null) return;
+        // 非删除事件且状态不是 NORMAL 时拦截；删除事件放行
+        if (eventType == PostChangeEvent.EventType.DELETE) {
+            return;
+        }
+        PostDocument data = PostDocument.builder()
+                .id(postId)
+                .postId(postId)
+                .title(post.getTitle())
+                .content(post.getContent())
+                .creatorId(post.getCreatorId())
+                .createTime(post.getCreateTime())
+                .status(post.getStatus().getCode())
+                .likeCount(post.getLikeCount())
+                .updateTime(post.getUpdateTime())
+                .comment(post.getReplyCount())
+                .build();
+
+        PostChangeEvent event = PostChangeEvent.builder()
+                .postId(post.getId())
+                .uid(post.getCreatorId())
+                .eventType(eventType)
+                .data(data)
+                .tagIds(tagIds)
+                .build();
+        postMessageSender.sendPostChangeEvent(event);
+    }
+
+    @Override
+    public void deletePost(Long id) {
+        if(id == null)throw new BusinessException("参数错误");
+        List<Long> tagIds = postTagRelRepository.findByPostId(id)
+                .stream()
+                .map(PostTag::getTagId).toList();
+
+        // 1, 根据帖子id获取帖子信息
+        Post post = postRepository.findById(id).orElseThrow(() -> new ParameterException("帖子不存在"));
+        if (!Objects.equals(post.getCreatorId(), UserHolder.getUser().getId())) {
+            throw new BusinessException("无权删除他人帖子");
+        }
+        post.delete();
+        //更新帖子
+        postRepository.update(post);
+        // 删除帖子额外信息
+        deletePostExtraInfo(post,tagIds);
+        // 发送帖子删除事件
+        publishPostEvent(post, PostChangeEvent.EventType.DELETE, tagIds , post.getId());  // 发布帖子删除事件
+    }
+
+    @Override
+    public void republishPost(Long id) {
+        Post post = postRepository.findById(id).orElseThrow(() -> new ParameterException("帖子不存在"));
+        if (!Objects.equals(post.getCreatorId(), UserHolder.getUser().getId())) {
+            throw new BusinessException("无权重新发布他人帖子");
+        }
+        if (post.getStatus() == PostStatus.BLOCKED) {
+            throw new BusinessException("该帖子已被封禁，无法重新发布");
+        }
+        post.republish();
+        postRepository.update(post);
+        try {
+            publishPostEvent(post, PostChangeEvent.EventType.CREATE, null, post.getId());
+            postCacheProvider.deletePostContent(id);
+            postCacheProvider.cachePostStatus(id, PostStatus.NORMAL.getCode());
+        } catch (Exception e) {
+            log.warn("【帖子模块】更新帖子重新发布事件及缓存异常，postId={}", id, e);
+        }
+    }
+
+
+    @Override
+    public List<PostVO> getPostPage(QueryPostListByCursorCommand command) {
+        return postQueryService.getPostPage(
+                command.getCursor(),
+                command.getSelf(),
+                command.getCreatorId(),
+                command.getStatus(),
+                command.getOrderType(),
+                10
+        );
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void topPost(Long id, Integer isTop) {
+        Post post = postRepository.findById(id).orElseThrow(() -> new ParameterException("帖子不存在"));
+        if (!Objects.equals(post.getCreatorId(), UserHolder.getUser().getId())) {
+            throw new BusinessException("无权置顶他人帖子");
+        }
+        if (isTop == null || (isTop != 0 && isTop != 1)) {
+            throw new ParameterException("置顶参数错误");
+        }
+        post.top(isTop);
+        postRepository.update(post);
+    }
+
+    @Override
+    public void viewPost(Long id) {
+        postRepository.findById(id).orElseThrow(() -> new ParameterException("帖子不存在"));
+        postCacheProvider.incrViewCount(id);
+    }
+
+    @Override
+    public void visibleSelf(Long id, Integer visible) {
+        Post post = postRepository.findById(id).orElseThrow(NoSuchPostException::new);
+        if (!post.getCreatorId().equals(UserHolder.getUser().getId())) throw new BusinessException("无权修改他人帖子");
+        post.updateScope(visible);
+        postRepository.update(post);
+
+    }
+    @Override
+    public String getUnpassReason(Long id) {
+        Post post = postRepository.findById(id).orElseThrow(NoSuchPostException::new);
+        if (!post.getCreatorId().equals(UserHolder.getUser().getId())) {
+            throw new BusinessException("无权限查看");
+        }
+        return post.getUnpassReason();
+    }
+    /**
+     * 构建帖子实体
+     *
+     * @param command 创建帖子命令
+     * @return 帖子实体
+     */
     private Post buildNewPost(CreatePostCommand command) {
-        PostStatus status = PostStatus.fromCode(command.getStatus());
         List<ImageInfo> mediaUrls = command.getMediaUrls();
         String mediaUrlsStr = resolvePostMediaMetaInfo(mediaUrls, command.getType());
         Timestamp now = new Timestamp(System.currentTimeMillis());
         Long userId = UserHolder.getUser().getId();
-        Long postId = IdUtil.getSnowflakeNextId();
         return Post.builder()
-                .id(postId)
                 .creatorId(userId)
                 .title(command.getTitle())
                 .type(PostType.fromCode(command.getType()))
@@ -123,7 +276,7 @@ public class PostAppServiceImpl implements PostAppService {
                 .likeCount(0L)
                 .viewCount(0L)
                 .collectCount(0L)
-                .status(status)
+                .status(PostStatus.CHECK)
                 .createTime(now)
                 .updateTime(now)
                 .isTop(command.getIsTop() == null ? 0 : command.getIsTop())
@@ -155,69 +308,16 @@ public class PostAppServiceImpl implements PostAppService {
     /**
      * 批量保存帖子图片
      *
+     * @param postId    生成的帖子ID
      * @param post      帖子实体
      * @param mediaUrls 图片链接集
      */
-    private void savePostImages(Post post, List<ImageInfo> mediaUrls) {
+    private void savePostImages(Long postId, Post post, List<ImageInfo> mediaUrls) {
         if (post.isImage() && mediaUrls != null && !mediaUrls.isEmpty()) {
-            List<PostImage> urls = buildImages(post.getId(), mediaUrls);
+            List<PostImage> urls = buildImages(postId, mediaUrls);
             postImageRepository.batchSave(urls);
         }
     }
-
-    /**
-     * 绑定标签集到一个帖子
-     *
-     * @param postId 帖子id
-     * @param tagIds 标签ids
-     */
-    private void bindPostTags(Long postId, List<Long> tagIds) {
-        if (tagIds != null && !tagIds.isEmpty()) {
-            postTagRelAppService.bindTag(postId, tagIds);
-        }
-    }
-
-    /**
-     * 初始化帖子实体缓存(post:detail)
-     *
-     * @param post 帖子实体
-     */
-    private void initPostCache(Post post) {
-        Long postId = post.getId();
-        try {
-            postCacheProvider.loadCache(postId);
-            if (post.getStatus().equals(PostStatus.NORMAL)) {
-                postCacheProvider.addToNewestZSet(postId);
-                postCacheProvider.addToHotZSet(postId, post.calculateHotScore());
-            }
-        } catch (Exception e) {
-            log.warn("【帖子模块】PostId:{} Redis服务异常，跳过预热，动作：加载帖子缓存", postId, e);
-        }
-    }
-
-    private void publishPostEvent(Post post, PostChangeEvent.EventType eventType, List<Long> tagIds) {
-        if (post == null) return;
-        // 非删除事件且状态不是 NORMAL 时拦截；删除事件放行
-        if (eventType != PostChangeEvent.EventType.DELETE && !PostStatus.NORMAL.equals(post.getStatus())) {
-            return;
-        }
-        PostDocument data = PostDocument.builder()
-                .id(post.getId())
-                .title(post.getTitle())
-                .content(post.getContent())
-                .build();
-
-        PostChangeEvent event = PostChangeEvent.builder()
-                .postId(post.getId())
-                .uid(post.getCreatorId())
-                .eventType(eventType)
-                .data(data)
-                .tagIds(tagIds)
-                .build();
-        postMessageSender.sendPostChangeEvent(event);
-    }
-
-
 
 
     /**
@@ -239,117 +339,30 @@ public class PostAppServiceImpl implements PostAppService {
                 .toList();
     }
 
+
+    /**
+     * 删除除了本体以外的所有信息
+     *
+     * @param post 帖子实体
+     */
     @Override
-    public void updatePost(UpdatePostCommand command) {
-        Post post = postRepository.findById(command.getId()).orElseThrow(() -> new ParameterException("帖子不存在"));
-        validatePostForUpdate(command, post);
-        List<ImageInfo> mediaUrls = command.getMediaUrls();
-        Long postId = post.getId();
-        String mediaUrlsStr = resolvePostMediaMetaInfo(mediaUrls, command.getType());
-
-        // 局部更新
-        post.updatePost(
-                Post.builder()
-                        .id(command.getId())
-                        .title(command.getTitle())
-                        .type(PostType.fromCode(command.getType()))
-                        .content(textSafeServiceProvider.xssFilter(command.getContent()))
-                        .mediaUrls(mediaUrlsStr)
-                        .urls(mediaUrls != null ? mediaUrls.stream().map(image ->
-                                        PostImage.builder()
-                                                .imageUrl(image.getUrl())
-                                                .postId(postId)
-                                                .width(image.getWidth())
-                                                .height(image.getHeight())
-                                                .build())
-                                .toList() : null)
-                        .isTop(command.getIsTop())
-                        .build()
-        );
-        postRepository.save(post);
-        List<Long> tagIds = command.getTagIds();
-        if (tagIds != null) {
-            List<Long> oldTagIds = postTagRelRepository.findByPostId(postId).stream()
-                    .map(PostTag::getTagId).toList();
-            postTagRelAppService.clearPostTags(postId);
-
-            if (!tagIds.isEmpty()) {
-                postTagRelAppService.bindTag(postId, tagIds);
-            }
-
-            List<Long> removeTagIds = oldTagIds.stream().filter(id -> !tagIds.contains(id)).toList();
-            List<Long> addTagIds = tagIds.stream().filter(id -> !oldTagIds.contains(id)).toList();
-            if (!removeTagIds.isEmpty()) {
-                tagCacheProvider.removePostFromTags(postId, removeTagIds);
-            }
-            if (!addTagIds.isEmpty()) {
-                tagCacheProvider.addPostToTags(postId, addTagIds);
-            }
-        }
+    public void deletePostExtraInfo(Post post, @Nullable List<Long> tagIds) {
+        Long id = post.getId();
+         if(tagIds == null) {
+             tagIds = postTagRelRepository.findByPostId(id)
+                     .stream()
+                     .map(PostTag::getTagId).toList();
+         }
         try {
-            postCacheProvider.deletePostContent(postId);
-            postCacheProvider.cachePostStatus(postId, post.getStatus().getCode());
-            publishPostEvent(post, PostChangeEvent.EventType.UPDATE, null);
-        } catch (Exception e) {
-            log.warn("【帖子模块】更新帖子缓存异常，postId={}", postId, e);
-        }
-    }
-
-
-    @Override
-    public void deletePost(Long id) {
-        Post post = postRepository.findById(id).orElseThrow(() -> new ParameterException("帖子不存在"));
-        if (!Objects.equals(post.getCreatorId(), UserHolder.getUser().getId())) {
-            throw new BusinessException("无权删除他人帖子");
-        }
-        List<Long> tagIds = postTagRelRepository.findByPostId(id).stream()
-                .map(PostTag::getTagId).toList();
-        post.delete();
-        postRepository.update(post);
-        try {
-            postCacheProvider.deletePostContent(id);
-            postCacheProvider.cachePostStatus(id, PostStatus.DELETED.getCode());
-            postCacheProvider.removeFromQueryZSets(id);
+            postCacheProvider.deletePostContent(id);            // 删除帖子内容缓存
+            postCacheProvider.cachePostStatus(id, PostStatus.DELETED.getCode());            // 缓存帖子状态
+            postCacheProvider.removeFromQueryZSets(id);            // 从查询缓存中移除
             if (!tagIds.isEmpty()) {
                 tagCacheProvider.removePostFromTags(id, tagIds);
             }
-            publishPostEvent(post, PostChangeEvent.EventType.DELETE, null);
         } catch (Exception e) {
             log.warn("【帖子模块】更新帖子删除状态缓存异常，postId={}", id, e);
         }
-    }
-
-    @Override
-    public void republishPost(Long id) {
-        Post post = postRepository.findById(id).orElseThrow(() -> new ParameterException("帖子不存在"));
-        if (!Objects.equals(post.getCreatorId(), UserHolder.getUser().getId())) {
-            throw new BusinessException("无权重新发布他人帖子");
-        }
-        if (post.getStatus() == PostStatus.BLOCKED) {
-            throw new BusinessException("该帖子已被封禁，无法重新发布");
-        }
-        post.republish();
-        postRepository.update(post);
-        try {
-            publishPostEvent(post, PostChangeEvent.EventType.CREATE, null);
-            postCacheProvider.deletePostContent(id);
-            postCacheProvider.cachePostStatus(id, PostStatus.NORMAL.getCode());
-        } catch (Exception e) {
-            log.warn("【帖子模块】更新帖子重新发布事件及缓存异常，postId={}", id, e);
-        }
-    }
-
-
-    @Override
-    public List<PostVO> getPostPage(QueryPostListByCursorCommand command) {
-        return postQueryService.getPostPage(
-                command.getCursor(),
-                command.getSelf(),
-                command.getCreatorId(),
-                command.getStatus(),
-                command.getOrderType(),
-                10
-        );
     }
 
 
@@ -382,28 +395,6 @@ public class PostAppServiceImpl implements PostAppService {
             log.warn("【帖子模块】{}帖子异常，postId={}", actionName, postId, e);
             fallbackInteractionInDb(postId, userId, type);
         }
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void likePost(Long postId) {
-        toggleInteraction(postId, InteractionType.LIKE);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void collectPost(Long postId) {
-        toggleInteraction(postId, InteractionType.COLLECT);
-    }
-
-    @Override
-    public boolean isLiked(Long postId) {
-        return postCacheProvider.isLiked(postId, UserHolder.getUser().getId());
-    }
-
-    @Override
-    public boolean isCollected(Long postId) {
-        return postCacheProvider.isCollected(postId, UserHolder.getUser().getId());
     }
 
 
@@ -454,69 +445,22 @@ public class PostAppServiceImpl implements PostAppService {
 
     // ======================== 其他操作 ========================
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void topPost(Long id, Integer isTop) {
-        Post post = postRepository.findById(id).orElseThrow(() -> new ParameterException("帖子不存在"));
-        if (!Objects.equals(post.getCreatorId(), UserHolder.getUser().getId())) {
-            throw new BusinessException("无权置顶他人帖子");
-        }
-        if (isTop == null || (isTop != 0 && isTop != 1)) {
-            throw new ParameterException("置顶参数错误");
-        }
-        post.top(isTop);
-        postRepository.update(post);
-    }
-
-    @Override
-    public void viewPost(Long id) {
-        Post post = postRepository.findById(id).orElseThrow(() -> new ParameterException("帖子不存在"));
-        postCacheProvider.incrViewCount(id);
-    }
-
-    @Override
-    public void visibleSelf(Long id, Integer visible) {
-        Post post = postRepository.findById(id).orElse(null);
-        if (post.getCreatorId().equals(UserHolder.getUser().getId())) {
-            post.updateScope(visible);
-            postRepository.update(post);
-            return;
-        }
-        throw new BusinessException("无权修改他人帖子");
-    }
-
 
     /**
      * 帖子内容公共校验：标题长度、内容长度、图片数量上限
      */
     private void validatePostContent(String title, String content, List<ImageInfo> mediaUrls) {
-        if (title != null && title.length() > PostConstants.Business.MAX_TITLE_LENGTH) {
-            throw new ParameterException("帖子标题长度不能超过" + PostConstants.Business.MAX_TITLE_LENGTH + "字");
+        if (title != null && title.length() > Post.MAX_TITLE_LENGTH) {
+            throw new ParameterException("帖子标题长度不能超过" + Post.MAX_TITLE_LENGTH + "字");
         }
-        if (content != null && content.length() > PostConstants.Business.MAX_CONTENT_LENGTH) {
-            throw new ParameterException("帖子内容长度不能超过" + PostConstants.Business.MAX_CONTENT_LENGTH + "字");
+        if (content != null && content.length() > Post.MAX_CONTENT_LENGTH) {
+            throw new ParameterException("帖子内容长度不能超过" + Post.MAX_CONTENT_LENGTH + "字");
         }
         if (mediaUrls != null && Post.isLimited(mediaUrls.size())) {
             throw new ParameterException("图片数量超过上限!");
         }
     }
 
-    /**
-     * 帖子更新前的校验
-     */
-    private void validatePostForUpdate(UpdatePostCommand command, Post post) {
-        if (post == null) {
-            throw new ParameterException("帖子不存在");
-        }
-        if (post.getCreatorId() != command.getCreatorId()) {
-            throw new BusinessException("无权修改他人帖子");
-        }
-        PostStatus status = PostStatus.fromCode(command.getStatus());
-        if ((status.equals(PostStatus.BLOCKED) || status.equals(PostStatus.NORMAL)) && UserHolder.getUser().getAdmin() != 1) {
-            throw new BusinessException("无权管理帖子的封禁");
-        }
-        validatePostContent(command.getTitle(), command.getContent(), command.getMediaUrls());
-    }
 
     /**
      * 帖子创建前的校验
@@ -528,6 +472,8 @@ public class PostAppServiceImpl implements PostAppService {
         }
         validatePostContent(command.getTitle(), command.getContent(), command.getMediaUrls());
     }
+
+
 }
 
 

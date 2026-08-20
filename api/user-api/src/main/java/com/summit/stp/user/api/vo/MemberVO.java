@@ -54,6 +54,9 @@ public class MemberVO implements Serializable {
     @ApiModelProperty(value = "会员优先级，数值越大优先级越高")
     private Integer priority;
 
+    @ApiModelProperty(value = "状态: 0 未使用 1使用中")
+    private Integer status;
+
     @ApiModelProperty(value = "创建时间")
     private Timestamp createTime;
 }

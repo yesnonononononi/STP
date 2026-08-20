@@ -1,10 +1,12 @@
 package com.summit.stp.post.application.service;
 
 import com.summit.stp.common.application.api.result.Result;
+import com.summit.stp.common.application.domain.event.PostChangeEvent;
 import com.summit.stp.post.application.command.CreatePostCommand;
 import com.summit.stp.post.application.command.QueryPostListByCursorCommand;
-import com.summit.stp.post.application.command.UpdatePostCommand;
 import com.summit.stp.post.application.vo.PostVO;
+import com.summit.stp.post.domain.model.Post;
+import jakarta.annotation.Nullable;
 
 import java.util.List;
 
@@ -21,11 +23,13 @@ public interface PostAppService {
      * @return
      */
     Result<Void> createPost(CreatePostCommand command);
-    /**
-     * 修改帖子
-     * @param command
-     */
-    void updatePost(UpdatePostCommand command);
+
+    void initPostCache(Post post);
+
+
+
+    void publishPostEvent(Post post, PostChangeEvent.EventType eventType, List<Long> tagIds, Long postId);
+
     /**
      * 删除帖子
      * @param id
@@ -56,10 +60,6 @@ public interface PostAppService {
      */
     void collectPost(Long postId);
 
-    /**
-     * 判断当前登录用户是否已点赞指定帖子
-     */
-    boolean isLiked(Long postId);
 
     /**
      * 判断当前登录用户是否已收藏指定帖子
@@ -84,5 +84,11 @@ public interface PostAppService {
      */
     void visibleSelf(Long id, Integer visible);
 
+    /**
+     * 获取帖子审核未通过原因
+     */
+    String getUnpassReason(Long id);
 
+
+    void deletePostExtraInfo(Post post, @Nullable List<Long> tagIds);
 }

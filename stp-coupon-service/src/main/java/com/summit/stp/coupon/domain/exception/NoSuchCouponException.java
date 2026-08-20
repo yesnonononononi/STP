@@ -6,4 +6,7 @@ public class NoSuchCouponException extends BusinessException {
     public NoSuchCouponException(String message) {
         super(message);
     }
+    public NoSuchCouponException() {
+        super("优惠券不存在");
+    }
 }

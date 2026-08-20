@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -20,16 +21,14 @@ public class CouponActivity {
     private  LocalDateTime activityEndTime;
     private Integer status;
     private final Type type;
-    private final Integer limitQuantity;
+    private final LocalDateTime createTime;
 
     public void start() {
         this.status = 1;
-        this.activityStartTime = LocalDateTime.now();
     }
 
     public void stop() {
         this.status = 0;
-        this.activityEndTime = LocalDateTime.now();
     }
 
     @Getter
@@ -72,5 +71,15 @@ public class CouponActivity {
 
     public boolean hasEnded(LocalDateTime now) {
         return this.activityEndTime != null && now.isAfter(this.activityEndTime);
+    }
+
+    public boolean canDelete(LocalDateTime now) {
+        if (this.activityStartTime != null && now.isBefore(this.activityStartTime)) {
+            return true;
+        }
+        if (this.activityEndTime != null && now.isAfter(this.activityEndTime)) {
+            return true;
+        }
+        return false;
     }
 }

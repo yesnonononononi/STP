@@ -1,6 +1,11 @@
 package com.summit.stp.payment.application.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.summit.stp.common.application.domain.model.UserSession;
+import com.summit.stp.common.auth.UserHolder;
+import com.summit.stp.order.api.client.OrderFeignClient;
+import com.summit.stp.order.api.vo.OrderQueryVO;
 import com.summit.stp.payment.api.dto.PayCommand;
 import com.summit.stp.common.application.domain.event.PayFailEvent;
 import com.summit.stp.common.application.domain.event.PaySuccessEvent;
@@ -16,7 +21,12 @@ import com.summit.stp.payment.application.service.PayEventPublishProvider;
 import com.summit.stp.payment.domain.PayDomainService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
+import org.springframework.aop.framework.AopContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +35,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.RoundingMode;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +50,7 @@ public class PayAppServiceImpl implements PayAppService {
     private final PayEventPublishProvider payEventPublishProvider;
     private final RestTemplate restTemplate;
     private final PaymentSignHelper paymentSignHelper;
+    private final OrderFeignClient orderFeignClient;
 
     @Value("${payment.pid}")
     private Integer pid;
@@ -54,7 +67,7 @@ public class PayAppServiceImpl implements PayAppService {
     @Value("${payment.pay.success.symbol}")
     private String successSymbol;
 
-    @Transactional(rollbackFor = Exception.class)
+
     @Override
     public PayVO pay(PayCommand payCommand) {
         log.info("【支付】收到支付请求，参数: {}", payCommand);
@@ -73,92 +86,6 @@ public class PayAppServiceImpl implements PayAppService {
         return resultVo;
     }
 
-    /**
-     * 步骤方法1：构造三方网关下单请求参数
-     */
-    private MultiValueMap<String, String> buildRequestParams(PayCommand payCommand) {
-        MultiValueMap<String, String> requestParams = new LinkedMultiValueMap<>();
-        requestParams.add("pid", String.valueOf(pid));
-        requestParams.add("method", "web");
-        requestParams.add("device", "pc");
-        requestParams.add("type", payCommand.getPayType().getType());
-        requestParams.add("out_trade_no", String.valueOf(payCommand.getOrderId()));
-        requestParams.add("notify_url", notifyUrl);
-        requestParams.add("return_url", returnUrl + "?orderId=" + payCommand.getOrderId());
-        requestParams.add("name", payCommand.getMemberName() != null ? payCommand.getMemberName() : "VIP");
-        requestParams.add("money", payCommand.getAmount().setScale(2, RoundingMode.HALF_UP).toPlainString());
-        requestParams.add("clientip", "127.0.0.1");
-        return requestParams;
-    }
-
-    /**
-     * 步骤方法2：请求三方支付网关下单接口并解析响应
-     */
-    private GatewayPayResponse callGateway(MultiValueMap<String, String> requestParams) {
-        HttpEntity<MultiValueMap<String, String>> requestEntity = paymentSignHelper.buildFormUrlEncodedEntity(requestParams);
-        log.info("【支付】发送三方下单请求，URL: {}, 参数: {}", createUrl, requestParams);
-
-        String responseStr;
-        try {
-            // 使用 String.class 接收响应，绕过 RestTemplate 对 text/html content-type 的解析错误
-            responseStr = restTemplate.postForObject(createUrl, requestEntity, String.class);
-        } catch (Exception e) {
-            log.error("【支付】请求三方支付网关网络异常: ", e);
-            throw new BusinessException("请求三方支付网关异常: " + e.getMessage());
-        }
-
-        log.info("【支付】收到三方下单响应原始字符串: {}", responseStr);
-        if (responseStr == null || responseStr.trim().isEmpty()) {
-            throw new BusinessException("三方下单响应为空，支付失败");
-        }
-
-        try {
-            return new ObjectMapper().readValue(responseStr, GatewayPayResponse.class);
-        } catch (Exception e) {
-            log.error("【支付】解析三方响应 JSON 异常: ", e);
-            throw new BusinessException("解析三方响应异常");
-        }
-    }
-
-    /**
-     * 步骤方法3：验证三方下单响应的业务状态及签名
-     */
-    private void verifyResponse(GatewayPayResponse response) {
-        if (response.getCode() == null || response.getCode() != 0) {
-            log.error("【支付】三方下单失败: code={}, msg={}", response.getCode(), response.getMsg());
-            throw new BusinessException("三方下单失败: " + (response.getMsg() != null ? response.getMsg() : "未知错误"));
-        }
-
-        Map<String, String> responseMap = new HashMap<>();
-        responseMap.put("code", String.valueOf(response.getCode()));
-        if (response.getTrade_no() != null) responseMap.put("trade_no", response.getTrade_no());
-        if (response.getPay_type() != null) responseMap.put("pay_type", response.getPay_type());
-        if (response.getPay_info() != null) responseMap.put("pay_info", response.getPay_info());
-        if (response.getTimestamp() != null) responseMap.put("timestamp", response.getTimestamp());
-
-        if (!payService.checkSign(responseMap, response.getSign())) {
-            log.error("【支付】三方下单响应验签失败: {}", response);
-            throw new BusinessException("支付网关响应验签失败");
-        }
-    }
-
-    /**
-     * 步骤方法4：构建支付结果 PayVO 实体
-     */
-    private PayVO buildResultVo(PayCommand payCommand, GatewayPayResponse response) {
-        return PayVO.builder()
-                .pid(pid)
-                .type(payCommand.getPayType().getType())
-                .orderId(payCommand.getOrderId())
-                .money(payCommand.getAmount().setScale(2, RoundingMode.HALF_UP).toPlainString())
-                .memberName(payCommand.getMemberName())
-                .to(response.getPay_info())
-                .sign(response.getSign())
-                .timestamp(response.getTimestamp())
-                .signType(response.getSign_type())
-                .build();
-    }
-
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -168,10 +95,10 @@ public class PayAppServiceImpl implements PayAppService {
             throw new BusinessException("签名验证失败");
         }
         //是否支付成功
-        if(payResult.getTrade_status().equals(successSymbol)) {
+        if (payResult.getTrade_status().equals(successSymbol)) {
             //发布支付成功事件并带上商户订单ID
             payEventPublishProvider.publish(new PaySuccessEvent(payResult.getOut_trade_no()));
-        }else{
+        } else {
             payEventPublishProvider.publish(new PayFailEvent(payResult.getOut_trade_no(), payResult.getTrade_status()));
         }
     }
@@ -179,6 +106,29 @@ public class PayAppServiceImpl implements PayAppService {
     @Override
     public Result<List<String>> getType() {
         return Result.success(Arrays.stream(PayType.values()).map(PayType::getType).toList());
+    }
+
+    @Override
+    public Result<String> toPay(Long orderNo) {
+        OrderQueryVO vo = orderFeignClient.findById(orderNo).getData();
+        if (vo == null) return Result.error("未查询到订单信息");
+
+        Timestamp timeoutTime = vo.getTimeoutTime();
+        if(timeoutTime.before(Timestamp.from(Instant.now())))return Result.error("订单已超时,无法支付");
+
+        PayCommand command = PayCommand.builder()
+                .payType(PayType.fromType(vo.getPayTypeName()))
+                .amount(vo.getAmount())
+                .timestamp(vo.getCreateTime())
+                .username(UserHolder.getUser().getUsername())
+                .orderId(orderNo)
+                .build();
+        PayVO pay =pay(command);
+        if(pay != null){
+            String payTo = pay.getTo();
+            if(StrUtil.isNotBlank(payTo))return Result.success(payTo);
+        }
+        return Result.error("支付失败");
     }
 
 
@@ -209,6 +159,99 @@ public class PayAppServiceImpl implements PayAppService {
         return payService.checkSign(params, payResult.getSign());
 
     }
+
+    private @NonNull Map<String, String> getResponseMap(GatewayPayResponse response) {
+        Map<String, String> responseMap = new HashMap<>();
+        responseMap.put("code", String.valueOf(response.getCode()));
+        if (response.getTrade_no() != null) responseMap.put("trade_no", response.getTrade_no());
+        if (response.getPay_type() != null) responseMap.put("pay_type", response.getPay_type());
+        if (response.getPay_info() != null) responseMap.put("pay_info", response.getPay_info());
+        if (response.getTimestamp() != null) responseMap.put("timestamp", response.getTimestamp());
+        return responseMap;
+    }
+
+
+    /**
+     * 步骤方法1：构造三方网关下单请求参数
+     */
+    private MultiValueMap<String, String> buildRequestParams(PayCommand payCommand) {
+        MultiValueMap<String, String> requestParams = new LinkedMultiValueMap<>();
+        requestParams.add("pid", String.valueOf(pid));
+        requestParams.add("method", "jump");
+        requestParams.add("device", "pc");
+        requestParams.add("type", payCommand.getPayType().getType());
+        requestParams.add("out_trade_no", String.valueOf(payCommand.getOrderId()));
+        requestParams.add("notify_url", notifyUrl);
+        requestParams.add("return_url", returnUrl + "?orderId=" + payCommand.getOrderId());
+        requestParams.add("name", payCommand.getMemberName() != null ? payCommand.getMemberName() : "VIP");
+        requestParams.add("money", payCommand.getAmount().setScale(2, RoundingMode.HALF_UP).toPlainString());
+        requestParams.add("clientip", "127.0.0.1");
+        return requestParams;
+    }
+
+    /**
+     * 步骤方法2：请求三方支付网关下单接口并解析响应
+     */
+    private GatewayPayResponse callGateway(MultiValueMap<String, String> requestParams) {
+        HttpEntity<MultiValueMap<String, String>> requestEntity = paymentSignHelper.buildFormUrlEncodedEntity(requestParams);
+        log.info("【支付】发送三方下单请求，URL: {}, 参数: {}", createUrl, requestParams);
+
+        String responseStr;
+        try {
+            responseStr = restTemplate.postForObject(createUrl, requestEntity, String.class);
+        } catch (Exception e) {
+            log.error("【支付】请求三方支付网关网络异常: ", e);
+            throw new BusinessException("请求三方支付网关异常: " + e.getMessage());
+        }
+
+        log.info("【支付】收到三方下单响应原始字符串: {}", responseStr);
+        if (responseStr == null || responseStr.trim().isEmpty()) {
+            throw new BusinessException("三方下单响应为空，支付失败");
+        }
+
+        try {
+            return new ObjectMapper().readValue(responseStr, GatewayPayResponse.class);
+        } catch (Exception e) {
+            log.error("【支付】解析三方响应 JSON 异常: ", e);
+            throw new BusinessException("解析三方响应异常");
+        }
+    }
+
+    /**
+     * 步骤方法3：验证三方下单响应的业务状态及签名
+     */
+    private void verifyResponse(GatewayPayResponse response) {
+        if (response.getCode() == null || response.getCode() != 0) {
+            log.error("【支付】三方下单失败: code={}, msg={}", response.getCode(), response.getMsg());
+            throw new BusinessException("三方下单失败: " + (response.getMsg() != null ? response.getMsg() : "未知错误"));
+        }
+
+        Map<String, String> responseMap = getResponseMap(response);
+
+        if (!payService.checkSign(responseMap, response.getSign())) {
+            log.error("【支付】三方下单响应验签失败: {}", response);
+            throw new BusinessException("支付网关响应验签失败");
+        }
+    }
+
+
+    /**
+     * 步骤方法4：构建支付结果 PayVO 实体
+     */
+    private PayVO buildResultVo(PayCommand payCommand, GatewayPayResponse response) {
+        return PayVO.builder()
+                .pid(pid)
+                .type(payCommand.getPayType().getType())
+                .orderId(payCommand.getOrderId())
+                .money(payCommand.getAmount().setScale(2, RoundingMode.HALF_UP).toPlainString())
+                .memberName(payCommand.getMemberName())
+                .to(response.getPay_info())
+                .sign(response.getSign())
+                .timestamp(response.getTimestamp())
+                .signType(response.getSign_type())
+                .build();
+    }
+
 
 }
 

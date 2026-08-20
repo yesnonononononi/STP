@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 @Builder
 @AllArgsConstructor
 public class MemberCreateRequest {
+    private Long id;
     private String name; // 会员名称
     private String type;
     private BigDecimal price; // 会员价格
@@ -21,4 +22,5 @@ public class MemberCreateRequest {
     private Long typeId;
     private Boolean isSuper;
     private Integer stock;
+    private Integer status;
 }

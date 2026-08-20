@@ -3,6 +3,7 @@ package com.summit.stp.activity.domain.repository;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.activity.domain.model.CouponActivity;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,4 +18,7 @@ public interface CouponActivityRepository {
     List<CouponActivity> findByScopeType(Integer scopeType);
 
     Page<CouponActivity> list(String keyword, Integer status, Integer page, Integer pageSize);
+
+
+    void deductStockWithOptimisticLock(Long couponId);
 }

@@ -19,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Arrays;
@@ -36,8 +38,8 @@ public class MemberAppServiceImpl implements MemberAppService {
 
     @Override
     public Result<MemberVO> queryMemberById(Long id) {
-        Member memberById = memberRepository.findMemberById(id).orElseThrow(()->new BusinessException("会员套餐不存在"));
-        MemberVO memberVO =  toVO(memberById);
+        Member memberById = memberRepository.findMemberById(id).orElseThrow(() -> new BusinessException("会员套餐不存在"));
+        MemberVO memberVO = toVO(memberById);
         return Result.success(memberVO);
     }
 
@@ -46,7 +48,6 @@ public class MemberAppServiceImpl implements MemberAppService {
         List<MemberVO> list = memberRepository.findMemberByType(typeId, status).stream().map(this::toVO).toList();
         return Result.success(list);
     }
-
 
 
     @Override
@@ -104,21 +105,30 @@ public class MemberAppServiceImpl implements MemberAppService {
 
     @Override
     public Result<Void> save(MemberCreateCommand command) {
+        validateCommand(command);
+        BigDecimal price = command.getPrice();
+        Integer duration = command.getDuration();
+        command.setDailyRate(price.divide(new BigDecimal(duration), RoundingMode.DOWN));
+        Long id = command.getId();
         Member member = Member.builder()
+                .id(id)
                 .stock(command.getStock())
                 .typeId(command.getTypeId())
                 .isSuper(command.getIsSuper())
                 .stock(command.getStock())
                 .name(command.getName())
-                .price(command.getPrice())
-                .duration(command.getDuration())
+                .price(price)
+                .duration(duration)
+                .priority(command.getPriority())
+                .dailyRate(command.getDailyRate())
                 .discount(command.getDiscount())
                 .description(command.getDescription())
+                .status(command.getStatus() != null ? command.getStatus() : 0)
                 .createTime(Instant.now())
                 .build();
         try {
-            memberRepository.save(member);
-        }catch (DuplicateKeyException e){
+             if(id == null){ memberRepository.save(member);} else memberRepository.updateById(member);
+        } catch (DuplicateKeyException e) {
             return Result.error("会员套餐已存在");
         }
         return Result.success();
@@ -126,7 +136,7 @@ public class MemberAppServiceImpl implements MemberAppService {
 
     @Override
     public Result<Void> deleteById(Long id) {
-        if(id == null)return Result.error("会员套餐ID不能为空");
+        if (id == null) return Result.error("会员套餐ID不能为空");
         Member memberById = memberRepository.findMemberById(id).orElseThrow(NoMemberPackageException::new);
         memberRepository.delete(memberById);
         return Result.success();
@@ -150,7 +160,7 @@ public class MemberAppServiceImpl implements MemberAppService {
     public PageResult<List<UserMemberVO>> queryUserMemberList(Integer page, Integer pageSize) {
         Page<UserMember> p = userMemberRepository.queryPage(page, pageSize);
         List<UserMemberVO> list = p.getRecords().stream().map(this::toUserMemberVO).toList();
-        return new PageResult<>(p.getCurrent(),p.getTotal(),list);
+        return new PageResult<>(p.getCurrent(), p.getTotal(), list);
     }
 
     @Override
@@ -172,11 +182,12 @@ public class MemberAppServiceImpl implements MemberAppService {
                 .memberType(userMember.getMemberType())
                 .createTime(userMember.getCreateTime())
                 .expireTime(userMember.getExpireTime())
+                .levelUpgradeTime(userMember.getLevelUpgradeTime())
                 .packageTypeId(userMember.getPackageTypeId())
                 .build();
     }
 
-    private MemberVO toVO(Member member){
+    private MemberVO toVO(Member member) {
         return MemberVO.builder()
                 .id(member.getId())
                 .name(member.getName())
@@ -185,10 +196,23 @@ public class MemberAppServiceImpl implements MemberAppService {
                 .description(member.getDescription())
                 .duration(member.getDuration())
                 .typeId(member.getTypeId())
-                .typeName(member.getType().getTypeName())
+                .typeName(member.getType() != null ? member.getType().getTypeName() : null)
                 .priority(member.getPriority())
-                .createTime(Timestamp.from(member.getCreateTime()))
+                .status(member.getStatus())
+                .createTime(member.getCreateTime() != null ? Timestamp.from(member.getCreateTime()) : null)
                 .build();
+    }
+
+
+    private void validateCommand(MemberCreateCommand command) {
+        Integer duration = command.getDuration();
+        String name = command.getName();
+        BigDecimal price = command.getPrice();
+        Double discount = command.getDiscount();
+        if (discount != null && discount > 1) throw new BusinessException("套餐折扣不能大于10");
+        if (duration == null || duration <= 0) throw new BusinessException("会员套餐时长不能为空");
+        if (name == null || name.isEmpty()) throw new BusinessException("会员套餐名称不能为空");
+        if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) throw new BusinessException("会员套餐价格不能为空");
     }
 }
 

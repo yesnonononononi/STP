@@ -63,6 +63,7 @@ public class MemberRepositoryImpl extends AbstractRepository<Member, MemberPacka
                 .dailyRate(member.getDailyRate())
                 .priority(member.getPriority())
                 .stock(member.getStock())
+                .status(member.getStatus())
                 .createTime(member.getCreateTime())
                 .build();
     }
@@ -89,6 +90,7 @@ public class MemberRepositoryImpl extends AbstractRepository<Member, MemberPacka
                 .dailyRate(po.getDailyRate())
                 .priority(po.getPriority())
                 .stock(po.getStock())
+                .status(po.getStatus())
                 .build();
     }
 }

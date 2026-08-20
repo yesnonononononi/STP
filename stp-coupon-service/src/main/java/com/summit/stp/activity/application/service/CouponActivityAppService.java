@@ -1,7 +1,7 @@
 package com.summit.stp.activity.application.service;
 
-import com.summit.stp.activity.application.dto.CouponActivityDTO;
 import com.summit.stp.activity.application.vo.CouponActivityQueryVO;
+import com.summit.stp.common.application.api.result.Result;
 
 import java.util.List;
 
@@ -18,21 +18,10 @@ public interface CouponActivityAppService {
 
     /**
      * 用户根据活动ID领取优惠券
+     *
+     * @return
      */
-    void receiveActivityCoupon(Long activityId);
+    Result<Void> receiveActivityCoupon(Long activityId);
 
-    /**
-     * 新增优惠券投放活动
-     */
-    void saveActivity(CouponActivityDTO dto);
 
-    /**
-     * 更新优惠券投放活动
-     */
-    void updateActivity(CouponActivityDTO dto);
-
-    /**
-     * 删除指定的优惠券投放活动
-     */
-    void deleteActivity(Long id);
 }

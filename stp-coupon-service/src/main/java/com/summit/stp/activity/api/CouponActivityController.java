@@ -32,29 +32,10 @@ public class CouponActivityController {
     @ApiOperation(value = "领取活动优惠券")
     public Result<Void> receiveCoupon(
             @ApiParam("活动ID") @PathVariable Long activityId) {
-        couponActivityAppService.receiveActivityCoupon(activityId);
-        return Result.success();
+       return couponActivityAppService.receiveActivityCoupon(activityId);
     }
 
-    @PostMapping("")
-    @ApiOperation(value = "新增优惠券投放活动")
-    public Result<Void> addActivity(@RequestBody CouponActivityDTO dto) {
-        couponActivityAppService.saveActivity(dto);
-        return Result.success();
-    }
 
-    @PutMapping("")
-    @ApiOperation(value = "更新优惠券投放活动")
-    public Result<Void> updateActivity(@RequestBody CouponActivityDTO dto) {
-        couponActivityAppService.updateActivity(dto);
-        return Result.success();
-    }
 
-    @DeleteMapping("/{id}")
-    @ApiOperation(value = "删除指定的优惠券投放活动")
-    public Result<Void> deleteActivity(
-            @ApiParam("活动ID") @PathVariable("id") Long id) {
-        couponActivityAppService.deleteActivity(id);
-        return Result.success();
-    }
+
 }

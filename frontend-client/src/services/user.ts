@@ -155,6 +155,13 @@ export class UserAPI {
   static async updateSettings(form: { showDelPost: number; customizationRecommend: number }): Promise<Result<void>> {
     return await request.post('/user/setting/update', form)
   }
+
+  /**
+   * 举报用户
+   */
+  static async reportUser(reportedId: string | number, reason: string): Promise<Result<void>> {
+    return await request.post('/user/report', { reportedId, reason })
+  }
 }
 
 export interface UserSettingData {

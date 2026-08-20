@@ -19,38 +19,10 @@ import java.util.stream.Collectors;
 
 @Repository
 public class CouponRepositoryImpl extends AbstractRepository<Coupon, CouponPO> implements CouponRepository {
-    private final CouponUseScopeMapper couponUseScopeMapper;
 
-    public CouponRepositoryImpl(BaseMapper<CouponPO> baseMapper, CouponUseScopeMapper couponUseScopeMapper) {
+    public CouponRepositoryImpl(BaseMapper<CouponPO> baseMapper ) {
         super(baseMapper);
-        this.couponUseScopeMapper = couponUseScopeMapper;
-    }
 
-    @Override
-    public Coupon findCouponById(Long couponId) {
-        CouponPO couponPO = getBaseMapper().selectOne(new LambdaQueryWrapper<CouponPO>().eq(CouponPO::getId, couponId));
-        if (couponPO == null) {
-            return null;
-        }
-
-        List<Long> relationIds = couponUseScopeMapper.selectList(
-                new LambdaQueryWrapper<CouponUseScopePO>()
-                        .eq(CouponUseScopePO::getCouponId, couponId)
-        ).stream().map(CouponUseScopePO::getRelationId).collect(Collectors.toList());
-
-        return Coupon.builder()
-                .id(couponPO.getId())
-                .name(couponPO.getName())
-                .amount(couponPO.getAmount())
-                .discount(couponPO.getDiscount())
-                .status(couponPO.getStatus())
-                .timeType(Coupon.CouponDateType.getByCode(couponPO.getTimeType()))
-                .description(couponPO.getDescription())
-                .validDays(couponPO.getValidDays())
-                .validHours(couponPO.getValidHours())
-                .scopeType(Coupon.CouponScopeType.fromCode(couponPO.getScopeType()))
-                .scopeRelationIds(relationIds)
-                .build();
     }
 
     @Override
@@ -99,6 +71,8 @@ public class CouponRepositoryImpl extends AbstractRepository<Coupon, CouponPO> i
                 .name(couponPO.getName())
                 .amount(couponPO.getAmount())
                 .discount(couponPO.getDiscount())
+                .type(couponPO.getType())
+                .createTime(couponPO.getCreateTime())
                 .status(couponPO.getStatus())
                 .timeType(couponPO.getTimeType() != null ? Coupon.CouponDateType.getByCode(couponPO.getTimeType()) : null)
                 .description(couponPO.getDescription())

@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserCouponAppServiceImpl implements UserCouponAppService {
     private final UserCouponRepository userCouponRepository;
-    private final CouponRepository couponRepository;
     private final OrderFeignClient orderFeignClient;
     private final MemberFeignClient memberFeignClient;
     private final DistributedLockUtil distributedLockUtil;
@@ -59,14 +58,7 @@ public class UserCouponAppServiceImpl implements UserCouponAppService {
         return convert(userCoupon);
     }
 
-    @Override
-    public Map<Long, CouponQueryVO> queryByIds(List<Long> cList) {
-        if (cList == null || cList.isEmpty()) {
-            return Map.of();
-        }
-        List<Coupon> byIds = couponRepository.findByIds(cList);
-        return byIds.stream().collect(Collectors.toMap(Coupon::getId, this::toTemplateVO));
-    }
+
 
     @Override
     public Page<CouponQueryVO> queryHistory(long page, long pageSize, CouponStatus status) {
@@ -248,19 +240,6 @@ public class UserCouponAppServiceImpl implements UserCouponAppService {
                 .build();
     }
 
-    private CouponQueryVO toTemplateVO(Coupon coupon) {
-        return CouponQueryVO.builder()
-                .id(coupon.getId())
-                .name(coupon.getName())
-                .discount(coupon.getDiscount())
-                .amount(coupon.getAmount())
-                .status(coupon.getStatus())
-                .validDays(coupon.getValidDays())
-                .validHours(coupon.getValidHours())
-                .scopeType(coupon.getScopeType() != null ? coupon.getScopeType().getCode() : null)
-                .reason(coupon.isApplicable(null, null))
-                .description(coupon.getDescription())
-                .build();
-    }
+
 }
 

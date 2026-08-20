@@ -1,16 +1,12 @@
 package com.summit.stp.post.domain.model;
 
 import com.summit.stp.common.application.domain.exception.BusinessException;
-import com.summit.stp.post.infrastructure.constants.PostConstants;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.apache.ibatis.annotations.Insert;
-
 import java.io.Serializable;
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.LocalDateTime;
+
 import java.util.List;
 
 @Builder
@@ -54,6 +50,12 @@ public class Post {
 
     private String unpassReason;
 
+
+    public static int MAX_TITLE_LENGTH = 100;
+    public static int MAX_CONTENT_LENGTH = 5000;
+    public static int MAX_IMAGE_NUM = 6;
+
+
     public void updateScope(Integer visible) {
         this.visibleScope = VisibleScope.fromCode(visible);
         this.updateTime = new Timestamp(System.currentTimeMillis());
@@ -81,16 +83,16 @@ public class Post {
     }
 
     public static boolean isLimited(Serializable imageUrlCount) {
-        return ((Number) imageUrlCount).intValue() > PostConstants.Business.MAX_IMAGE_NUM;
+        return ((Number) imageUrlCount).intValue() >MAX_IMAGE_NUM;
     }
 
 
     public void updatePost(Post post){
-        if (post.title != null && post.title.length() > PostConstants.Business.MAX_TITLE_LENGTH) {
-            throw new IllegalArgumentException("帖子标题长度不能超过" + PostConstants.Business.MAX_TITLE_LENGTH + "字");
+        if (post.title != null && post.title.length() > MAX_TITLE_LENGTH) {
+            throw new IllegalArgumentException("帖子标题长度不能超过" + MAX_TITLE_LENGTH + "字");
         }
-        if (post.content != null && post.content.length() > PostConstants.Business.MAX_CONTENT_LENGTH) {
-            throw new IllegalArgumentException("帖子内容长度不能超过" + PostConstants.Business.MAX_CONTENT_LENGTH + "字");
+        if (post.content != null && post.content.length() >MAX_CONTENT_LENGTH) {
+            throw new IllegalArgumentException("帖子内容长度不能超过" +MAX_CONTENT_LENGTH + "字");
         }
         if (post.urls != null && isLimited(post.urls.size())) {
             throw new IllegalArgumentException("图片数量超过上限!");

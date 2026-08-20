@@ -11,4 +11,7 @@ public interface AdminUserService {
     Result<PageResult<List<UserProfileVO>>> listBy(AdminUserQueryCommand command);
 
     Result<Void> toggleBan(Long uid, boolean attemptBan);
+
+    Result<Long> countNewUser();
+
 }

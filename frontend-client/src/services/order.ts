@@ -14,6 +14,7 @@ export interface OrderQueryVO {
   couponName: string
   couponId: number | null
   payTime?: string | null
+  timeoutTime?: string | null
 }
 
 export class OrderAPI {
@@ -37,18 +38,22 @@ export class OrderAPI {
   static async queryHistory(
     page: number = 1,
     pageSize: number = 10,
+    status?: number | null,
   ): Promise<Result<OrderQueryVO[]>> {
-    return await request.post('/order/query/history', null, {
-      params: { page, pageSize },
-    })
+    const params: Record<string, any> = { page, pageSize }
+    if (status !== undefined && status !== null) {
+      params.status = status
+    }
+    return await request.post('/order/query/history', null, { params })
   }
 
 
   /**
-   * 手动对账订单并更新/补偿本地权益与状态
+   * 确认订单 (ACK)
+   * @param orderNo 订单唯一标识
    */
-  static async reconcileOrder(orderId: string | number): Promise<Result<string>> {
-    return await request.post(`/order/reconcile/${orderId}`)
+  static async ackOrder(orderNo: string | number): Promise<Result<void>> {
+    return await request.get('/order/ack', { params: { orderNo } })
   }
 
   /**

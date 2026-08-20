@@ -1,5 +1,6 @@
 package com.summit.stp.common.application.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.netty.util.internal.StringUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,7 +19,10 @@ public class UserSession implements Serializable {
     private final Long id;
     private final String username;
     private String ip;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private final LocalDateTime loginTime;
+
     private final String token;
     private final Integer admin;
     private final TokenType tokenType;
@@ -45,7 +49,7 @@ public class UserSession implements Serializable {
     }
 
     public boolean isLogin(){
-        return !StringUtil.isNullOrEmpty(token) && !StringUtil.isNullOrEmpty(username) && Objects.equals(tokenType, TokenType.ACCESS);
+        return id != null && !StringUtil.isNullOrEmpty(token) && !StringUtil.isNullOrEmpty(username) && Objects.equals(tokenType, TokenType.ACCESS);
     }
 
 }

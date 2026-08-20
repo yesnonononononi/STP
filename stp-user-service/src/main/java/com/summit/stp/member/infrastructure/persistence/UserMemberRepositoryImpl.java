@@ -14,6 +14,10 @@ import com.summit.stp.member.infrastructure.persistence.po.UserMemberPO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -21,8 +25,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Repository
-
-public class UserMemberRepositoryImpl extends AbstractRepository<UserMember, UserMemberPO> implements UserMemberRepository {
+public class UserMemberRepositoryImpl extends AbstractRepository<UserMember, UserMemberPO>
+        implements UserMemberRepository {
     @Autowired
     private UserMemberMapper userMemberMapper;
     @Autowired
@@ -32,18 +36,71 @@ public class UserMemberRepositoryImpl extends AbstractRepository<UserMember, Use
         super(baseMapper);
     }
 
+    @Override
+    public long countActiveMembers() {
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+        Long count = getBaseMapper().selectCount(new LambdaQueryWrapper<UserMemberPO>().gt(UserMemberPO::getExpireTime, now));
+        return count != null ? count : 0L;
+    }
+
+    @Override
+    public long countNewMembersAfter(Instant startTime) {
+        if (startTime == null) return 0L;
+        Timestamp startTs = Timestamp.from(startTime);
+        Long count = getBaseMapper().selectCount(new LambdaQueryWrapper<UserMemberPO>().ge(UserMemberPO::getLevelUpgradeTime, startTs));
+        return count != null ? count : 0L;
+    }
+
+    @Override
+    public Map<Long, Long> countMemberLevelDistribution() {
+        QueryWrapper<UserMemberPO> wrapper = new QueryWrapper<UserMemberPO>()
+                .select("vip_level", "COUNT(*) as count")
+                .groupBy("vip_level");
+        List<Map<String, Object>> mapList = getBaseMapper().selectMaps(wrapper);
+        if (mapList == null || mapList.isEmpty()) {
+            return Map.of();
+        }
+        return mapList.stream()
+                .filter(m -> m.get("vip_level") != null && m.get("count") != null)
+                .collect(Collectors.toMap(
+                        m -> Long.parseLong(m.get("vip_level").toString()),
+                        m -> Long.parseLong(m.get("count").toString()),
+                        (k1, k2) -> k1
+                ));
+    }
+
+    @Override
+    public Map<Long, Long> countPackageUserDistribution() {
+        QueryWrapper<UserMemberPO> wrapper = new QueryWrapper<UserMemberPO>()
+                .select("package_type_id", "COUNT(*) as count")
+                .groupBy("package_type_id");
+        List<Map<String, Object>> mapList = getBaseMapper().selectMaps(wrapper);
+        if (mapList == null || mapList.isEmpty()) {
+            return Map.of();
+        }
+        return mapList.stream()
+                .filter(m -> m.get("package_type_id") != null && m.get("count") != null)
+                .collect(Collectors.toMap(
+                        m -> Long.parseLong(m.get("package_type_id").toString()),
+                        m -> Long.parseLong(m.get("count").toString()),
+                        (k1, k2) -> k1
+                ));
+    }
 
     @Override
     public UserMember queryUserMemberByUserId(long creatorId) {
-        UserMemberPO po = getBaseMapper().selectOne(new LambdaQueryWrapper<UserMemberPO>().eq(UserMemberPO::getUserId, creatorId));
-        if (po == null) return null;
+        UserMemberPO po = getBaseMapper()
+                .selectOne(new LambdaQueryWrapper<UserMemberPO>().eq(UserMemberPO::getUserId, creatorId));
+        if (po == null)
+            return null;
         MemberLevelConfig level = memberLevelConfigRepository.findByLevel(po.getVipLevel()).orElse(null);
         return convertToDomain(po, level);
     }
 
     @Override
     public void save(UserMember userMember) {
-        if (userMember == null) return;
+        if (userMember == null)
+            return;
         if (findBy(userMember.getUserId(), UserMemberPO::getUserId).isPresent()) {
             super.updateById(userMember);
         } else {
@@ -57,7 +114,8 @@ public class UserMemberRepositoryImpl extends AbstractRepository<UserMember, Use
         if (userMemberPO == null) {
             return null;
         }
-        return convertToDomain(userMemberPO, memberLevelConfigRepository.findByLevel(userMemberPO.getVipLevel()).orElse(null));
+        return convertToDomain(userMemberPO,
+                memberLevelConfigRepository.findByLevel(userMemberPO.getVipLevel()).orElse(null));
     }
 
     @Override
@@ -66,8 +124,7 @@ public class UserMemberRepositoryImpl extends AbstractRepository<UserMember, Use
             return Collections.emptyMap();
         }
         List<UserMemberPO> poList = getBaseMapper().selectList(
-                new LambdaQueryWrapper<UserMemberPO>().in(UserMemberPO::getUserId, userIds)
-        );
+                new LambdaQueryWrapper<UserMemberPO>().in(UserMemberPO::getUserId, userIds));
         if (poList == null || poList.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -81,8 +138,7 @@ public class UserMemberRepositoryImpl extends AbstractRepository<UserMember, Use
                 .collect(Collectors.toMap(
                         UserMemberPO::getUserId,
                         po -> convertToDomain(po, configMap.get(po.getVipLevel())),
-                        (v1, v2) -> v1
-                ));
+                        (v1, v2) -> v1));
     }
 
     @Override
@@ -106,7 +162,8 @@ public class UserMemberRepositoryImpl extends AbstractRepository<UserMember, Use
 
     @Override
     protected UserMemberPO toPO(UserMember userMember) {
-        if (userMember == null) return null;
+        if (userMember == null)
+            return null;
         return UserMemberPO.builder()
                 .userId(userMember.getUserId())
                 .totalRecharge(userMember.getTotalRecharge())
@@ -121,7 +178,8 @@ public class UserMemberRepositoryImpl extends AbstractRepository<UserMember, Use
 
     @Override
     protected UserMember toModel(UserMemberPO po) {
-        if (po == null) return null;
+        if (po == null)
+            return null;
         return convertToDomain(po, null);
     }
 
@@ -140,4 +198,3 @@ public class UserMemberRepositoryImpl extends AbstractRepository<UserMember, Use
                 .build();
     }
 }
-

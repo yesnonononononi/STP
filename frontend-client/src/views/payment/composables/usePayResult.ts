@@ -88,19 +88,16 @@ export function usePayResult() {
     stopPolling()
   })
 
-  // 手动对账刷新
+  // 确认订单刷新
   const handleReconcile = async () => {
     if (!info.value || !info.value.orderId) return
     loading.value = true
     try {
-      await OrderAPI.reconcileOrder(info.value.orderId)
+      await OrderAPI.ackOrder(info.value.orderId)
       const res = await OrderAPI.queryOrder(String(info.value.orderId))
       info.value = res.data
-      if (info.value && info.value.status !== OrderStatus.PAID) {
-        info.value.status = OrderStatus.PAID
-      }
     } catch (err: any) {
-      console.error('手动对账执行异常:', err)
+      console.error('确认订单执行异常:', err)
     } finally {
       loading.value = false
     }

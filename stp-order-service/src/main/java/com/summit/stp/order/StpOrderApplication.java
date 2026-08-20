@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableFeignClients(basePackages = {"com.summit.stp.coupon.api","com.summit.stp.payment.api","com.summit.stp.user.api"})
 @ComponentScan(basePackages = {"com.summit.stp.common","com.summit.stp.order"})
-@MapperScan("com.summit.stp.order.infrastructure.persistence.mapper")
+@MapperScan("com.summit.stp.order.order.infrastructure.persistence.mapper")
 public class StpOrderApplication {
     public static void main(String[] args) {
         SpringApplication.run(StpOrderApplication.class, args);

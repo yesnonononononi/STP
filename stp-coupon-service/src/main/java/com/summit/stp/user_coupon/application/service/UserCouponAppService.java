@@ -19,10 +19,6 @@ public interface UserCouponAppService {
      */
     CouponQueryVO queryById(Long id);
 
-    /**
-     * 批量查询优惠券模板或用户优惠券详情
-     */
-    Map<Long, CouponQueryVO> queryByIds(List<Long> cList);
 
     /**
      * 分页查询当前用户的个人优惠券历史记录

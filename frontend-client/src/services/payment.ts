@@ -24,8 +24,12 @@ export interface PayResponse {
 }
 
 export class PayAPI {
-  static async pay(form: PayForm): Promise<Result<PayResponse>> {
+  static async pay(form: PayForm): Promise<Result<{ orderId: string | number; endTime?: string | number }>> {
     return await request.post('/order/create', form)
+  }
+
+  static async toPay(orderNo: string | number): Promise<Result<string>> {
+    return await request.post('/pay/toPay', null, { params: { orderNo } })
   }
 
   static async getPayTypes(): Promise<Result<string[]>> {

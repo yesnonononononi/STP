@@ -21,7 +21,9 @@ public interface PostQueryService {
      */
     List<PostVO> getPostPage(Long cursor, Boolean self, Long creatorId, Integer status, String orderType, Integer limit);
 
-    List<PostVO> getByPostIds(List<Long> ids);
+
+
+    List<PostVO> findAllOfPostsInfo(List<Long> ids);
 
     /**
      * 获取用户收藏的帖子列表
@@ -44,11 +46,13 @@ public interface PostQueryService {
      * @param request 查询请求参数
      * @return 帖子列表
      */
-    List<PostVO> getFollowPostList(QueryPostListPageRequest request);
+
     PostVO findById(Long id, Long uid, Integer status);
 
 
     List<PostVO> searchPost(String keyWord, Integer page);
+
+    List<PostVO> resolveExtraInfo(List<PostVO> postVOList);
 
     com.summit.stp.post.api.vo.PostSimpleVO findSimplePostById(Long id);
 }

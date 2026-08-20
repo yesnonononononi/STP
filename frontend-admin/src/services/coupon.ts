@@ -1,65 +1,101 @@
 import request from '@/services/request'
-import type { Result } from '@/types/result'
+import type { Result, PageResult } from '@/types/result'
 
-export interface CouponItem {
+export interface AdminCouponVO {
   id: number
-  title: string
-  couponType: 'CASH' | 'DISCOUNT' // 1:立减券 2:折扣券
-  discountValue: number // 减免金额或折扣率(如8.5折)
-  minThreshold: number // 使用门槛金额(0表示无门槛)
-  totalCount: number // 总发行量
-  remainCount: number // 剩余数量
-  perUserLimit: number // 每人限领张数
-  status: number // 1:正常 0:已封禁/已作废
-  validStartTime: string
-  validEndTime: string
-  createTime: string
+  name: string
+  discount?: number
+  amount?: number
+  type?: number // 0 折扣, 1 金额
+  status?: number
+  scopeType?: number
+  timeType?: number
+  createTime?: string
+  updateTime?: string
+  validDays?: number
+  validHours?: number
+  image?: string
+  description?: string
 }
 
-export interface CouponActivityItem {
+export interface CreateCouponPayload {
+  id?: number
+  name: string
+  discount?: number
+  amount?: number
+  status?: number
+  type?: number // 0 折扣, 1 金额
+  description?: string
+  image?: string
+  scopeType?: number
+  scopeRelationIds?: number[]
+  timeType?: number
+  validDays?: number
+  validHours?: number
+}
+
+export interface AdminCouponActivityVO {
   id: number
-  activityName: string
-  description: string
-  associatedCouponId: number
-  associatedCouponTitle?: string
-  status: number // 1:进行中 0:已暂停 2:已结束
-  startTime: string
-  endTime: string
-  createTime: string
+  couponId: number
+  name: string
+  stock?: number
+  activityStartTime?: string
+  activityEndTime?: string
+  status?: number
+  type?: number
+}
+
+export interface CreateCouponActivityPayload {
+  id?: number
+  couponId: number
+  name: string
+  stock?: number
+  activityStartTime?: string
+  activityEndTime?: string
+  status?: number
+  type?: number
 }
 
 export class CouponAPI {
   // --- 优惠券管理 ---
-  static async getCouponList(params?: { keyword?: string; status?: number; page?: number; size?: number }): Promise<Result<{ list: CouponItem[]; total: number }>> {
+  static async getCouponList(params?: { keyword?: string; status?: number; page?: number; pageSize?: number }): Promise<Result<PageResult<AdminCouponVO[]>>> {
     return request.get('/a/coupon/list', { params })
   }
 
-  static async saveCoupon(data: Partial<CouponItem>): Promise<Result<void>> {
+  static async saveCoupon(data: CreateCouponPayload): Promise<Result<void>> {
     return request.post('/a/coupon/save', data)
+  }
+
+  static async banCoupon(id: number): Promise<Result<void>> {
+    return request.post('/a/coupon/ban', null, { params: { id } })
+  }
+
+  static async unbanCoupon(id: number): Promise<Result<void>> {
+    return request.post('/a/coupon/unban', null, { params: { id } })
   }
 
   static async deleteCoupon(id: number): Promise<Result<void>> {
     return request.post(`/a/coupon/delete/${id}`)
   }
 
-  static async toggleCouponStatus(id: number, status: number): Promise<Result<void>> {
-    return request.post('/a/coupon/toggle-status', { id, status })
-  }
-
-  // --- 活动管理 ---
-  static async getActivityList(params?: { keyword?: string; status?: number; page?: number; size?: number }): Promise<Result<{ list: CouponActivityItem[]; total: number }>> {
+  // --- 营销活动管理 ---
+  static async getActivityList(params?: { keyword?: string; status?: number; page?: number; pageSize?: number }): Promise<Result<PageResult<AdminCouponActivityVO[]>>> {
     return request.get('/a/coupon/activity/list', { params })
   }
 
-  static async saveActivity(data: Partial<CouponActivityItem>): Promise<Result<void>> {
+  static async saveActivity(data: CreateCouponActivityPayload): Promise<Result<void>> {
     return request.post('/a/coupon/activity/save', data)
+  }
+
+  static async startActivity(id: number): Promise<Result<void>> {
+    return request.post('/a/coupon/activity/start', null, { params: { id } })
+  }
+
+  static async closeActivity(id: number): Promise<Result<void>> {
+    return request.post('/a/coupon/activity/close', null, { params: { id } })
   }
 
   static async deleteActivity(id: number): Promise<Result<void>> {
     return request.post(`/a/coupon/activity/delete/${id}`)
-  }
-
-  static async toggleActivityStatus(id: number, status: number): Promise<Result<void>> {
-    return request.post('/a/coupon/activity/toggle-status', { id, status })
   }
 }

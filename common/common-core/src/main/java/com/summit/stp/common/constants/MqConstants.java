@@ -16,7 +16,11 @@ public interface MqConstants {
         String QUEUE = "admin.queue";
         String ROUTING_KEY = "admin.routing.key";
     }
-
+    interface Coupon{
+        String EXCHANGE= "coupon.topic.exchange";
+        String COUPON_SECKILL_QUEUE = "coupon.seckill.queue";
+        String COUPON_SECKILL_ROUTING_KEY = "coupon.seckill.routing.key";
+    }
     interface Member {
         String EXCHANGE = "member.topic.exchange";
         String QUEUE = "member.queue.pay";
@@ -61,5 +65,15 @@ public interface MqConstants {
         String EXCHANGE = "stp.comment.exchange";
         String QUEUE = "stp.comment.queue";
         String ROUTING_KEY = "stp.comment.routing.key";
+    }
+
+    interface Es {
+        String EXCHANGE = "es.topic.exchange";
+
+        String QUEUE_POST_UPDATE = "es.post.update.queue";
+        String ROUTING_KEY_POST_UPDATE = "es.post.update.routing.key";
+
+        String QUEUE_USER_UPDATE = "es.user.update.queue";
+        String ROUTING_KEY_USER_UPDATE = "es.user.update.routing.key";
     }
 }

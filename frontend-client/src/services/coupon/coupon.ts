@@ -90,7 +90,6 @@ export interface CouponActivityVO {
   activityStartTime: string
   activityEndTime: string
   status: number
-  limitQuantity?: number
   couponName: string
   discount: number | null
   amount: number | null

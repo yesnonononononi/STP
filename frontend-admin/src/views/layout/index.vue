@@ -20,6 +20,19 @@
 
       <!-- 导航菜单 -->
       <nav class="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto">
+        <!-- 0. 仪表盘 Dash -->
+        <router-link
+          to="/dashboard"
+          class="flex items-center gap-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group"
+          :class="isCollapsed ? 'justify-center px-0' : 'px-3.5'"
+          active-class="bg-blue-50/60 text-blue-600 border border-blue-100/80 font-medium"
+        >
+          <el-icon class="text-lg group-hover:text-blue-600 transition-colors shrink-0">
+            <Odometer />
+          </el-icon>
+          <span v-show="!isCollapsed" class="text-sm transition-all duration-300">仪表盘 Dash</span>
+        </router-link>
+
         <!-- 1. 管理员管理 -->
         <router-link
           to="/admin"
@@ -33,18 +46,54 @@
           <span v-show="!isCollapsed" class="text-sm transition-all duration-300">管理员管理</span>
         </router-link>
 
-        <!-- 2. 用户管理 -->
-        <router-link
-          to="/user"
-          class="flex items-center gap-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group"
-          :class="isCollapsed ? 'justify-center px-0' : 'px-3.5'"
-          active-class="bg-blue-50/60 text-blue-600 border border-blue-100/80 font-medium"
-        >
-          <el-icon class="text-lg group-hover:text-blue-600 transition-colors shrink-0">
-            <UserFilled />
-          </el-icon>
-          <span v-show="!isCollapsed" class="text-sm transition-all duration-300">用户管理</span>
-        </router-link>
+        <!-- 2. 用户管理 (下拉框) -->
+        <div>
+          <button
+            @click="toggleSubMenu('user')"
+            class="w-full flex items-center py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group"
+            :class="[
+              isCollapsed ? 'justify-center px-0' : 'justify-between px-3.5',
+              isPathActive('/user') ? 'text-blue-600 font-medium bg-blue-50/30' : ''
+            ]"
+          >
+            <div class="flex items-center gap-3">
+              <el-icon class="text-lg group-hover:text-blue-600 transition-colors shrink-0">
+                <UserFilled />
+              </el-icon>
+              <span v-show="!isCollapsed" class="text-sm">用户管理</span>
+            </div>
+            <el-icon v-show="!isCollapsed" class="text-xs transition-transform duration-200" :class="subMenuOpen.user ? 'rotate-180' : ''">
+              <ArrowDown />
+            </el-icon>
+          </button>
+
+          <!-- 用户管理 子菜单 -->
+          <transition
+            enter-active-class="transition-all duration-300 ease-out overflow-hidden"
+            enter-from-class="max-h-0 opacity-0 transform -translate-y-1"
+            enter-to-class="max-h-48 opacity-100 transform translate-y-0"
+            leave-active-class="transition-all duration-200 ease-in overflow-hidden"
+            leave-from-class="max-h-48 opacity-100 transform translate-y-0"
+            leave-to-class="max-h-0 opacity-0 transform -translate-y-1"
+          >
+            <div v-show="subMenuOpen.user && !isCollapsed" class="ml-7 mt-1 space-y-1 border-l-2 border-slate-100 pl-3">
+              <router-link
+                to="/user"
+                class="block px-3 py-1.5 rounded-md text-xs text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition-colors"
+                active-class="text-blue-600 font-medium bg-blue-50/50"
+              >
+                用户列表
+              </router-link>
+              <router-link
+                to="/user/report"
+                class="block px-3 py-1.5 rounded-md text-xs text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition-colors"
+                active-class="text-blue-600 font-medium bg-blue-50/50"
+              >
+                举报审核管理
+              </router-link>
+            </div>
+          </transition>
+        </div>
 
         <!-- 3. 会员管理 (下拉框) -->
         <div>
@@ -272,6 +321,7 @@ import { ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/views/auth/store'
 import { useUserInfoStore } from '@/stores/userInfo'
 import {
+  Odometer,
   User,
   UserFilled,
   Medal,
@@ -291,6 +341,7 @@ const router = useRouter()
 const isCollapsed = ref(false)
 
 const subMenuOpen = reactive({
+  user: false,
   member: false,
   coupon: false
 })
@@ -299,7 +350,9 @@ const subMenuOpen = reactive({
 watch(
   () => route.path,
   (newPath) => {
-    if (newPath.startsWith('/member')) {
+    if (newPath.startsWith('/user')) {
+      subMenuOpen.user = true
+    } else if (newPath.startsWith('/member')) {
       subMenuOpen.member = true
     } else if (newPath.startsWith('/coupon')) {
       subMenuOpen.coupon = true
@@ -308,7 +361,7 @@ watch(
   { immediate: true }
 )
 
-const toggleSubMenu = (menu: 'member' | 'coupon') => {
+const toggleSubMenu = (menu: 'user' | 'member' | 'coupon') => {
   subMenuOpen[menu] = !subMenuOpen[menu]
 }
 

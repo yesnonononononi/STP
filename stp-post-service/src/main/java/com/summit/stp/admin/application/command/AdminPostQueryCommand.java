@@ -9,6 +9,7 @@ import java.security.Timestamp;
 @Builder
 @Data
 public class AdminPostQueryCommand {
+  private Long postId;
   private Integer page;
   private Integer pageSize;
   private String keyword;

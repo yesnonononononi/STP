@@ -30,6 +30,10 @@ public class AdminUserController {
         return adminUserService.listBy(command);
     }
 
+    @GetMapping("/count/new")
+    public Result<Long> countNewUser(){
+        return adminUserService.countNewUser();
+    }
 
     @GetMapping("/ban")
     @OperationLog(description = "禁用用户", type =  Operation.OperationType.UPDATE,entityId = "#uid")

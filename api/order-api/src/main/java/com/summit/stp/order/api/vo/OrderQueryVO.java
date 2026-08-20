@@ -59,5 +59,8 @@ public class OrderQueryVO implements Serializable {
 
     @ApiModelProperty(value = "支付完成时间")
     private Timestamp payTime;
+
+    @ApiModelProperty(value = "订单超时时间")
+    private Timestamp timeoutTime;
 }
 

@@ -22,7 +22,6 @@ public class CouponActivityPO {
     private LocalDateTime activityStartTime;
     private LocalDateTime activityEndTime;
     private Integer status;
-    private Integer limitQuantity;
     private LocalDateTime createTime;
     private Integer type;
     private LocalDateTime updateTime;

@@ -29,4 +29,5 @@ public class MemberPackagePO {
     private Double discount;
     private BigDecimal dailyRate;
     private Integer priority;
+    private Integer status;
 }

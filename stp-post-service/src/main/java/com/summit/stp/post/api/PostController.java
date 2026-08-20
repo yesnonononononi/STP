@@ -6,10 +6,8 @@ import com.summit.stp.common.annotation.Login;
 import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.post.api.dto.request.CreatePostRequest;
 import com.summit.stp.post.api.dto.request.QueryPostListPageRequest;
-import com.summit.stp.post.api.dto.request.UpdatePostRequest;
 import com.summit.stp.post.application.command.CreatePostCommand;
 import com.summit.stp.post.application.command.QueryPostListByCursorCommand;
-import com.summit.stp.post.application.command.UpdatePostCommand;
 import com.summit.stp.post.application.service.PostAppService;
 import com.summit.stp.post.application.service.PostQueryService;
 import com.summit.stp.post.application.vo.PostVO;
@@ -41,8 +39,9 @@ public class PostController {
     @ApiOperation(value = "发布新帖子", notes = "创建并发布一个新帖子")
     public Result<Void> createPost(
             @ApiParam(value = "发帖请求参数", required = true) @RequestBody CreatePostRequest request) {
+        Long userId = UserHolder.getUser().getId();
         CreatePostCommand command = CreatePostCommand.builder()
-                .creatorId(UserHolder.getUser().getId())
+                .creatorId(userId)
                 .title(request.getTitle())
                 .type(request.getType())
                 .content(request.getContent())
@@ -50,32 +49,12 @@ public class PostController {
                 .status(request.getStatus())
                 .tagIds(request.getTagIds())
                 .isTop(request.getIsTop())
-
-
                 .build();
         return postAppService.createPost(command);
 
     }
 
-    @Login
-    @PutMapping("/update")
-    @ApiOperation(value = "编辑/更新帖子", notes = "修改已发布帖子的内容或基本字段")
-    public Result<Void> updatePost(
-            @ApiParam(value = "更新的帖子参数", required = true) @RequestBody UpdatePostRequest request) {
-        UpdatePostCommand command = UpdatePostCommand.builder()
-                .id(request.getId())
-                .creatorId(UserHolder.getUser().getId())
-                .title(request.getTitle())
-                .type(request.getType())
-                .content(request.getContent())
-                .mediaUrls(request.getMediaUrls())
-                .status(request.getStatus())
-                .tagIds(request.getTagIds())
-                .isTop(request.getIsTop())
-                .build();
-        postAppService.updatePost(command);
-        return Result.success();
-    }
+
 
     @Login
     @DeleteMapping("/{id}")
@@ -133,13 +112,7 @@ public class PostController {
         return Result.success();
     }
 
-    @Login
-    @GetMapping("/like/status/{id}")
-    @ApiOperation(value = "获取帖子点赞状态", notes = "获取当前登录用户对指定帖子的点赞状态")
-    public Result<Boolean> isLiked(
-            @ApiParam(value = "帖子ID", required = true) @PathVariable Long id) {
-        return Result.success(postAppService.isLiked(id));
-    }
+
 
     @Login
     @GetMapping("/collect/status/{id}")
@@ -189,12 +162,6 @@ public class PostController {
     }
 
 
-    @Login
-    @GetMapping("/follow/list")
-    @ApiOperation(value = "获取我关注的用户的帖子列表")
-    public Result<List<PostVO>> getFollowPostList(@RequestBody QueryPostListPageRequest request) {
-        return Result.success(postQueryService.getFollowPostList(request));
-    }
 
 
     @GetMapping("/search/{keyWord}")
@@ -203,5 +170,11 @@ public class PostController {
         return Result.success(postQueryService.searchPost(keyWord, page));
     }
 
-
+    @Login
+    @GetMapping("/unpass/reason/{id}")
+    @ApiOperation(value = "获取帖子未审核通过的原因", notes = "根据帖子ID获取其未通过的具体原因")
+    public Result<String> getUnpassReason(
+            @ApiParam(value = "帖子ID", required = true) @PathVariable Long id) {
+        return Result.success(postAppService.getUnpassReason(id));
+    }
 }

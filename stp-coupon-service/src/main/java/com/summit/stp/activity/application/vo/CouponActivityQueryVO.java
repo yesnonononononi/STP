@@ -23,7 +23,6 @@ public class CouponActivityQueryVO {
     private LocalDateTime activityStartTime;
     private LocalDateTime activityEndTime;
     private Integer status;
-    private Integer limitQuantity;
     private Integer type;
 
     // 关联的优惠券模板信息

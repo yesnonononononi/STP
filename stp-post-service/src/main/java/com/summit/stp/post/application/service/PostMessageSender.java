@@ -33,6 +33,11 @@ public class PostMessageSender {
         queueSender.send(MqConstants.Post.EXCHANGE, MqConstants.Post.ROUTING_KEY_CHANGE, event);
     }
 
-
-
+    /**
+     * 发送系统 ES 专用帖子更新事件
+     * @param event ES 帖子更新事件
+     */
+    public void sendEsPostUpdateEvent(com.summit.stp.common.application.domain.event.EsPostUpdateEvent event) {
+        queueSender.send(MqConstants.Es.EXCHANGE, MqConstants.Es.ROUTING_KEY_POST_UPDATE, event);
+    }
 }

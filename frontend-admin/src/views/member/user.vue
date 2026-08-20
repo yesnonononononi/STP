@@ -45,13 +45,13 @@
 
         <el-table-column prop="expireTime" label="会员到期时间" min-width="180">
           <template #default="{ row }">
-            <span class="text-xs font-mono text-slate-600">{{ row.expireTime || '-' }}</span>
+            <span class="text-xs font-mono text-slate-700">{{ formatTime(row.expireTime) }}</span>
           </template>
         </el-table-column>
 
         <el-table-column prop="levelUpgradeTime" label="升阶时间" min-width="180">
           <template #default="{ row }">
-            <span class="text-xs font-mono text-slate-400">{{ row.levelUpgradeTime || '-' }}</span>
+            <span class="text-xs font-mono text-slate-500">{{ formatTime(row.levelUpgradeTime) }}</span>
           </template>
         </el-table-column>
 
@@ -105,6 +105,27 @@ const form = reactive<{ userId: number; expireTime: string }>({
   expireTime: ''
 })
 
+const formatTime = (time?: string | number | null) => {
+  if (!time) return '-'
+  let d: Date
+  if (typeof time === 'number') {
+    d = new Date(time)
+  } else if (/^\d+$/.test(String(time))) {
+    d = new Date(Number(time))
+  } else {
+    d = new Date(time)
+  }
+  if (Number.isNaN(d.getTime())) return String(time)
+  
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  const ss = String(d.getSeconds()).padStart(2, '0')
+  return `${y}-${m}-${day} ${hh}:${mm}:${ss}`
+}
+
 const fetchData = async () => {
   loading.value = true
   try {
@@ -138,7 +159,7 @@ const handleRaiseLevel = (row: UserMemberItem) => {
 // 打开延期对话框
 const handleOpenExtendExpire = (row: UserMemberItem) => {
   form.userId = row.userId
-  form.expireTime = row.expireTime || ''
+  form.expireTime = row.expireTime ? formatTime(row.expireTime) : ''
   dialogVisible.value = true
 }
 

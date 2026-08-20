@@ -31,14 +31,11 @@ public class AuthAspect {
     /**
      * 拦截 @Login 注解：校验用户是否已登录（ACCESS Token）
      */
-    @Before(value = "@annotation(login) || @within(login)", argNames = "login,jp")
-    public void checkLogin(Login login, @NonNull JoinPoint jp) {
-        if (login == null) {
-            login = (Login) getAnno(Login.class, jp);
-        }
+    @Before("@annotation(com.summit.stp.common.annotation.Login) || @within(com.summit.stp.common.annotation.Login)")
+    public void checkLogin(JoinPoint jp) {
         UserSession session = getSession();
-        if (session.getTokenType() != UserSession.TokenType.ACCESS) {
-            log.warn("【鉴权】@Login 校验失败，当前 session tokenType={}", session.getTokenType());
+        if (session.getId() == null || session.getTokenType() != UserSession.TokenType.ACCESS) {
+            log.warn("【鉴权】@Login 校验失败，当前 session 用户ID为空或tokenType非ACCESS, userId={}, tokenType={}", session.getId(), session.getTokenType());
             throw new AuthException(401, "请先登录");
         }
     }
@@ -47,17 +44,15 @@ public class AuthAspect {
      * 拦截 @Admin 注解：校验用户是否为管理员
      * 处理顺序：先验证登录 → 再验证管理员身份
      */
-    @Before(value = "@annotation(admin) || @within(admin)", argNames = "admin,jp")
-    public void checkAdmin(Admin admin, @NonNull JoinPoint jp) {
-        if (admin == null) {
-            admin = (Admin) getAnno(Admin.class, jp);
-        }
+    @Before("@annotation(com.summit.stp.common.annotation.Admin) || @within(com.summit.stp.common.annotation.Admin)")
+    public void checkAdmin(JoinPoint jp) {
+        Admin admin = (Admin) getAnno(Admin.class, jp);
         UserSession session = getSession();
-        if (session.getTokenType() != UserSession.TokenType.ACCESS) {
-            log.warn("【鉴权】@Admin 校验失败（未登录），tokenType={}", session.getTokenType());
+        if (session.getId() == null || session.getTokenType() != UserSession.TokenType.ACCESS) {
+            log.warn("【鉴权】@Admin 校验失败（未登录或userId为空），userId={}, tokenType={}", session.getId(), session.getTokenType());
             throw new AuthException(401, "请先登录");
         }
-        if (!isAdmin(session, admin.order())) {
+        if (admin != null && !isAdmin(session, admin.order())) {
             log.warn("【鉴权】@Admin 校验失败（非管理员），userId={}", session.getId());
             throw new AuthException(403, "无管理员权限");
         }

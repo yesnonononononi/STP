@@ -1,26 +1,26 @@
 package com.summit.stp.elasticsearch.document;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.io.Serializable;
-import java.sql.Timestamp;
-
+import java.util.Date;
+@ToString
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(indexName = "posts")
 public class PostDocument implements Serializable {
-
-    @Field(type = FieldType.Long)
+    @Id
     private Long id;
 
+
+    @Field(type = FieldType.Long)
+    private Long postId;
     @Field(
             type = FieldType.Text,
             analyzer = "ik_max_word",
@@ -36,7 +36,7 @@ public class PostDocument implements Serializable {
     private String content;
 
     @Field(type = FieldType.Date)
-    private Timestamp createTime;
+    private Date createTime;
 
     @Field(type = FieldType.Integer)
     private Integer status;
@@ -48,7 +48,7 @@ public class PostDocument implements Serializable {
     private Long likeCount;
 
     @Field(type = FieldType.Date)
-    private Timestamp updateTime;
+    private Date updateTime;
 
     @Field(type = FieldType.Long)
     private Long creatorId;

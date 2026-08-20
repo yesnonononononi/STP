@@ -1,18 +1,22 @@
 import request from '@/services/request'
-import type { Result } from '@/types/result'
+import type { Result, PageResult } from '@/types/result'
 
-export interface OrderItem {
+export interface AdminOrderVO {
   id: number
-  orderNo: string
-  userId: number
-  userName: string
-  orderType: 'MEMBER' | 'COUPON_PACKAGE' | 'OTHER'
+  creatorId: number
   amount: number
-  payType: 'WECHAT' | 'ALIPAY' | 'BALANCE'
-  payStatus: 'PAID' | 'UNPAID' | 'REFUNDED' | 'FAILED'
-  tradeNo?: string
-  remark?: string
-  createTime: string
+  payType?: number // 1: 微信, 2: 支付宝, 3: 余额
+  to?: string
+  sign?: string
+  status?: number // 0: 待支付, 1: 已支付, 2: 已退款, 3: 交易失败/已关闭
+  packageId?: number
+  quantity?: number
+  couponId?: number
+  unitPrice?: number
+  discountAmount?: number
+  createTime?: string
+  timeoutTime?: string
+  updateTime?: string
   payTime?: string
 }
 
@@ -21,29 +25,27 @@ export interface OrderQueryPayload {
   size: number
   orderNo?: string
   userId?: number
-  orderType?: string
-  payStatus?: string
-  createTimeStart?: string
-  createTimeEnd?: string
+  orderType?: number
+  payStatus?: number
 }
 
 export class OrderAPI {
-  static async getOrderList(payload: OrderQueryPayload): Promise<Result<{ list: OrderItem[]; total: number }>> {
-    return request.post('/a/order/list', payload)
+  static async getOrderList(payload: OrderQueryPayload): Promise<Result<PageResult<AdminOrderVO[]>>> {
+    return request.post('/a/order/list', null, { params: payload })
   }
 
   // 补单（针对支付成功但状态未同步的订单）
-  static async reissuanceOrder(orderNo: string): Promise<Result<void>> {
-    return request.post('/a/order/reissuance', { orderNo })
+  static async reissuanceOrder(orderNo: number | string): Promise<Result<void>> {
+    return request.post('/a/order/reissuance', null, { params: { orderNo } })
   }
 
   // 退单（触发退款/撤销）
-  static async refundOrder(orderNo: string, reason: string): Promise<Result<void>> {
-    return request.post('/a/order/refund', { orderNo, reason })
+  static async refundOrder(orderNo: number | string, reason: string): Promise<Result<void>> {
+    return request.post('/a/order/refund', null, { params: { orderNo, reason } })
   }
 
   // 订单状态核对（向三方/渠道校验订单实时状态）
-  static async verifyOrderStatus(orderNo: string): Promise<Result<{ orderNo: string; syncedStatus: string; message: string }>> {
-    return request.post('/a/order/verify-status', { orderNo })
+  static async verifyOrderStatus(orderNo: number | string): Promise<Result<string>> {
+    return request.post('/a/order/verfiy-status', null, { params: { orderNo } })
   }
 }

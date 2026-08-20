@@ -130,6 +130,8 @@
 import { Close as CloseIcon, Loading, } from '@element-plus/icons-vue'
 import { computed, onMounted, ref } from 'vue'
 import { MemberAPI, type MemberConfig } from '@/services/member'
+import { OrderAPI } from '@/services/order'
+import { ElMessage } from 'element-plus'
 import { useUserInfoStore } from '@/stores/userInfo'
 import router from '@/router'
 
@@ -190,8 +192,36 @@ function Close() {
 }
 
 async function toPay(id: number) {
-  emit('close')
-  router.push({ name: 'payment', query: { id: id, quantity: 1, typeId: curTab.value } })
+  try {
+    loading.value = true
+    const form = {
+      packageId: id,
+      payType: 1,
+      quantity: 1,
+      uname: user.value?.nick || '',
+      couponId: null,
+    }
+    const res = await OrderAPI.createOrder(form)
+    if (res && res.data) {
+      const orderId = typeof res.data === 'object' ? (res.data.orderId || res.data) : res.data
+      const endTime = typeof res.data === 'object' ? res.data.endTime : undefined
+      emit('close')
+      router.push({
+        name: 'payment',
+        query: {
+          orderId: String(orderId),
+          endTime: endTime ? String(endTime) : undefined,
+          id: String(id),
+          quantity: 1,
+          typeId: curTab.value || undefined
+        }
+      })
+    }
+  } catch {
+    // 响应拦截器统一提示错误
+  } finally {
+    loading.value = false
+  }
 }
 
 async function loadMemberInfo(typeId: string) {

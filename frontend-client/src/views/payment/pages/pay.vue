@@ -39,6 +39,19 @@
                 </span>
             </div>
 
+            <!-- Timeout Countdown Banner -->
+            <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 flex items-center justify-between text-xs font-semibold text-amber-800 shadow-2xs">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-amber-600 animate-spin" style="animation-duration: 3s;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>支付有效剩余时间</span>
+                </div>
+                <span class="font-mono text-sm font-bold text-amber-700 bg-amber-100/80 px-2.5 py-0.5 rounded-lg border border-amber-200">
+                    {{ countdownText }}
+                </span>
+            </div>
+
             <!-- Commodity Info Card -->
             <div
                 class="bg-linear-to-r from-slate-50 to-indigo-50/30 border border-slate-100 rounded-2xl p-4 flex items-center justify-between gap-4">
@@ -306,7 +319,7 @@
 </template>
 
 <script lang="ts" setup>
-import {computed, onMounted, ref} from 'vue';
+import {computed, onMounted, onUnmounted, ref} from 'vue';
 import {useRoute} from 'vue-router';
 import {PayType} from '../types/payType';
 import {Payer} from '../composables/payer';
@@ -315,11 +328,14 @@ import {CouponAPI, type CouponVO} from '@/services/coupon/coupon';
 import {TimeUtils} from '@/utils/time';
 import Tooltip from '@/presentation/components/Tooltip.vue';
 import {MemberAPI, type MemberConfig} from '@/services/member';
+import {OrderAPI} from '@/services/order';
 import type {payForm} from '../types/pay';
 import {PayFormBuilder} from '../utils/PayFormBuilder';
 import router from '@/router';
 import {useUserInfoStore} from '@/stores/userInfo';
+import {ElMessage} from 'element-plus';
 
+const route = useRoute();
 const moreCoupon = ref<boolean>(false);
 const commodityInfo = ref<MemberConfig>();
 const couponList = ref<CouponVO[]>([]);
@@ -328,10 +344,19 @@ const payer = new Payer();
 const curCoupon = ref<CouponVO>();
 const payType = ref<PayType>(PayType.WX_PAY);
 const curCouponTab = ref<boolean>(true);
-const commodityId = useRoute().query.id as string;
-const quantity = useRoute().query.quantity as string;
+
+const currentOrderId = ref<string | number | undefined>(route.query.orderId as string);
+const endTimeStr = ref<string | undefined>(route.query.endTime as string);
+const orderTimeoutTime = ref<string | undefined>(undefined);
+const orderCreateTime = ref<string | undefined>(undefined);
+
+const commodityId = route.query.id as string;
+const quantity = route.query.quantity as string;
 const user = useUserInfoStore().user;
-const typeId = useRoute().query.typeId as string;
+const typeId = route.query.typeId as string;
+
+const countdownText = ref<string>('计算中...');
+let countdownTimer: any = null;
 
 const canUseCoupon = computed(() => {
     return couponList.value.filter(coupon => coupon.isAvailable === true);
@@ -341,19 +366,80 @@ const unUseCoupon = computed(() => {
 });
 
 const discount = computed(() => {
-    if (!commodityInfo.value) return 0;
+    if (!commodityInfo.value) return '0.00';
     const original = Number(commodityInfo.value.price);
     const finalPrice = calculatePrice();
     return Math.max(0, original - finalPrice).toFixed(2);
 });
 
-onMounted(async () => {
-    if (!commodityId || !typeId) {
-        router.back();
+function updateCountdown() {
+    let targetMs = 0;
+    if (orderTimeoutTime.value) {
+        targetMs = new Date(orderTimeoutTime.value).getTime();
+    } else if (endTimeStr.value) {
+        targetMs = new Date(endTimeStr.value).getTime();
+    } else if (orderCreateTime.value) {
+        targetMs = new Date(orderCreateTime.value).getTime() + 15 * 60 * 1000;
+    } else {
+        countdownText.value = '15:00';
+        return;
     }
+
+    const diffMs = targetMs - Date.now();
+    if (diffMs <= 0) {
+        countdownText.value = '订单已超时关闭';
+        return;
+    }
+
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    countdownText.value = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+onMounted(async () => {
+    if (!currentOrderId.value) {
+        ElMessage.warning('未能获取订单信息，请重新从会员套餐发起下单');
+        router.back();
+        return;
+    }
+
     await loadPayTypes();
-    await loadCouponList();
-    commodityInfo.value = (await MemberAPI.queryMemberById(commodityId)).data;
+
+    try {
+        const res = await OrderAPI.queryOrder(currentOrderId.value);
+        if (res && res.data) {
+            const orderData = res.data;
+            orderTimeoutTime.value = orderData.timeoutTime || undefined;
+            orderCreateTime.value = orderData.createTime || undefined;
+            commodityInfo.value = {
+                id: Number(orderData.memberId) || Number(commodityId) || 0,
+                name: orderData.memberName || '会员商品',
+                price: String(orderData.payableAmount || orderData.amount || 0),
+                discount: 1,
+                quantity: 1,
+                duration: 30,
+                typeId: typeId || '1',
+                typeName: '会员套餐'
+            };
+        }
+    } catch {
+        // query order failed
+    }
+
+    updateCountdown();
+    countdownTimer = setInterval(updateCountdown, 1000);
+
+    if (typeId && commodityId) {
+        await loadCouponList();
+    }
+});
+
+onUnmounted(() => {
+    if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+    }
 });
 
 function toggleCoupon(coupon: CouponVO) {
@@ -371,42 +457,54 @@ function substractTime(time: string) {
 }
 
 async function loadCouponList() {
-    couponList.value = (await CouponAPI.getCouponsForOrder(typeId, commodityId)).data;
+    if (!typeId || !commodityId) return;
+    try {
+        couponList.value = (await CouponAPI.getCouponsForOrder(typeId, commodityId)).data || [];
+    } catch {
+        couponList.value = [];
+    }
 }
 
 function calculatePrice() {
     if (!commodityInfo.value) return 0;
-    const d = commodityInfo.value?.discount;
-    const res = Number(commodityInfo.value.price) * (d || 1) * ((curCoupon.value && curCoupon.value.discount) || 1) - (curCoupon.value && curCoupon.value.amount || 0);
-    console.log('res', res);
+    const d = commodityInfo.value?.discount || 1;
+    const res = Number(commodityInfo.value.price) * d * ((curCoupon.value && curCoupon.value.discount) || 1) - (curCoupon.value && curCoupon.value.amount || 0);
     return res > 0.01 ? Number(res.toFixed(2)) : 0.01;
 }
 
 async function loadPayTypes() {
-    const types: string[] = (await payer.getPayTypes()).data;
-    payTypes.value = types
-        .map((type) => PayType.fromType(type))
-        .filter((t): t is PayType => t !== undefined);
+    try {
+        const types: string[] = (await payer.getPayTypes()).data || [];
+        payTypes.value = types
+            .map((type) => PayType.fromType(type))
+            .filter((t): t is PayType => t !== undefined);
+        if (payTypes.value.length > 0 && payTypes.value[0] !== undefined) {
+            payType.value = payTypes.value[0];
+        }
+    } catch {
+        payTypes.value = [PayType.WX_PAY, PayType.ALI_PAY];
+    }
 }
 
 async function toPay() {
-    if (!commodityInfo.value) return;
+    if (!currentOrderId.value) {
+        ElMessage.error('订单标识缺失，无法发起支付');
+        return;
+    }
+
     try {
-        const form: payForm = {
-            packageId: commodityId,
-            payType: payType.value,
-            quantity: quantity ? Number(quantity) : 1,
-            uname: user?.nick || '',
-            couponId: curCoupon.value?.id ? Number(curCoupon.value.id) : null,
-        };
-        const res = await payer.pay(form);
-        if (res.code === 1 && res.data) {
-            PayFormBuilder.submitPayment(res.data);
-        } else {
-            console.error(res.errMsg || '支付请求失败');
+        const res = await payer.toPay(currentOrderId.value);
+        if (res && res.data) {
+            if (typeof res.data === 'string') {
+                if (res.data.startsWith('http://') || res.data.startsWith('https://') || res.data.startsWith('/')) {
+                    window.location.href = res.data;
+                } else {
+                    PayFormBuilder.submitPayment(res.data);
+                }
+            }
         }
-    } catch (error) {
-        console.error('支付请求失败，请稍后重试', error);
+    } catch {
+        // 响应拦截器统一提示错误
     }
 }
 

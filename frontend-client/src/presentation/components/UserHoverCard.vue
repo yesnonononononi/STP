@@ -48,14 +48,18 @@
           </div>
           <div class="operation w-full pl-5 h-12 px-8">
             <div class="flex items-center justify-between gap-2" v-if="!me || displayUser?.id != me.id.toString()">
-              <button @click="handleFollow" class="flex-1 text-center shadow-md hover:scale-[1.05] cursor-pointer"
+              <button @click="handleFollow" class="flex-1 text-center shadow-md hover:scale-[1.05] cursor-pointer rounded-md py-1 text-xs"
                 :class="displayUser?.followed
                   ? 'bg-gray-200 text-gray-500 border border-gray-300'
-                  : 'bg-linear-to-l from-blue-300 to-blue-200 text-white'">
+                  : 'bg-linear-to-l from-blue-400 to-indigo-500 text-white font-medium'">
                 {{ displayUser?.followed ? '已关注' : '关注' }}
               </button>
               <button @click="handleMessage"
-                class="flex-1 text-center bg-linear-to-l from-blue-300 to-blue-200 shadow-md hover:scale-[1.05] cursor-pointer text-white">私信</button>
+                class="flex-1 text-center bg-linear-to-l from-blue-400 to-indigo-500 shadow-md hover:scale-[1.05] cursor-pointer text-white rounded-md py-1 text-xs font-medium">私信</button>
+              <button @click="showReportDialog = true"
+                class="text-xs text-slate-400 hover:text-rose-500 transition-colors px-1 py-1 cursor-pointer">
+                举报
+              </button>
             </div>
           </div>
         </div>
@@ -72,6 +76,14 @@
         @close="showMessageInput = false" @success="handleMessageSuccess" />
     </div>
   </Teleport>
+
+  <!-- 举报弹窗 -->
+  <UserReportDialog
+    v-if="displayUser && displayUser.id"
+    v-model="showReportDialog"
+    :reported-id="displayUser.id"
+    :target-nick="displayUser.nick"
+  />
 </template>
 
 <script setup lang="ts">
@@ -85,6 +97,9 @@ import {log} from '@/utils/log';
 import {computed, ref} from 'vue';
 import PrivateMessageInput from './private_message_input.vue';
 import VipTag from './VipTag.vue';
+import UserReportDialog from './UserReportDialog.vue';
+
+const showReportDialog = ref(false);
 
 const props = withDefaults(
   defineProps<{

@@ -74,7 +74,7 @@ public class PostTagRelAppServiceImpl implements PostTagRelAppService {
 
     private void checkPostActive(Long postId) {
         Post post = postRepository.findById(postId).orElse(null);
-        if (post == null || post.getStatus() != PostStatus.NORMAL) {
+        if (post == null || post.getStatus() == PostStatus.DELETED) {
             throw new BusinessException("帖子已被删除!");
         }
     }

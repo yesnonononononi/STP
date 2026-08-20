@@ -7,6 +7,7 @@ import java.security.Timestamp;
 
 @Data
 public class AdminPostQueryRequest {
+    private Long postId;
     private Integer page;
     private RangeDTO<Timestamp> createTime;
     private RangeDTO<Timestamp> updateTime;

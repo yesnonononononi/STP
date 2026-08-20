@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.summit.stp.comment.infrastructure.persistence.mapper.CommentsMapper">
+<mapper namespace="com.summit.stp.comment.comment.infrastructure.persistence.mapper.CommentsMapper">
     
-    <resultMap id="voMap" type="com.summit.stp.comment.application.vo.CommentVO">
+    <resultMap id="voMap" type="com.summit.stp.comment.comment.application.vo.CommentVO">
         <result column="commentId"  property="id" javaType="Long"/>
         <result column="rootId" property="rootId" javaType="Long"/>
         <result column="parentId" property="parentId" javaType="Long"/>
         <result column="postId" property="postId" javaType="Long"/>
         <result column="postPublisherId" property="postPublisherId" javaType="Long"/>
         <result column="postStatus" property="postStatus" javaType="Boolean"/>
-        <result column="isAudit" property="isAudit" javaType="Boolean"/>
         <result column="commentType" property="type" javaType="Integer"/>
         <result column="content" property="content" javaType="String" />
         <result column="createTime" property="createTime" jdbcType="TIMESTAMP"/>
@@ -19,7 +18,7 @@
         <result column="client_type" property="clientType" javaType="String"/>
         <result column="ipLocation" property="ipLocation" javaType="String"/>
         <result column="hotScore" property="hotScore" javaType="Double"/>
-        <result column="extra" property="extra" javaType="com.summit.stp.comment.domain.model.Comment$Extra" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+        <result column="extra" property="extra" javaType="com.summit.stp.comment.comment.domain.model.Comment$Extra" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
     </resultMap>
 
     <select id="queryCommentByPostIdWithCursor" resultMap="voMap">
@@ -29,7 +28,6 @@
         c.post_id as postId,
         p.creator_id as postPublisherId,
         p.status as postStatus,
-        c.is_audit as isAudit,
         c.type as commentType,
         c.content as content,
         c.create_time as createTime,
@@ -50,8 +48,7 @@
             </if>
         and c.root_id is null
             and c.parent_id is null
-            and c.is_audit = 1
-            and c.status = 1
+            and c.status = #{status}
         </where>
         order by c.is_top desc, c.hot_score desc,c.id desc
         limit #{limit}
@@ -64,7 +61,6 @@
         c.post_id as postId,
         p.creator_id as postPublisherId,
         p.status as postStatus,
-        c.is_audit as isAudit,
         c.type as commentType,
         c.content as content,
         c.create_time as createTime,
@@ -82,8 +78,7 @@
                 and c.id &lt; #{cursor}
             </if>
             and c.root_id = #{rootId}
-            and c.is_audit = 1
-            and c.status = 1
+            and c.status = #{status}
         </where>
         order by c.id desc
         limit #{limit}
@@ -105,7 +100,7 @@
         group by c.post_id
     </select>
     <select id="queryActiveComment"
-            resultType="com.summit.stp.comment.infrastructure.persistence.po.CommentsPO">
+            resultType="com.summit.stp.comment.comment.infrastructure.persistence.po.CommentsPO">
         SELECT c.id as id, c.hot_score AS hotScore, c.create_time as createTime, c.reply_count AS replyCount, c.like_count AS likeCount, c.update_time as updateTime
         FROM comments c
         WHERE c.status = 1

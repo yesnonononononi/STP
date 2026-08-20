@@ -20,6 +20,12 @@ export interface MemberLevelConfigItem {
   sortOrder: number
 }
 
+export interface MemberTypeVO {
+  id: number | string
+  name: string
+  description?: string
+}
+
 // 2. 对应后端 MemberVO / MemberCreateRequest
 export interface MemberPackageItem {
   id?: number
@@ -35,6 +41,7 @@ export interface MemberPackageItem {
   priority: number
   type?: string
   isSuper?: boolean
+  status?: number
   createTime?: string
   updateTime?: string
 }
@@ -66,6 +73,26 @@ export interface UserMemberItem {
   updateTime?: string
 }
 
+export interface MemberConfig {
+  pointsRate: number
+  checkinBonus: number
+  vipMonthlyPrice: number
+  vipYearlyPrice: number
+  autoRenewDiscount: number
+  autoApproveRefund: boolean
+}
+
+export interface MemberDecorationItem {
+  id: number
+  name: string
+  type: string
+  previewUrl: string
+  requiredLevel: number
+  validDays: number
+  status: number
+  createTime?: string
+}
+
 export class MemberAPI {
   // --- 1. 等级配置管理 (member_level_config) ---
   static async getLevelConfigList(params?: { page?: number; pageSize?: number }): Promise<Result<PageResult<MemberLevelConfigItem[]>>> {
@@ -73,12 +100,10 @@ export class MemberAPI {
     return request.get('/a/member/level-config/list', { params: queryParams })
   }
 
-  // 1.1 新增等级配置
   static async saveLevelConfig(data: any): Promise<Result<void>> {
     return request.post('/a/member/level-config/save', data)
   }
 
-  // 1.2 更新等级配置
   static async updateLevelConfig(data: any): Promise<Result<void>> {
     return request.post('/a/member/level-config/update', data)
   }
@@ -90,6 +115,10 @@ export class MemberAPI {
   // --- 2. 会员套餐配置管理 (member_package) ---
   static async getPackageList(): Promise<Result<MemberPackageItem[]>> {
     return request.get('/a/member/package/list')
+  }
+
+  static async getMemberTypeList(): Promise<Result<MemberTypeVO[]>> {
+    return request.get('/member/list')
   }
 
   static async savePackage(data: MemberPackageItem): Promise<Result<void>> {
@@ -106,13 +135,36 @@ export class MemberAPI {
     return request.get('/a/member/user/list', { params: queryParams })
   }
 
-  // 提升用户会员等级（后端自动升级 raiseLevel）
   static async updateUserMemberLevel(uid: number): Promise<Result<void>> {
     return request.post('/a/member/user/update-level', null, { params: { uid } })
   }
 
-  // 延期/修改用户会员到期时间
   static async extendUserExpire(uid: number, expireTime: string): Promise<Result<void>> {
     return request.post('/a/member/user/extend-expire', null, { params: { uid, expireTime } })
+  }
+
+  // --- 辅助前端UI Mock扩展 ---
+  static async getConfig(): Promise<Result<MemberConfig>> {
+    return request.get('/a/member/config')
+  }
+
+  static async updateConfig(data: MemberConfig): Promise<Result<void>> {
+    return request.post('/a/member/config/update', data)
+  }
+
+  static async getDecorationList(): Promise<Result<MemberDecorationItem[]>> {
+    return request.get('/a/member/decoration/list')
+  }
+
+  static async saveDecoration(data: Partial<MemberDecorationItem>): Promise<Result<void>> {
+    return request.post('/a/member/decoration/save', data)
+  }
+
+  static async toggleDecorationStatus(id: number, status: number): Promise<Result<void>> {
+    return request.post('/a/member/decoration/toggle-status', { id, status })
+  }
+
+  static async deleteDecoration(id: number): Promise<Result<void>> {
+    return request.post(`/a/member/decoration/delete/${id}`)
   }
 }

@@ -17,6 +17,7 @@ import com.summit.stp.tag.domain.repository.PostTagRelRepository;
 import com.summit.stp.tag.domain.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
@@ -138,7 +139,30 @@ public class TagAppServiceImpl implements TagAppService {
             postIds = postRepository.getHotPostsByTag(actualTagId, cursor, limit);
         }
 
-        List<PostVO> byPostIds = postQueryService.getByPostIds(postIds);
+        List<PostVO> byPostIds = postQueryService.findAllOfPostsInfo(postIds);
+        return getPostVOCursorPageResult(limit, byPostIds);
+    }
+
+
+
+
+    @Override
+    public CursorPageResult<PostVO> getPostsByTag(String tagId, String cursor, Integer limit) {
+        Long actualTagId = parseTagId(tagId);
+        List<Long> postIds;
+        try {
+            postIds = tagCacheProvider.getPostsTag(actualTagId, cursor, limit);
+        } catch (Exception e) {
+            log.error("【标签模块】获取标签帖子失败,降级db，tagId={}, cursor={}, limit={}", tagId, cursor, limit, e);
+            postIds = postRepository.getPostsByTag(actualTagId, cursor, limit);
+        }
+        List<PostVO> byPostIds = postQueryService.findAllOfPostsInfo(postIds);
+
+        return getPostVOCursorPageResult(limit,byPostIds);
+    }
+
+
+    private static @NonNull CursorPageResult<PostVO> getPostVOCursorPageResult(Integer limit, List<PostVO> byPostIds) {
         CursorPageResult<PostVO> postVOCursorPageResult = new CursorPageResult<>();
         if (byPostIds != null && !byPostIds.isEmpty()) {
             postVOCursorPageResult.setCursor(byPostIds.getLast().getHotScore() + "_" + byPostIds.getLast().getId());
@@ -151,31 +175,6 @@ public class TagAppServiceImpl implements TagAppService {
         }
         return postVOCursorPageResult;
     }
-
-    @Override
-    public CursorPageResult<PostVO> getPostsByTag(String tagId, String cursor, Integer limit) {
-        Long actualTagId = parseTagId(tagId);
-        List<Long> postIds;
-        try {
-            postIds = tagCacheProvider.getPostsTag(actualTagId, cursor, limit);
-        } catch (Exception e) {
-            log.error("【标签模块】获取标签帖子失败,降级db，tagId={}, cursor={}, limit={}", tagId, cursor, limit, e);
-            postIds = postRepository.getPostsByTag(actualTagId, cursor, limit);
-        }
-        List<PostVO> byPostIds = postQueryService.getByPostIds(postIds);
-        CursorPageResult<PostVO> postVOCursorPageResult = new CursorPageResult<>();
-        if (byPostIds != null && !byPostIds.isEmpty()) {
-            postVOCursorPageResult.setCursor(byPostIds.getLast().getId().toString());
-            postVOCursorPageResult.setHasMore(byPostIds.size() >= limit);
-            postVOCursorPageResult.setList(byPostIds);
-        } else {
-            postVOCursorPageResult.setCursor(null);
-            postVOCursorPageResult.setHasMore(false);
-            postVOCursorPageResult.setList(List.of());
-        }
-        return postVOCursorPageResult;
-    }
-
     private Long parseTagId(String identifier) {
         if (identifier == null || identifier.isBlank()) {
             throw new ParameterException("标签标识不能为空");

@@ -30,17 +30,17 @@ public class PostImageAppServiceImpl implements PostImageAppService {
 
     @Override
     public PostImageVO getPostImageById(Long id) {
-        PostImageVO byId = postImageRepository.findVOById(id);
-        if (byId != null) {
-            checkPostActive(byId.getPostId());
+        PostImage image = postImageRepository.findById(id).orElse(null);
+        if (image != null) {
+            checkPostActive(image.getPostId());
         }
-        return byId;
+        return convertToVO(image);
     }
 
     @Override
     public List<PostImageVO> getImagesByPostId(Long postId) {
         checkPostActive(postId);
-        return postImageRepository.findByPostId(postId);
+        return  postImageRepository.findByPostId(postId).stream().map(this::convertToVO).toList();
     }
 
 
@@ -58,7 +58,7 @@ public class PostImageAppServiceImpl implements PostImageAppService {
         checkPostActive(postId);
         Long curImageCount = postImageRepository.countByPostId(postId);
         if (Post.isLimited(curImageCount + imageUrls.size())) {
-            throw new BusinessException("图片数量已到达上限 " + PostConstants.Business.MAX_IMAGE_NUM + "张!");
+            throw new BusinessException("图片数量已到达上限 " + Post.MAX_IMAGE_NUM + "张!");
         }
         List<PostImage> postImages = imageUrls.stream().map(url -> 
             PostImage.builder()
@@ -77,32 +77,32 @@ public class PostImageAppServiceImpl implements PostImageAppService {
 
     @Override
     public void updatePostImage(UpdatePostImageCommand command) {
-        PostImageVO byId = postImageRepository.findVOById(command.getId());
-        if (byId == null) throw new NoSuchPostException(command.getId());
-        PostImage postImage = convertToDomain(byId);
-        postImage.updateImage(command.getImageUrl(), command.getWidth(), command.getHeight(), command.getSize());
-        postImage.updateSortOrder(command.getSortOrder());
-        postImageRepository.save(postImage);
+        Long id = command.getId();
+        if(id == null)throw new RuntimeException("帖子图片更新参数ID缺失");
+        PostImage image = postImageRepository.findById(id).orElseThrow(()->new BusinessException("未找到帖子图片"));
+        image.updateImage(command.getImageUrl(), command.getWidth(), command.getHeight(), command.getSize());
+        image.updateSortOrder(command.getSortOrder());
+        postImageRepository.save(image);
     }
 
     @Override
     @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public void deletePostImage(Long id) {
-       PostImageVO imageVO = postImageRepository.findVOById(id);
+       PostImage image = postImageRepository.findById(id).orElseThrow(()->new BusinessException("未找到帖子图片"));
        postImageRepository.delete(id);
-       if (imageVO != null && imageVO.getImageUrl() != null) {
-           applicationEventPublisher.publishEvent(new FileDeleteEvent(this, java.util.List.of(imageVO.getImageUrl())));
+       if ( image.getImageUrl() != null) {
+           applicationEventPublisher.publishEvent(new FileDeleteEvent(this, List.of(image.getImageUrl())));
        }
     }
 
     @Override
     @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public void deleteImagesByPostId(Long postId) {
-       List<PostImageVO> images = postImageRepository.findByPostId(postId);
+       List<PostImage> images = postImageRepository.findByPostId(postId);
        postImageRepository.deleteByPostId(postId);
        if (images != null && !images.isEmpty()) {
            List<String> urls = images.stream()
-                   .map(PostImageVO::getImageUrl)
+                   .map(PostImage::getImageUrl)
                    .filter(java.util.Objects::nonNull)
                    .toList();
            if (!urls.isEmpty()) {
@@ -131,5 +131,17 @@ public class PostImageAppServiceImpl implements PostImageAppService {
             throw new BusinessException("帖子已被删除!");
         }
     }
-
+    public PostImageVO convertToVO(PostImage image) {
+        return PostImageVO.builder()
+                .id(image.getId())
+                .postId(image.getPostId())
+                .imageUrl(image.getImageUrl())
+                .width(image.getWidth())
+                .height(image.getHeight())
+                .size(image.getSize())
+                .sortOrder(image.getSortOrder())
+                .status(image.getStatus().getCode())
+                .createTime(image.getCreateTime())
+                .build();
+    }
 }

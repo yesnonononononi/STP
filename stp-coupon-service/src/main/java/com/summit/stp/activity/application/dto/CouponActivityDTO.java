@@ -28,6 +28,5 @@ public class CouponActivityDTO {
     private LocalDateTime activityEndTime;
 
     private Integer status;
-    private Integer limitQuantity;
     private Integer type;
 }

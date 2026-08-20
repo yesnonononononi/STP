@@ -55,7 +55,7 @@ public class PostTagRelRepositoryImpl extends AbstractRepository<PostTag, PostTa
 
     @Override
     public void batchSave(Long postId, List<Long> tags) {
-        if (tags == null || tags.isEmpty()) return;
+        if (tags == null || tags.isEmpty() || postId == null) return;
         List<PostTagRelPO> list = tags.stream().map(tagId -> PostTagRelPO.builder().postId(postId).tagId(tagId).build())
                 .toList();
         getBaseMapper().insert(list);

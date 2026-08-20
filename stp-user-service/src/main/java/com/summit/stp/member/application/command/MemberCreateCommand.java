@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class MemberCreateCommand {
+    private Long id;
     private String name; // 会员名称
     private MemberType type;
     private BigDecimal price; // 会员价格
@@ -22,4 +23,5 @@ public class MemberCreateCommand {
     private Long typeId;
     private Boolean isSuper;
     private Integer stock;
+    private Integer status;
 }

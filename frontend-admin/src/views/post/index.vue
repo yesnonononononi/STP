@@ -8,7 +8,7 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <el-input v-model="filterForm.keyword" placeholder="搜索帖子标题/内容..." clearable class="w-64" @keyup.enter="fetchData" />
+        <el-input v-model="filterForm.keyword" placeholder="搜索帖子 ID/标题/内容..." clearable class="w-64" @keyup.enter="fetchData" />
         <el-button type="primary" class="admin-btn-primary" @click="openFilterDialog = true">
           高级筛选
         </el-button>
@@ -19,80 +19,111 @@
     <!-- 数据表格 -->
     <div class="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden p-6">
       <el-table v-loading="loading" :data="list" class="admin-table-custom" style="width: 100%">
-        <el-table-column prop="id" label="帖子 ID" width="90" />
-
-        <el-table-column label="发布作者" min-width="160">
+        <!-- 帖子 ID -->
+        <el-table-column prop="id" label="帖子 ID" min-width="180">
           <template #default="{ row }">
-            <div class="flex items-center gap-2">
-              <el-avatar :src="row.authorAvatar || undefined" :size="28">
-                {{ (row.authorName || '?').slice(0, 1) }}
+            <span class="font-mono text-xs text-slate-700 font-semibold select-all hover:text-blue-600 cursor-pointer" @click="openDetailModal(row)">
+              {{ row.id }}
+            </span>
+          </template>
+        </el-table-column>
+
+        <!-- 发布作者 ID -->
+        <el-table-column label="发布作者 ID" min-width="190">
+          <template #default="{ row }">
+            <div class="flex items-center gap-2.5">
+              <el-avatar :size="28" class="bg-gradient-to-tr from-blue-500 to-indigo-600 text-white font-bold text-xs shrink-0">
+                {{ String(row.creatorId || '?').slice(0, 1) }}
               </el-avatar>
-              <div class="truncate text-sm font-medium text-slate-800">{{ row.authorName }} (ID:{{ row.userId }})</div>
+              <span class="font-mono text-xs text-slate-700 font-medium select-all truncate">
+                {{ row.creatorId || '-' }}
+              </span>
             </div>
           </template>
         </el-table-column>
 
-        <el-table-column label="帖子标题 / 预览" min-width="240">
+        <!-- 帖子标题 / 预览 -->
+        <el-table-column label="帖子标题 / 预览" min-width="260">
           <template #default="{ row }">
-            <div class="space-y-1">
-              <div class="font-semibold text-slate-800 hover:text-blue-600 cursor-pointer truncate" @click="openDetailModal(row)">
+            <div class="space-y-1 py-1">
+              <div class="font-semibold text-slate-800 hover:text-blue-600 cursor-pointer truncate transition-colors" @click="openDetailModal(row)">
                 {{ row.title }}
               </div>
-              <div class="text-xs text-slate-500 line-clamp-1">{{ row.content }}</div>
-              <div v-if="row.topicName" class="inline-block mt-1">
-                <el-tag size="small" type="info"># {{ row.topicName }}</el-tag>
+              <div class="text-xs text-slate-500 line-clamp-1 leading-relaxed" v-html="row.content || '无正文文本内容' "></div>
+            </div>
+          </template>
+        </el-table-column>
+
+        <!-- 互动数据 -->
+        <el-table-column label="互动数据" width="180">
+          <template #default="{ row }">
+            <div class="text-xs text-slate-600 space-y-1">
+              <div class="flex items-center gap-2">
+                <span>浏览: <strong class="text-slate-800 font-semibold">{{ row.viewCount ?? 0 }}</strong></span>
+                <span>点赞: <strong class="text-blue-600 font-semibold">{{ row.likeCount ?? 0 }}</strong></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span>回复: <strong class="text-slate-800 font-semibold">{{ row.replyCount ?? 0 }}</strong></span>
+                <span>热度: <strong class="text-amber-600 font-semibold">{{ row.hotScore ?? 0 }}</strong></span>
               </div>
             </div>
           </template>
         </el-table-column>
 
-        <el-table-column label="互动数据" width="160">
+        <!-- 审核 / 状态 -->
+        <el-table-column label="审核 / 状态" width="130">
           <template #default="{ row }">
-            <div class="text-xs text-slate-600 space-y-0.5">
-              <div>浏览: <span class="font-medium text-slate-800">{{ row.viewCount }}</span></div>
-              <div>点赞: <span class="font-medium text-slate-800">{{ row.likeCount }}</span> | 评论: <span class="font-medium text-slate-800">{{ row.commentCount }}</span></div>
-            </div>
+            <el-tag :type="getStatusTag(row.status)" effect="light" size="small" class="font-medium">
+              {{ getStatusText(row.status) }}
+            </el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column label="审核状态" width="130">
-          <template #default="{ row }">
-            <div class="space-y-1">
-              <el-tag :type="getStatusTag(row.status)">
-                {{ getStatusText(row.status) }}
-              </el-tag>
-              <div v-if="row.status === 0 && row.rejectReason" class="text-xs text-rose-500 truncate max-w-[110px]" :title="row.rejectReason">
-                因: {{ row.rejectReason }}
-              </div>
-            </div>
-          </template>
-        </el-table-column>
-
+        <!-- 发布时间 -->
         <el-table-column label="发布时间" min-width="160">
           <template #default="{ row }">
-            <span class="text-xs text-slate-500">{{ row.createTime }}</span>
+            <span class="text-xs text-slate-500 font-mono">{{ formatTime(row.createTime) }}</span>
           </template>
         </el-table-column>
 
+        <!-- 操作栏 -->
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
-            <div class="flex items-center gap-2">
-              <!-- 查看详情按钮 -->
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <!-- 查看详情按钮 (对接 /a/post/detail) -->
               <el-button size="small" type="primary" plain @click="openDetailModal(row)">
                 详情
               </el-button>
 
-              <!-- 审核通过 Toggle -->
-              <el-button v-if="row.status !== 1" size="small" type="success" plain @click="handlePass(row)">
-                审核通过
+              <!-- 审核通过 (bypass) -->
+              <el-button v-if="Number(row.status) === 7" size="small" type="success" plain @click="handleBypass(row)">
+                通过
               </el-button>
 
-              <!-- 审核不通过（弹出填写驳回理由弹窗） -->
-              <el-button v-if="row.status !== 0" size="small" type="danger" plain @click="openRejectModal(row)">
+              <!-- 审核驳回 (bypassNot) -->
+              <el-button v-if="Number(row.status) === 7" size="small" type="warning" plain @click="openRejectModal(row)">
                 驳回
               </el-button>
 
-              <el-button size="small" type="danger" text @click="handleDelete(row)">删除</el-button>
+              <!-- 封禁 / 解封 (ban / unban) -->
+              <el-button
+                v-if="Number(row.status) === 3"
+                size="small"
+                type="info"
+                plain
+                @click="handleUnban(row)"
+              >
+                解封
+              </el-button>
+              <el-button
+                v-else-if="Number(row.status) === 1"
+                size="small"
+                type="danger"
+                plain
+                @click="handleBan(row)"
+              >
+                封禁
+              </el-button>
             </div>
           </template>
         </el-table-column>
@@ -112,72 +143,94 @@
       </div>
     </div>
 
-    <!-- 帖子元信息详情悬浮框 Modal -->
-    <el-dialog v-model="detailDialogVisible" title="帖子元信息详情" width="680px" destroy-on-close>
-      <div v-if="detailPost" class="space-y-5 text-slate-800">
-        <!-- 1. 头部作者与时间状态 -->
-        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-          <div class="flex items-center gap-3">
-            <el-avatar :src="detailPost.authorAvatar || undefined" :size="42">
-              {{ (detailPost.authorName || '?').slice(0, 1) }}
-            </el-avatar>
-            <div>
-              <div class="font-bold text-slate-900 text-base">{{ detailPost.authorName }}</div>
-              <div class="text-xs text-slate-500">User ID: {{ detailPost.userId }} · 发布于 {{ detailPost.createTime }}</div>
+    <!-- 帖子元信息详情悬浮框 Modal (对齐 /a/post/detail) -->
+    <el-dialog v-model="detailDialogVisible" title="帖子元信息详情" width="740px" destroy-on-close class="rounded-2xl">
+      <div v-loading="detailLoading" class="space-y-6 text-slate-800 py-2 px-1">
+        <template v-if="detailPost">
+          <!-- 1. 头部作者与时间状态 -->
+          <div class="flex items-center justify-between border-b border-slate-100 pb-5">
+            <div class="flex items-center gap-3.5">
+              <el-avatar :size="46" :src="detailPost.publisher?.avatar" class="bg-gradient-to-tr from-blue-500 to-indigo-600 text-white font-bold shrink-0 shadow-xs">
+                {{ String(detailPost.publisher?.nick || detailPost.creatorId || '?').slice(0, 1) }}
+              </el-avatar>
+              <div class="space-y-1">
+                <div class="font-bold text-slate-900 text-base flex items-center gap-2">
+                  <span>{{ detailPost.publisher?.nick || '发布作者' }}</span>
+                  <span class="font-mono text-xs text-slate-400 font-normal bg-slate-100 px-2 py-0.5 rounded-md select-all">ID: {{ detailPost.creatorId }}</span>
+                </div>
+                <div class="text-xs text-slate-500 flex items-center gap-2">
+                  <span>发布于 {{ formatTime(detailPost.createTime) }}</span>
+                  <span v-if="detailPost.publisher?.ip" class="text-slate-300">·</span>
+                  <span v-if="detailPost.publisher?.ip">IP: {{ detailPost.publisher.ip }}</span>
+                </div>
+              </div>
+            </div>
+            <el-tag :type="getStatusTag(detailPost.status)" size="large" class="rounded-lg px-3 py-1 font-medium">
+              {{ getStatusText(detailPost.status) }}
+            </el-tag>
+          </div>
+
+          <!-- 2. 帖子 ID & 标题 -->
+          <div class="space-y-2 pt-1">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">帖子 ID</span>
+              <span class="font-mono text-xs text-slate-500 select-all font-medium bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded">{{ detailPost.id }}</span>
+            </div>
+            <h2 class="text-xl font-extrabold text-slate-900 leading-snug tracking-tight">{{ detailPost.title }}</h2>
+          </div>
+
+          <!-- 3. 完整正文内容 -->
+          <div class="p-5 rounded-xl bg-slate-50/90 border border-slate-200/70 text-slate-700 text-sm leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto" v-html="detailPost.content || '无正文内容'">
+          </div>
+
+          <!-- 4. 媒体信息 (图片全屏预览网格) -->
+          <div class="space-y-3 pt-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                媒体附件照片 ({{ normalizedMediaList.length }})
+              </span>
+              <span v-if="normalizedMediaList.length > 0" class="text-xs text-slate-400">点击照片可查看原图大图</span>
+            </div>
+            <div v-if="normalizedMediaList.length > 0" class="grid grid-cols-3 gap-3.5">
+              <el-image
+                v-for="(img, idx) in normalizedMediaList"
+                :key="img.id || idx"
+                :src="img.url"
+                :preview-src-list="previewUrlList"
+                :initial-index="idx"
+                :preview-teleported="true"
+                :hide-on-click-modal="true"
+                fit="cover"
+                class="w-full h-36 rounded-xl border border-slate-200 shadow-xs cursor-pointer hover:opacity-90 transition-all hover:scale-[1.02] duration-200"
+              />
+            </div>
+            <div v-else class="text-xs text-slate-400 bg-slate-50 p-4 rounded-xl text-center border border-slate-100">暂无媒体图文附件</div>
+          </div>
+
+          <!-- 5. 互动底栏数据 -->
+          <div class="grid grid-cols-4 gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200/70 text-center">
+            <div class="space-y-1">
+              <div class="text-xs text-slate-400">浏览量</div>
+              <div class="font-bold text-slate-800 text-base font-mono">{{ detailPost.viewCount ?? 0 }}</div>
+            </div>
+            <div class="space-y-1 border-l border-slate-200/60">
+              <div class="text-xs text-slate-400">点赞数</div>
+              <div class="font-bold text-blue-600 text-base font-mono">{{ detailPost.likeCount ?? 0 }}</div>
+            </div>
+            <div class="space-y-1 border-l border-slate-200/60">
+              <div class="text-xs text-slate-400">回复数</div>
+              <div class="font-bold text-indigo-600 text-base font-mono">{{ detailPost.replyCount ?? 0 }}</div>
+            </div>
+            <div class="space-y-1 border-l border-slate-200/60">
+              <div class="text-xs text-slate-400">收藏数</div>
+              <div class="font-bold text-amber-600 text-base font-mono">{{ detailPost.collectCount ?? 0 }}</div>
             </div>
           </div>
-          <el-tag :type="getStatusTag(detailPost.status)">
-            {{ getStatusText(detailPost.status) }}
-          </el-tag>
-        </div>
-
-        <!-- 2. 帖子标题与话题标签 -->
-        <div class="space-y-2">
-          <h2 class="text-lg font-bold text-slate-900">{{ detailPost.title }}</h2>
-          <div class="flex items-center gap-2 flex-wrap">
-            <el-tag v-if="detailPost.topicName" type="primary" effect="light" size="small">
-              # {{ detailPost.topicName }}
-            </el-tag>
-            <el-tag v-for="tag in (detailPost.tags || [])" :key="tag" type="info" size="small">
-              {{ tag }}
-            </el-tag>
-          </div>
-        </div>
-
-        <!-- 3. 完整正文内容 -->
-        <div class="p-4 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-700 text-sm leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto">
-          {{ detailPost.content }}
-        </div>
-
-        <!-- 4. 媒体信息 (图片全屏预览网格) -->
-        <div class="space-y-2">
-          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-            媒体附件照片 ({{ (detailPost.images || []).length }})
-          </span>
-          <div v-if="detailPost.images && detailPost.images.length > 0" class="grid grid-cols-3 gap-3">
-            <el-image
-              v-for="(img, idx) in detailPost.images"
-              :key="idx"
-              :src="img"
-              :preview-src-list="detailPost.images"
-              :initial-index="idx"
-              fit="cover"
-              class="w-full h-28 rounded-lg border border-slate-200 shadow-xs cursor-pointer hover:opacity-90 transition-opacity"
-            />
-          </div>
-          <div v-else class="text-xs text-slate-400 bg-slate-50 p-3 rounded-lg text-center">暂无媒体图文附件</div>
-        </div>
-
-        <!-- 5. 互动底栏数据 -->
-        <div class="flex items-center justify-around p-3 rounded-lg bg-blue-50/50 border border-blue-100 text-xs text-slate-600">
-          <div>浏览量: <span class="font-bold text-blue-600 text-sm ml-1">{{ detailPost.viewCount }}</span></div>
-          <div>点赞数: <span class="font-bold text-blue-600 text-sm ml-1">{{ detailPost.likeCount }}</span></div>
-          <div>评论数: <span class="font-bold text-blue-600 text-sm ml-1">{{ detailPost.commentCount }}</span></div>
-        </div>
+        </template>
       </div>
       <template #footer>
-        <div class="flex justify-end">
-          <el-button @click="detailDialogVisible = false">关闭</el-button>
+        <div class="flex justify-end pt-2">
+          <el-button size="large" class="px-6 rounded-lg" @click="detailDialogVisible = false">关闭</el-button>
         </div>
       </template>
     </el-dialog>
@@ -209,19 +262,22 @@
       </template>
     </el-dialog>
 
-    <!-- 搭配多条件高级筛选弹窗 (参考用户管理) -->
+    <!-- 搭配多条件高级筛选弹窗 -->
     <el-dialog v-model="openFilterDialog" title="高级组合筛选帖子" width="680px">
       <div class="grid grid-cols-2 gap-4">
         <el-input v-model="filterForm.keyword" placeholder="标题/内容关键字" clearable />
-        <el-input v-model="filterForm.topicName" placeholder="话题名称" clearable />
+        <el-input v-model="filterForm.creatorId" placeholder="创作者 ID (文本/字符串)" clearable />
+        <el-input v-model="filterForm.postId" placeholder="帖子 ID (文本/字符串)" clearable />
 
         <el-select v-model="filterForm.status" placeholder="审核状态" clearable>
-          <el-option label="审核通过 (正常)" :value="1" />
-          <el-option label="已驳回 (不通过)" :value="0" />
-          <el-option label="待审核" :value="2" />
+          <el-option label="正常/审核通过 (1)" value="1" />
+          <el-option label="已删除 (2)" value="2" />
+          <el-option label="已封禁/被屏蔽 (3)" value="3" />
+          <el-option label="被举报 (4)" value="4" />
+          <el-option label="草稿 (6)" value="6" />
+          <el-option label="待审核 (7)" value="7" />
+          <el-option label="审核未通过 (8)" value="8" />
         </el-select>
-
-        <el-input v-model.number="filterForm.authorId" placeholder="作者 User ID" clearable />
 
         <div class="flex items-center gap-2">
           <el-input-number v-model="filterForm.minLikes" :min="0" placeholder="最低点赞数" class="w-full" />
@@ -242,11 +298,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessageBox } from 'element-plus'
-import { PostAPI, type PostItem, type PostQueryPayload } from '@/services/post'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { ElMessageBox, ElMessage } from 'element-plus'
+import { PostAPI, type AdminPostVO, type PostVO, type PostQueryPayload } from '@/services/post'
 
-const list = ref<PostItem[]>([])
+const list = ref<AdminPostVO[]>([])
 const loading = ref(false)
 const total = ref(0)
 
@@ -255,38 +311,119 @@ const openFilterDialog = ref(false)
 
 const filterForm = reactive<{
   keyword?: string
-  topicName?: string
-  status?: number
-  authorId?: number
+  status?: string | number
+  creatorId?: string
+  postId?: string
   minLikes?: number
   minComments?: number
 }>({})
 
-// 详情悬浮框弹窗
+// 详情悬浮框弹窗及动态详情接口状态 (/a/post/detail)
 const detailDialogVisible = ref(false)
-const detailPost = ref<PostItem | null>(null)
+const detailLoading = ref(false)
+const detailPost = ref<PostVO | null>(null)
 
 // 驳回弹窗控制
 const rejectDialogVisible = ref(false)
-const activePost = ref<PostItem | null>(null)
+const activePost = ref<AdminPostVO | null>(null)
 const rejectReasonInput = ref('')
 const quickReason = ref('')
 
-const getStatusText = (status: number) => {
-  if (status === 1) return '通过 (正常)'
-  if (status === 0) return '已驳回'
-  return '待审核'
+// 对齐后端 PostStatus.java: 1-NORMAL, 2-DELETED, 3-BLOCKED, 4-REPORTED, 5-UNKNOWN, 6-DRAFT, 7-CHECK, 8-UNPASS
+const getStatusText = (status?: string | number) => {
+  const code = Number(status)
+  if (code === 1) return '正常/审核通过'
+  if (code === 2) return '已删除'
+  if (code === 3) return '已封禁'
+  if (code === 4) return '被举报'
+  if (code === 6) return '草稿'
+  if (code === 7) return '待审核'
+  if (code === 8) return '审核未通过'
+  return String(status ?? '未知')
 }
 
-const getStatusTag = (status: number) => {
-  if (status === 1) return 'success'
-  if (status === 0) return 'danger'
-  return 'warning'
+const getStatusTag = (status?: string | number) => {
+  const code = Number(status)
+  if (code === 1) return 'success'
+  if (code === 3 || code === 8) return 'danger'
+  if (code === 4 || code === 7) return 'warning'
+  return 'info'
 }
 
-const openDetailModal = (row: PostItem) => {
-  detailPost.value = row
+const formatTime = (time?: string) => {
+  if (!time) return '-'
+  const d = new Date(time)
+  return Number.isNaN(d.getTime()) ? time : d.toLocaleString('zh-CN')
+}
+
+interface MediaItem {
+  id?: number | string
+  url: string
+}
+
+// 标准化提炼安全的媒体照片列表 (防崩防 [object Object])
+const normalizedMediaList = computed<MediaItem[]>(() => {
+  if (!detailPost.value) return []
+  const raw = detailPost.value.mediaUrls || (detailPost.value as any).urls
+  if (!raw) return []
+
+  let listArr: any[] = []
+  if (Array.isArray(raw)) {
+    listArr = raw
+  } else if (typeof raw === 'string' && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        listArr = parsed
+      } else {
+        listArr = raw.split(',').map(s => s.trim()).filter(Boolean)
+      }
+    } catch {
+      listArr = raw.split(',').map(s => s.trim()).filter(Boolean)
+    }
+  }
+
+  return listArr.map((item, index) => {
+    if (typeof item === 'string') {
+      return { id: index, url: item }
+    }
+    const url = item.imageUrl || item.url || (typeof item === 'object' ? String(item) : '')
+    return { id: item.id || index, url }
+  }).filter(item => item.url && item.url !== '[object Object]')
+})
+
+const previewUrlList = computed<string[]>(() => {
+  return normalizedMediaList.value.map(item => item.url)
+})
+
+// 调起后端详情接口 /a/post/detail
+const openDetailModal = async (row: AdminPostVO) => {
   detailDialogVisible.value = true
+  detailLoading.value = true
+  try {
+    const res = await PostAPI.getPostDetail(row.id, Number(row.status))
+    if (res.code === 1 && res.data) {
+      detailPost.value = res.data
+    } else {
+      // 降级构建
+      detailPost.value = {
+        id: row.id,
+        creatorId: row.creatorId,
+        title: row.title,
+        content: row.content,
+        status: row.status,
+        createTime: row.createTime,
+        viewCount: row.viewCount,
+        likeCount: row.likeCount,
+        replyCount: row.replyCount,
+        collectCount: row.collectCount
+      }
+    }
+  } catch (err) {
+    console.error('获取帖子详情失败:', err)
+  } finally {
+    detailLoading.value = false
+  }
 }
 
 const fetchData = async () => {
@@ -294,84 +431,39 @@ const fetchData = async () => {
   try {
     const payload: PostQueryPayload = {
       page: pagination.page,
-      size: pagination.size,
-      ...filterForm
+      pageSize: pagination.size,
+      keyword: filterForm.keyword?.trim() || undefined,
+      status: filterForm.status,
+      creatorId: filterForm.creatorId,
+      postId: filterForm.postId,
+      likeCount: filterForm.minLikes != null ? { min: filterForm.minLikes } : undefined,
+      comment: filterForm.minComments != null ? { min: filterForm.minComments } : undefined,
     }
     const res = await PostAPI.getPostList(payload)
-    list.value = res.data?.list || [
-      {
-        id: 501,
-        userId: 10086,
-        authorName: '极客小张',
-        authorAvatar: '',
-        title: '分享一个超实用 Spring Boot Starter 开发指南',
-        content: '今天探讨如何将常用公共组件解耦封装为自动装配的 Starter...\n1. 创建根聚合 Starter 工程\n2. 配置 AutoConfiguration\n3. 注册 AutoConfiguration.imports\n实现完全无侵入的监控增强！',
-        topicName: 'Java后端',
-        tags: ['SpringBoot', '架构设计', '解耦'],
-        images: [
-          'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=500&auto=format&fit=crop&q=60',
-          'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=500&auto=format&fit=crop&q=60'
-        ],
-        viewCount: 1280,
-        likeCount: 96,
-        commentCount: 34,
-        status: 1,
-        createTime: '2026-08-16 10:20'
-      },
-      {
-        id: 502,
-        userId: 10087,
-        authorName: '测试违规用户',
-        authorAvatar: '',
-        title: '【推广】点击免费领取大额优惠券',
-        content: '点击链接免费获得好礼...',
-        topicName: '福利区',
-        tags: ['广告'],
-        images: [],
-        viewCount: 45,
-        likeCount: 0,
-        commentCount: 1,
-        status: 0,
-        rejectReason: '包含违规违法/敏感内容',
-        createTime: '2026-08-16 11:05'
-      },
-      {
-        id: 503,
-        userId: 10088,
-        authorName: '前端小能手',
-        authorAvatar: '',
-        title: 'Vue 3 + Tailwind CSS 响应式布局实战总结',
-        content: '记录管理端框架升级流程...',
-        topicName: '前端开发',
-        tags: ['Vue3', 'TailwindCSS'],
-        images: ['https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=500&auto=format&fit=crop&q=60'],
-        viewCount: 340,
-        likeCount: 22,
-        commentCount: 5,
-        status: 2,
-        createTime: '2026-08-16 14:00'
-      }
-    ]
-    total.value = res.data?.total || list.value.length
+    if (res.code === 1 && res.data) {
+      list.value = res.data.data || []
+      total.value = Number(res.data.total) || 0
+    }
   } catch {
-    // 拦截器处理
+    // 拦截器统一处理
   } finally {
     loading.value = false
   }
 }
 
-// 审核通过 Toggle
-const handlePass = async (row: PostItem) => {
+// 审核通过 (bypass)
+const handleBypass = async (row: AdminPostVO) => {
   try {
-    await PostAPI.togglePostStatus(row.id, 1)
+    await PostAPI.bypass(row.id)
+    ElMessage.success('审核通过成功')
     fetchData()
   } catch {
     // 拦截器处理
   }
 }
 
-// 打开驳回弹窗
-const openRejectModal = (row: PostItem) => {
+// 打开驳回弹窗 (bypassNot)
+const openRejectModal = (row: AdminPostVO) => {
   activePost.value = row
   rejectReasonInput.value = ''
   quickReason.value = ''
@@ -382,11 +474,12 @@ const onQuickReasonSelect = (val: string) => {
   rejectReasonInput.value = val
 }
 
-// 确认驳回
+// 确认驳回 (bypassNot)
 const confirmReject = async () => {
   if (!activePost.value || !rejectReasonInput.value.trim()) return
   try {
-    await PostAPI.togglePostStatus(activePost.value.id, 0, rejectReasonInput.value.trim())
+    await PostAPI.bypassNot(activePost.value.id, rejectReasonInput.value.trim())
+    ElMessage.success('已处理驳回')
     rejectDialogVisible.value = false
     fetchData()
   } catch {
@@ -394,10 +487,25 @@ const confirmReject = async () => {
   }
 }
 
-const handleDelete = (row: PostItem) => {
-  ElMessageBox.confirm(`确定要彻底删除帖子 [${row.title}] 吗？`, '删除确认', { type: 'error' }).then(async () => {
+// 封禁帖子 (ban)
+const handleBan = async (row: AdminPostVO) => {
+  ElMessageBox.confirm(`确定要封禁帖子 [${row.title}] 吗？`, '封禁确认', { type: 'warning' }).then(async () => {
     try {
-      await PostAPI.deletePost(row.id)
+      await PostAPI.ban(row.id)
+      ElMessage.success('已成功封禁该帖子')
+      fetchData()
+    } catch {
+      // 拦截器处理
+    }
+  }).catch(() => {})
+}
+
+// 解封帖子 (unban)
+const handleUnban = async (row: AdminPostVO) => {
+  ElMessageBox.confirm(`确定要解封帖子 [${row.title}] 吗？`, '解封确认', { type: 'info' }).then(async () => {
+    try {
+      await PostAPI.unban(row.id)
+      ElMessage.success('已成功解封该帖子')
       fetchData()
     } catch {
       // 拦截器处理

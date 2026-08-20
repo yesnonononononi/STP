@@ -12,8 +12,14 @@ const router = createRouter({
     {
       path: "/",
       component: () => import("@/views/layout/index.vue"),
-      redirect: "/admin",
+      redirect: "/dashboard",
       children: [
+        {
+          path: "dashboard",
+          name: "dashboard",
+          component: () => import("@/views/dashboard/index.vue"),
+          meta: { title: "仪表盘 Dash" },
+        },
         {
           path: "admin",
           name: "admin-list",
@@ -25,6 +31,12 @@ const router = createRouter({
           name: "user",
           component: () => import("@/views/user/pages/list.vue"),
           meta: { title: "用户管理" },
+        },
+        {
+          path: "user/report",
+          name: "user-report",
+          component: () => import("@/views/user/report.vue"),
+          meta: { title: "举报审核管理" },
         },
         // 会员管理 (子路由 - 完全基于后端已有 member_level_config, member_package, user_member 三张表)
         {
@@ -100,7 +112,7 @@ const router = createRouter({
     // 全局通配兜底重定向，消除未匹配路径引起的白屏
     {
       path: "/:pathMatch(.*)*",
-      redirect: "/admin",
+      redirect: "/dashboard",
     },
   ],
 });

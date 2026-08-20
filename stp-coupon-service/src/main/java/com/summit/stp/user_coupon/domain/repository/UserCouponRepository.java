@@ -26,9 +26,8 @@ public interface UserCouponRepository {
 
     List<UserCoupon> findUnusedByUserId(Long userId);
 
-    Integer countUnUsedByCouponId(Long couponId);
-
-    Integer countByUserIdAndCouponId(Long userId, Long couponId);
 
     Map<Long, Integer> countByUserIdAndCouponIds(Long userId, Collection<Long> couponIds);
+
+
 }

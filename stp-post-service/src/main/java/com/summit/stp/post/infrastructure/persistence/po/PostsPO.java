@@ -38,6 +38,9 @@ public class PostsPO {
     @ApiModelProperty(value = "状态: 0已删除, 1公开已发布, 2草稿/私密")
     private Integer status;
 
+    @ApiModelProperty(value = "审核未通过原因")
+    private String unpassReason;
+
     @ApiModelProperty(value = "创建时间")
     private Timestamp createTime;
 

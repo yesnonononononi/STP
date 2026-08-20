@@ -37,7 +37,19 @@
                         v-html="parseEmoji(parseTag(postInfo?.content || '', postInfo?.tags))"></div>
                     <div v-if="postInfo.type === PostType.IMAGE" class="img flex flex-wrap gap-2 w-full">
                         <div v-for="(item, index) in postInfo.mediaUrls" :key="item.id || index">
-                            <el-image class="w-45 h-45 rounded-lg" :src="item.imageUrl" :preview-src-list="postInfo.mediaUrls?.map(m => m.imageUrl) || []" :initial-index="index" fit="cover" preview-teleported alt="" />
+                            <el-image
+                                :class="[
+                                    (!item.width || !item.height) ? 'w-45 h-45' : '',
+                                    'rounded-lg object-cover transition-transform duration-200 hover:scale-[1.02] cursor-pointer'
+                                ]"
+                                :style="getImageStyle(item)"
+                                :src="item.imageUrl"
+                                :preview-src-list="postInfo.mediaUrls?.map(m => m.imageUrl) || []"
+                                :initial-index="index"
+                                fit="cover"
+                                preview-teleported
+                                alt=""
+                            />
                         </div>
                     </div>
                     <div v-if="postInfo.type !== PostType.TEXT && postInfo.type !== PostType.IMAGE" class="extraMedia my-3">
@@ -245,6 +257,28 @@ const commentArea = ref<HTMLDivElement>();
 const user = useUserInfoStore().user;
 const showSettingsModal = ref(false);
 const showShareTip = ref(false);
+
+function getImageStyle(item?: { width?: number | null; height?: number | null } | null) {
+    if (item && item.width && item.height && item.width > 0 && item.height > 0) {
+        const aspectRatio = item.width / item.height
+        let targetHeight = Math.min(item.height, 360)
+        let targetWidth = Math.min(item.width, targetHeight * aspectRatio)
+
+        if (targetWidth > 540) {
+            targetWidth = 540
+            targetHeight = targetWidth / aspectRatio
+        }
+
+        return {
+            width: `${Math.round(targetWidth)}px`,
+            height: `${Math.round(targetHeight)}px`,
+            maxWidth: '100%',
+            maxHeight: '360px',
+            objectFit: 'cover' as const
+        }
+    }
+    return {}
+}
 
 const isOwner = computed(() => {
     return postInfo.value && user && postInfo.value.creatorId?.toString() === user.id?.toString();

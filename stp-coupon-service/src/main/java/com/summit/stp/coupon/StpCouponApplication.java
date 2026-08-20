@@ -10,7 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = {"com.summit.stp.order.api","com.summit.stp.user.api"})
-@ComponentScan(basePackages = {"com.summit.stp.coupon", "com.summit.stp.user_coupon", "com.summit.stp.activity", "com.summit.stp.common"})
+@ComponentScan(basePackages = {"com.summit.stp.coupon", "com.summit.stp.user_coupon", "com.summit.stp.activity", "com.summit.stp.common", "com.summit.stp.admin"})
 @MapperScan({"com.summit.stp.coupon.infrastructure.persistence.mapper", "com.summit.stp.user_coupon.infrastructure.persistence.mapper", "com.summit.stp.activity.infrastructure.persistence.mapper"})
 public class StpCouponApplication {
     public static void main(String[] args) {

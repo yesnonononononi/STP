@@ -4,12 +4,15 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.devframeworkdddstarter.repo.AbstractRepository;
+import com.summit.stp.common.application.domain.exception.BusinessException;
 import com.summit.stp.coupon.domain.model.Coupon;
 import com.summit.stp.coupon.domain.repository.CouponRepository;
 import com.summit.stp.user_coupon.domain.model.CouponStatus;
 import com.summit.stp.user_coupon.domain.model.UserCoupon;
 import com.summit.stp.user_coupon.domain.repository.UserCouponRepository;
+import com.summit.stp.user_coupon.infrastructure.persistence.mapper.UserCouponMapper;
 import com.summit.stp.user_coupon.infrastructure.persistence.po.UserCouponPO;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
@@ -18,15 +21,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+
 @Repository
 public class UserCouponRepositoryImpl extends AbstractRepository<UserCoupon, UserCouponPO> implements UserCouponRepository {
+    @Autowired
+    private  CouponRepository couponRepository;
 
-    private final CouponRepository couponRepository;
 
-    public UserCouponRepositoryImpl(BaseMapper<UserCouponPO> baseMapper, CouponRepository couponRepository) {
+    public UserCouponRepositoryImpl(BaseMapper<UserCouponPO> baseMapper) {
         super(baseMapper);
-        this.couponRepository = couponRepository;
     }
+
 
     @Override
     public UserCoupon findUserCouponById(Long id) {
@@ -80,26 +85,7 @@ public class UserCouponRepositoryImpl extends AbstractRepository<UserCoupon, Use
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public Integer countUnUsedByCouponId(Long couponId) {
-        Timestamp now = new Timestamp(System.currentTimeMillis());
-        return Math.toIntExact(getBaseMapper().selectCount(
-                new LambdaQueryWrapper<UserCouponPO>()
-                        .eq(UserCouponPO::getCouponId, couponId)
-                        .eq(UserCouponPO::getStatus, CouponStatus.NOT_USE.getCode())
-                        .isNull(UserCouponPO::getUsedTime)
-                        .gt(UserCouponPO::getEndTime, now)
-        ));
-    }
 
-    @Override
-    public Integer countByUserIdAndCouponId(Long userId, Long couponId) {
-        return Math.toIntExact(getBaseMapper().selectCount(
-                new LambdaQueryWrapper<UserCouponPO>()
-                        .eq(UserCouponPO::getUserId, userId)
-                        .eq(UserCouponPO::getCouponId, couponId)
-        ));
-    }
 
     @Override
     public Map<Long, Integer> countByUserIdAndCouponIds(Long userId, Collection<Long> couponIds) {
@@ -113,6 +99,8 @@ public class UserCouponRepositoryImpl extends AbstractRepository<UserCoupon, Use
                 .stream()
                 .collect(Collectors.groupingBy(UserCouponPO::getCouponId, Collectors.summingInt(ignored -> 1)));
     }
+
+
 
     @Override
     protected UserCouponPO toPO(UserCoupon userCoupon) {
@@ -145,10 +133,7 @@ public class UserCouponRepositoryImpl extends AbstractRepository<UserCoupon, Use
                 .endTime(po.getEndTime())
                 .build();
         if (po.getCouponId() != null) {
-            Coupon template = couponRepository.findCouponById(po.getCouponId());
-            if (template != null) {
-                userCoupon.bindTemplate(template);
-            }
+            couponRepository.findById(po.getCouponId()).ifPresent(userCoupon::bindTemplate);
         }
         return userCoupon;
     }
