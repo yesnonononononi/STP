@@ -156,6 +156,28 @@ services:
         condition: service_healthy
       nacos:
         condition: service_healthy
+  admin-service:
+    container_name: stp-admin-service
+    build: ./stp-admin-service
+    ports:
+      - "8092:8092"
+    env_file:
+      - .env
+    environment:
+      # 固定服务名映射
+      MYSQL_HOST: mysql
+      REDIS_HOST: redis
+      NACOS_HOST: nacos
+      MINIO_HOST: minio
+      RABBITMQ_HOST: rabbitmq
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
 
   gateway-service:
     container_name: stp-gateway-service
