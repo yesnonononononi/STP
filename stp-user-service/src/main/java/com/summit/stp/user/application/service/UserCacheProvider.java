@@ -10,5 +10,7 @@ public interface UserCacheProvider {
 
     @SuppressWarnings("unchecked")
     void batchSetUserSimpleVO(Map<Long, UserSimpleVO> userSimpleVOMap);
+
+    void clearUserInfo(Long userId);
 }
 

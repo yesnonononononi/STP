@@ -3,10 +3,11 @@ package com.summit.stp.user.infrastructure.persistence.po;
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
 import lombok.Data;
 
 import java.sql.Timestamp;
-
+@Builder
 @Data
 @TableName("user_follow")
 @ApiModel(value = "UserFollowPO", description = "用户关注关系数据持久化实体")

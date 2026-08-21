@@ -1,8 +1,8 @@
 import type {PostVO} from '@/services/post/types'
 
 export interface CreatorRankVO {
-  id?: number | string
-  entityId: number | string
+  id?: string
+  entityId: string
   rank: number
   entityInfo: {
     nick?: string
@@ -19,8 +19,8 @@ export interface CreatorRankVO {
 }
 
 export interface PostRankVO {
-  id?: number | string
-  entityId: number | string
+  id?: string
+  entityId: string
   rank: number
   entityInfo: PostVO
   name: string
@@ -32,11 +32,11 @@ export interface PostRankVO {
 }
 
 export interface TopicRankVO {
-  id?: number | string
-  entityId: number | string
+  id?: string
+  entityId: string
   rank: number
   entityInfo: {
-    id: number | string
+    id: string
     tagName: string
     useCount?: number
   }
@@ -49,14 +49,14 @@ export interface TopicRankVO {
 }
 
 export interface MappedCommonRank {
-  id: number | string
+  id: string
   sort: number
   title: string
   count: number
 }
 
 export interface MappedCreatorRank {
-  id: number | string
+  id: string
   sort: number
   score: number
   nickname: string

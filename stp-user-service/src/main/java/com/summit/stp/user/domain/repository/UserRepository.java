@@ -1,9 +1,12 @@
 package com.summit.stp.user.domain.repository;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.user.api.vo.stats.UserTrendsVO;
+import com.summit.stp.user.domain.model.User;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -27,4 +30,6 @@ public interface UserRepository<T> {
     long countUsersCreatedAfter(Instant startTime);
 
     com.summit.stp.user.domain.model.stats.UserTrendStat countUserTrends(int days);
+
+    Page<User> findPage(Integer page, Integer size);
 }

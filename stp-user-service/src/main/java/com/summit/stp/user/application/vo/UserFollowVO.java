@@ -28,6 +28,12 @@ public class UserFollowVO {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long followeeId;
 
+    @ApiModelProperty("被关注用户昵称")
+    private String nick;
+
+    @ApiModelProperty("被关注用户头像")
+    private String avatar;
+
     @ApiModelProperty("状态：1-正常关注，2-已取消，3-互相关注")
     private Integer status;
 

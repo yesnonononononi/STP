@@ -1,5 +1,6 @@
 package com.summit.stp.user.application.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.user.api.vo.UserProfileVO;
 import com.summit.stp.user.api.vo.UserSimpleVO;
 import com.summit.stp.user.application.command.CreateUserCommand;
@@ -43,5 +44,7 @@ public interface UserApplicationService {
     UserProfileVO findUserByPhone(String phone);
 
     UserProfileVO findUserByUname(String uname);
+
+    Page<UserProfileVO> findPage(Integer page, Integer size);
 }
 

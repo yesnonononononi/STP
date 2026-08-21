@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import com.summit.stp.user.domain.model.UserFollow;
 
-import com.summit.stp.user.domain.model.UserFollowRepository;
+import com.summit.stp.user.domain.repository.UserFollowRepository;
 import com.summit.stp.user.infrastructure.persistence.po.UserFollowPO;
 import org.springframework.stereotype.Repository;
 
@@ -71,29 +71,24 @@ public class UserFollowRepositoryImpl extends AbstractRepository<UserFollow, Use
     }
 
     @Override
-    public Page<UserFollow> queryFolloweesPage(Long followerId, long page, long pageSize) {
-        Page<UserFollowPO> poPage = getBaseMapper().selectPage(
-                new Page<>(page, pageSize),
-                new LambdaQueryWrapper<UserFollowPO>()
-                        .eq(UserFollowPO::getFollowerId, followerId)
-                        .eq(UserFollowPO::getStatus, 1)
-                        .orderByDesc(UserFollowPO::getCreateTime)
-        );
-        Page<UserFollow> modelPage = new Page<>(poPage.getCurrent(), poPage.getSize(), poPage.getTotal());
-        modelPage.setRecords(poPage.getRecords().stream().map(this::toModel).toList());
-        return modelPage;
+    public Page<UserFollow> queryFolloweesPage(Long followeeId, long page, long pageSize) {
+        Page<UserFollow> res = new Page<>();
+        Page<UserFollowPO> userFollowPOPage = new Page<>(page,pageSize);
+        getBaseMapper().selectPage(userFollowPOPage,new LambdaQueryWrapper<UserFollowPO>().eq(UserFollowPO::getFolloweeId,followeeId).orderByDesc(UserFollowPO::getCreateTime).ne(UserFollowPO::getStatus,UserFollow.FollowStatus.CANCEL.getCode()));
+        return res.setCurrent(userFollowPOPage.getCurrent()).setTotal(userFollowPOPage.getTotal()).setRecords(userFollowPOPage.getRecords().stream().map(this::toModel).toList());
     }
 
     @Override
     protected UserFollowPO toPO(UserFollow entity) {
         if (entity == null) return null;
-        UserFollowPO po = new UserFollowPO();
-        po.setId(entity.getId());
-        po.setFollowerId(entity.getFollowerId());
-        po.setFolloweeId(entity.getFolloweeId());
-        po.setCreateTime(entity.getCreateTime());
-        po.setStatus(1);
-        return po;
+        return UserFollowPO.builder()
+                .id(entity.getId())
+                .followerId(entity.getFollowerId())
+                .followeeId(entity.getFolloweeId())
+                .status(entity.getStatus().getCode())
+                .source(entity.getSource())
+                .build();
+
     }
 
     @Override
@@ -101,6 +96,8 @@ public class UserFollowRepositoryImpl extends AbstractRepository<UserFollow, Use
         if (po == null) return null;
         return UserFollow.builder()
                 .id(po.getId())
+                .status(UserFollow.FollowStatus.fromCode(po.getStatus()))
+                .source(po.getSource())
                 .followerId(po.getFollowerId())
                 .followeeId(po.getFolloweeId())
                 .createTime(po.getCreateTime())

@@ -37,7 +37,7 @@ public class RankPostPublishListener {
             key = MqConstants.Post.ROUTING_KEY_CHANGE
     ))
 
-    public void listen(PostChangeEvent postPublishEvent, Channel channel, Message message) {
+    public void listen(PostChangeEvent postPublishEvent, Channel channel, Message message) throws IOException {
 
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         try {
@@ -75,12 +75,9 @@ public class RankPostPublishListener {
             channel.basicAck(deliveryTag, false);
 
         } catch (Exception e) {
-            try {
-                channel.basicNack(deliveryTag, false, true);
-            } catch (IOException ioException) {
-                log.error("【排行榜实时更新】MQ应答失败", ioException);
-            }
             log.error("【排行榜实时更新】处理发帖实时更新失败: postId={}", postPublishEvent.getPostId(), e);
+            throw e;
+
         }
     }
 }

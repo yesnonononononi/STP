@@ -36,7 +36,7 @@ export class PostAPI {
   static async getPage(query: {
     cursor: string | number | null
     self: boolean
-    creatorId?: string | number
+    creatorId?: string
     status?: number
     orderType?: string
   }): Promise<Result<PostVO[]>> {
@@ -74,7 +74,7 @@ export class PostAPI {
   /**
    * 删除帖子
    */
-  static async delete(id: string | number): Promise<Result<void>> {
+  static async delete(id: string): Promise<Result<void>> {
     return await request.delete(`/post/${id}`)
   }
 
@@ -95,14 +95,14 @@ export class PostAPI {
   /**
    * 获取当前登录用户对指定帖子的点赞状态
    */
-  static async getLikeStatus(id: string | number): Promise<Result<boolean>> {
+  static async getLikeStatus(id: string): Promise<Result<boolean>> {
     return await request.get(`/post/like/status/${id}`)
   }
 
   /**
    * 获取当前登录用户对指定帖子的收藏状态
    */
-  static async getCollectStatus(id: string | number): Promise<Result<boolean>> {
+  static async getCollectStatus(id: string): Promise<Result<boolean>> {
     return await request.get(`/post/collect/status/${id}`)
   }
 
@@ -110,7 +110,7 @@ export class PostAPI {
    * 获取当前用户收藏的帖子列表
    */
   static async getMyCollectList(
-    userId: string | number | null,
+    userId: string | null,
     cursor: string | number | null,
   ): Promise<Result<PostVO[]>> {
     return await request.get(`/post/collect/my`, { params: { userId, cursor } })
@@ -120,7 +120,7 @@ export class PostAPI {
    * 获取当前用户点赞的帖子列表
    */
   static async getMyLikeList(
-    userId: string | number | null,
+    userId: string | null,
     cursor: string | number | null,
   ): Promise<Result<PostVO[]>> {
     return await request.get(`/post/like/my`, { params: { userId, cursor } })
@@ -136,14 +136,14 @@ export class PostAPI {
   /**
    * 增加帖子浏览数
    */
-  static async view(id: string | number): Promise<Result<void>> {
+  static async view(id: string): Promise<Result<void>> {
     return await request.post(`/post/view/${id}`)
   }
 
   /**
    * 获取帖子未审核通过的原因
    */
-  static async getUnpassReason(id: string | number): Promise<Result<string>> {
+  static async getUnpassReason(id: string): Promise<Result<string>> {
     return await request.get(`/post/unpass/reason/${id}`)
   }
 }
@@ -155,7 +155,7 @@ export class TagAPI {
   /**
    * 根据标签ID获取标签详情
    */
-  static async getById(id: number): Promise<Result<TagVO>> {
+  static async getById(id: string): Promise<Result<TagVO>> {
     return await request.get(`/post/tag/${id}`)
   }
 
@@ -187,7 +187,7 @@ export class TagAPI {
   /**
    * 删除标签
    */
-  static async delete(id: number): Promise<Result<void>> {
+  static async delete(id: string): Promise<Result<void>> {
     return await request.delete(`/post/tag/${id}`)
   }
 
@@ -204,7 +204,7 @@ export class TagAPI {
    * 根据标签获取帖子列表 (支持游标分页和最新/最热排序)
    */
   static async getPostsByTag(
-    tagId: number | string,
+    tagId: string,
     cursor: string | null,
     limit: number,
     isHot: boolean
@@ -222,7 +222,7 @@ export class PostTagRelAPI {
   /**
    * 绑定标签到帖子
    */
-  static async bind(postId: number, tagId: number): Promise<Result<void>> {
+  static async bind(postId: string, tagId: string): Promise<Result<void>> {
     return await request.post('/post/relation/bind', null, {
       params: { postId, tagId },
     })
@@ -231,28 +231,28 @@ export class PostTagRelAPI {
   /**
    * 解绑帖子标签
    */
-  static async unbind(id: number): Promise<Result<void>> {
+  static async unbind(id: string): Promise<Result<void>> {
     return await request.delete(`/post/relation/unbind/${id}`)
   }
 
   /**
    * 清空帖子的所有标签
    */
-  static async clear(postId: number): Promise<Result<void>> {
+  static async clear(postId: string): Promise<Result<void>> {
     return await request.delete(`/post/relation/clear/${postId}`)
   }
 
   /**
    * 获取帖子关联的全部关系
    */
-  static async getRelationsByPostId(postId: number): Promise<Result<PostTagRelPO[]>> {
+  static async getRelationsByPostId(postId: string): Promise<Result<PostTagRelPO[]>> {
     return await request.get(`/post/relation/post/${postId}`)
   }
 
   /**
    * 获取标签关联的全部关系
    */
-  static async getRelationsByTagId(tagId: number): Promise<Result<PostTagRelPO[]>> {
+  static async getRelationsByTagId(tagId: string): Promise<Result<PostTagRelPO[]>> {
     return await request.get(`/post/relation/tag/${tagId}`)
   }
 }

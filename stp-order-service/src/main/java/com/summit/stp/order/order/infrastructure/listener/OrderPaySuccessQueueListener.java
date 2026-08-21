@@ -62,8 +62,7 @@ public class OrderPaySuccessQueueListener {
         } catch (Exception e) {
             log.error("【MQ-order】订单确认失败，订单ID: {}", orderId, e);
             try {
-                // MQ NACK：消费失败，requeue=true，放回队列头部重新投递以便重试
-                channel.basicNack(deliveryTag, false, true);
+               throw e;
             } catch (IOException ioException) {
                 log.error("【MQ-order】拒绝消息失败，订单ID: {}", orderId, ioException);
             }
@@ -79,7 +78,7 @@ public class OrderPaySuccessQueueListener {
             exchange = @Exchange(name = MqConstants.Pay.EXCHANGE, type = "topic"),
             key = MqConstants.Pay.ROUTING_KEY_FAIL
     ))
-    public void onOrderPayFail(PayFailEvent event, Message message, Channel channel) {
+    public void onOrderPayFail(PayFailEvent event, Message message, Channel channel) throws IOException, InterruptedException {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         Long orderId = event.getOrderId();
         log.info("【MQ-order】收到支付失败事件，订单ID: {}, DeliveryTag: {}", orderId, deliveryTag);
@@ -105,11 +104,7 @@ public class OrderPaySuccessQueueListener {
             }
         } catch (Exception e) {
             log.error("【支付失败消费】订单取消失败，订单ID: {}", orderId, e);
-            try {
-                channel.basicNack(deliveryTag, false, true);
-            } catch (IOException ioException) {
-                log.error("【支付失败消费】拒绝消息失败，订单ID: {}", orderId, ioException);
-            }
+            throw e;
         } finally {
             distributedLockUtil.releaseLock(lock);
         }

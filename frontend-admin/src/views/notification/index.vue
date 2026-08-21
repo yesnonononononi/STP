@@ -58,6 +58,7 @@
                 :key="i"
                 :src="img"
                 :preview-src-list="row.images"
+                preview-teleported
                 class="w-10 h-10 rounded border object-cover shrink-0 cursor-pointer"
                 fit="cover"
               />

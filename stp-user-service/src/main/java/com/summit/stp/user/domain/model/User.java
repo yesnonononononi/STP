@@ -72,7 +72,7 @@ public class User {
     }
 
     public void clearBgImage() {
-        this.bgImage = null;
+        this.bgImage = "";
         this.updateTime = Instant.now();
     }
 

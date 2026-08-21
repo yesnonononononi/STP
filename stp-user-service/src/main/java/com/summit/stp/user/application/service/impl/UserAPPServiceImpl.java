@@ -1,5 +1,6 @@
 package com.summit.stp.user.application.service.impl;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.common.application.domain.exception.BusinessException;
 import com.summit.stp.common.application.domain.model.Username;
 import com.summit.stp.common.auth.UserHolder;
@@ -28,8 +29,10 @@ import com.summit.stp.user.domain.model.Email;
 import com.summit.stp.user.domain.model.User;
 import com.summit.stp.user.domain.model.UserFollow;
 
+import com.summit.stp.user.domain.model.UserStat;
 import com.summit.stp.user.domain.repository.UserRepository;
 import com.summit.stp.user.infrastructure.persistence.UserFollowRepositoryImpl;
+import com.summit.stp.user.infrastructure.persistence.UserStatRepositoryImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -58,13 +61,14 @@ public class UserAPPServiceImpl implements UserApplicationService {
     private final UserCacheProvider userCacheProvider;
     private final QueueSender queueSender;
     private final UserFollowRepositoryImpl userFollowRepositoryImpl;
+    private final UserStatRepositoryImpl userStatRepositoryImpl;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateProfile(UserProfileUpdateCommand command) {
         String currentUsername = UserHolder.getUser().getUsername();
         log.info("修改用户基本资料: {}", currentUsername);
-
+        List<FileDeleteEvent> willDelete = new ArrayList<>();
         User user = userRepository.findUserByName(currentUsername).orElseThrow(NoFoundUserInfoException::new);
 
         String newEmail = command.getEmail();
@@ -77,8 +81,8 @@ public class UserAPPServiceImpl implements UserApplicationService {
         if (newBgImage != null) {
             if (StringUtils.hasText(newBgImage)) {
                 user.updateBgImage(newBgImage);
-                if (!oldBgImage.equals(newBgImage)) {
-                    applicationEventPublisher.publishEvent(new FileDeleteEvent(this, List.of(oldBgImage)));
+                if (oldBgImage != null && !oldBgImage.equals(newBgImage)) {
+                   willDelete.add(new FileDeleteEvent(this, List.of(oldBgImage)));
                 }
             } else {
                 user.clearBgImage();
@@ -88,9 +92,18 @@ public class UserAPPServiceImpl implements UserApplicationService {
         userRepository.updateById(user);
 
         String newAvatar = command.getAvatar();
+
         if (oldAvatar != null && !oldAvatar.isEmpty() && !oldAvatar.equals(newAvatar)) {
-            applicationEventPublisher.publishEvent(new FileDeleteEvent(this, List.of(oldAvatar)));
+            willDelete.add(new FileDeleteEvent(this, List.of(oldAvatar)));
         }
+
+        userCacheProvider.clearUserInfo(user.getId());
+
+
+        if (!willDelete.isEmpty()) {
+            willDelete.forEach(applicationEventPublisher::publishEvent);
+        }
+
 
         log.info("用户基本资料修改成功: {}", currentUsername);
     }
@@ -112,6 +125,8 @@ public class UserAPPServiceImpl implements UserApplicationService {
         user.changePhoneNumber(PhoneNumber.of(command.getPhoneNumber()));
         userRepository.updateById(user);
         log.info("用户手机号绑定修改成功: {}", currentUsername);
+        userCacheProvider.clearUserInfo(user.getId());
+
     }
 
     @Override
@@ -136,7 +151,8 @@ public class UserAPPServiceImpl implements UserApplicationService {
             return null;
         }
         UserMember userMember = userMemberRepository.queryUserMemberByUserId(id);
-        return convertToVO(user, userMember);
+        UserStat userStat = userStatRepositoryImpl.findById(id).orElse(null);
+        return convertToVO(user, userMember, userStat);
     }
 
     @Override
@@ -210,11 +226,13 @@ public class UserAPPServiceImpl implements UserApplicationService {
         Map<Long, User> userByIds = userRepository.findUserByIds(ids);
         Map<Long, UserMember> memberMap = userMemberRepository.queryUserMemberByUserIds(ids);
         List<UserProfileVO> res = new ArrayList<>();
+        Map<Long, UserStat> userStatMap = userStatRepositoryImpl.batchFindByIds(ids);
         ids.forEach(id -> {
             User user = userByIds.get(id);
             UserMember userMember = memberMap.get(id);
+            UserStat userStat = userStatMap.get(id);
             if (user != null) {
-                res.add(convertToVO(user, userMember, false));
+                res.add(convertToVO(user, userMember, userStat));
             }
         });
         return res;
@@ -246,35 +264,36 @@ public class UserAPPServiceImpl implements UserApplicationService {
     @Override
     public UserProfileVO findUserByPhone(String phone) {
         User user = userRepository.findUserByPhone(phone).orElseThrow(NoFoundUserInfoException::new);
-        return convertToVO(user, null, false);
+        UserStat userStat = userStatRepositoryImpl.findById(user.getId()).orElse(null);
+        return convertToVO(user, null, false, userStat);
     }
 
     @Override
     public UserProfileVO findUserByUname(String uname) {
         User userByName = userRepository.findUserByName(uname).orElseThrow(NoFoundUserInfoException::new);
-        return convertToVO(userByName, null, false);
+        UserStat userStat = userStatRepositoryImpl.findById(userByName.getId()).orElse(null);
+        return convertToVO(userByName, null, false,userStat);
     }
 
-    private UserProfileVO convertToVO(User user, UserMember userMember) {
+    private UserProfileVO convertToVO(User user, UserMember userMember,UserStat userStat) {
         boolean followed = false;
         try {
             UserSession currentUser = UserHolder.getUser();
             if (!currentUser.isLogin()) {
-                return convertToVO(user, userMember, followed);
+                return convertToVO(user, userMember, followed,userStat);
             }
             if (!currentUser.getId().equals(user.getId())) {
                 UserFollow follow = userFollowRepositoryImpl.findByFollowerAndFollowee(currentUser.getId(), user.getId()).orElse(null);
-                if (follow != null) {
-                    followed = true;
-                }
+                    followed = follow != null && follow.isActive();
+
             }
         } catch (NoFoundUserInfoException e) {
             // 未登录或非 Web 请求线程，默认设为未关注
         }
-        return convertToVO(user, userMember, followed);
+        return convertToVO(user, userMember, followed,userStat);
     }
 
-    private UserProfileVO convertToVO(User user, UserMember userMember, boolean followed) {
+    private UserProfileVO convertToVO(User user, UserMember userMember, boolean followed, UserStat userStat) {
         if (user == null) {
             return null;
         }
@@ -310,9 +329,9 @@ public class UserAPPServiceImpl implements UserApplicationService {
                 .phone(phoneNumber != null ? EncryptUtil.encodeStrForStar(phoneNumber.getValue(), "phone") : null)
                 .email(email != null ? EncryptUtil.encodeStrForStar(email.getValue(), "email") : null)
                 .ip(user.getIp())
-                .liked(user.getLiked() != null ? String.valueOf(user.getLiked()) : "0")
-                .topic(user.getTopic() != null ? String.valueOf(user.getTopic()) : "0")
-                .fans(user.getFans() != null ? String.valueOf(user.getFans()) : "0")
+                .liked(userStat != null ? String.valueOf(userStat.getLiked()) : "0")
+                .topic(userStat != null ? String.valueOf(userStat.getTopic()) : "0")
+                .fans(userStat != null ? String.valueOf(userStat.getFans()) : "0")
                 .vipType(vipType)
                 .createTime(String.valueOf(user.getCreateTime()))
                 .status(String.valueOf(user.getStatusCode()))
@@ -385,6 +404,17 @@ public class UserAPPServiceImpl implements UserApplicationService {
         } catch (Exception e) {
             log.error("【用户注册】标识：MQ 动作：发布用户创建事件失败, userId={}", userId, e);
         }
+    }
+
+    @Override
+    public Page<UserProfileVO> findPage(Integer page, Integer size) {
+        Page<User> p = userRepository.findPage(page, size);
+        Map<Long, UserMember> memberMap = userMemberRepository.queryUserMemberByUserIds(p.getRecords().stream().map(User::getId).toList());
+        Map<Long, UserStat> userStatMap = userStatRepositoryImpl.batchFindByIds(memberMap.keySet());
+        Page<UserProfileVO> res = new Page<>();
+        List<User> us = p.getRecords();
+        List<UserProfileVO> list = us.stream().map(user -> convertToVO(user, memberMap.get(user.getId()), userStatMap.get(user.getId()))).toList();
+        return res.setCurrent(p.getCurrent()).setTotal(p.getTotal()).setRecords(list);
     }
 }
 

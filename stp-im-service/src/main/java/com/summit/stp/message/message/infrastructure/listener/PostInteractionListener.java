@@ -39,7 +39,7 @@ public class PostInteractionListener {
             exchange = @Exchange(name = MqConstants.Post.EXCHANGE, type = "topic"),
             key = MqConstants.Post.ROUTING_KEY_INTERACTION
     ))
-    public void onPostInteraction(PostInteractionEvent event, Channel channel, Message message) {
+    public void onPostInteraction(PostInteractionEvent event, Channel channel, Message message) throws IOException {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         boolean isOnce = Objects.requireNonNullElse(event.getIsOnce(), false);
         try {
@@ -93,11 +93,7 @@ public class PostInteractionListener {
             channel.basicAck(deliveryTag, false);
         } catch (Exception e) {
             log.error("【消息模块】处理帖子互动 MQ 消息失败，postId={}", event.getPostId(), e);
-            try {
-                channel.basicNack(deliveryTag, false, true);
-            } catch (IOException ioException) {
-                log.error("【消息模块】MQ基本拒签操作失败", ioException);
-            }
+            throw e;
         }
     }
 }

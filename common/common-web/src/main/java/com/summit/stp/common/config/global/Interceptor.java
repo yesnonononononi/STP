@@ -109,6 +109,7 @@ public class Interceptor implements HandlerInterceptor {
             return UserSession.builder()
                     .id(Long.valueOf(userIdStr))
                     .username(request.getHeader("X-User-Name"))
+                    .ip(request.getHeader("X-User-IP"))
                     .admin(adminVal)
                     .tokenType(tokenTypeStr != null
                             ? UserSession.TokenType.valueOf(tokenTypeStr)

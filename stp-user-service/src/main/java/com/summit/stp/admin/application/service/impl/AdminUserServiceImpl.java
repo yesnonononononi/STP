@@ -1,5 +1,6 @@
 package com.summit.stp.admin.application.service.impl;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.admin.application.command.AdminUserQueryCommand;
 import com.summit.stp.admin.application.service.AdminService;
 import com.summit.stp.common.application.api.result.PageResult;
@@ -11,6 +12,7 @@ import com.summit.stp.common.auth.UserHolder;
 import com.summit.stp.common.application.api.result.ESPageVO;
 import com.summit.stp.common.application.domain.event.EsUserUpdateEvent;
 import com.summit.stp.user.api.vo.UserProfileVO;
+import com.summit.stp.user.application.service.UserApplicationService;
 import com.summit.stp.user.application.service.impl.UserAPPServiceImpl;
 import com.summit.stp.user.domain.model.User;
 import com.summit.stp.user.domain.repository.UserRepository;
@@ -28,18 +30,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminUserServiceImpl implements AdminUserService {
     private final AdminUserQuerySupport adminUserQuerySupport;
-    private final UserAPPServiceImpl userAPPServiceImpl;
+    private final UserApplicationService userAPPService;
     private final AdminService adminService;
     private final UserRepository<User> userRepository;
     private final QueueSender queueSender;
 
     @Override
     public Result<PageResult<List<UserProfileVO>>> listBy(AdminUserQueryCommand command) {
-        ESPageVO<Long> res = adminUserQuerySupport.listBy(command);
-        List<Long> ids = res.getData();
-        List<UserProfileVO> list = userAPPServiceImpl.findProfileByIds(ids).stream().sorted(Comparator.comparing(UserProfileVO::getId)).toList();
-        if (list.isEmpty()) return Result.success(PageResult.empty());
-        return Result.success(new PageResult<>(res.getPage(), res.getTotal(), list));
+        if (!command.isQueryWithoutFilter()) {
+            return esQuery(command);
+        }else{
+            Page<UserProfileVO> page = userAPPService.findPage(command.getPage(),command.getSize());
+            return Result.success(new PageResult<>(page.getCurrent(), page.getTotal(), page.getRecords()));
+        }
     }
 
 
@@ -68,5 +71,19 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     public Integer isAdmin(Long uid) {
         return adminService.is(uid);
+    }
+
+
+    /**
+     * if acquire filter data from es
+     * @param command 查询条件
+     */
+    private Result<PageResult<List<UserProfileVO>>>  esQuery(AdminUserQueryCommand command){
+        ESPageVO<Long> res = adminUserQuerySupport.listBy(command);
+        List<Long> ids = res.getData();
+        if(ids.isEmpty())return null;
+        List<UserProfileVO> list = userAPPService.findProfileByIds(ids).stream().sorted(Comparator.comparing(UserProfileVO::getId)).toList();
+        if (list.isEmpty()) return Result.success(PageResult.empty());
+        return Result.success(new PageResult<>(res.getPage(), res.getTotal(), list));
     }
 }

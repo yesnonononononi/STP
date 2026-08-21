@@ -7,6 +7,8 @@ export type { RangeDTO }
 export interface AdminUserQueryPayload {
   page: number
   size: number
+  /** false 表示启用筛选(ES 多条件查询)，无筛选条件时传 true 走普通分页 */
+  queryWithoutFilter?: boolean
   keyword?: string | null
   createTime?: RangeDTO<string> | null
   enabledVIP?: boolean | null

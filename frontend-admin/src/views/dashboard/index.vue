@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6 pb-8">
     <!-- 顶部欢迎区与快捷控制栏 -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
       <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
       <div class="space-y-1 relative z-10">
         <div class="flex items-center gap-3">
@@ -27,14 +27,14 @@
         </el-tooltip>
         <button
           @click="openNoticeModal"
-          class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all shadow-lg shadow-blue-600/30 active:scale-95"
+          class="flex items-center gap-2 px-4 py-2.5 rounded-xl  bg-black cursor-pointer text-white text-sm font-medium transition-all shadow-lg shadow-blue-600/30 active:scale-95"
         >
           <el-icon class="text-base"><Bell /></el-icon>
           <span>发布全站广播</span>
         </button>
         <button
           @click="openCouponModal"
-          class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all shadow-lg shadow-indigo-600/30 active:scale-95"
+          class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-black  cursor-pointer   text-white text-sm font-medium transition-all shadow-lg shadow-blue-600/30 active:scale-95"
         >
           <el-icon class="text-base"><Ticket /></el-icon>
           <span>新建优惠券</span>
@@ -800,13 +800,11 @@ const handleSendNotice = async () => {
       targetType: 1
     })
     if (res.code === 1) {
-      ElMessage.success('全站广播通知成功发布！')
       noticeModalVisible.value = false
     } else {
       ElMessage.error(res.errMsg || '发布失败')
     }
   } catch {
-    ElMessage.success('全站广播通知成功发布！')
     noticeModalVisible.value = false
   } finally {
     noticeSubmitting.value = false
@@ -842,13 +840,11 @@ const handleSaveCoupon = async () => {
       amount: couponForm.amount
     })
     if (res.code === 1) {
-      ElMessage.success('优惠券创建成功！')
       couponModalVisible.value = false
     } else {
       ElMessage.error(res.errMsg || '创建失败')
     }
   } catch {
-    ElMessage.success('优惠券创建成功！')
     couponModalVisible.value = false
   } finally {
     couponSubmitting.value = false

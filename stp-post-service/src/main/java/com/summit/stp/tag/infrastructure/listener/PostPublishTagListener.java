@@ -37,11 +37,11 @@ public class PostPublishTagListener {
             key = MqConstants.Post.ROUTING_KEY_CHANGE
     ))
 
-    public void listen(PostChangeEvent postPublishEvent, Channel channel, Message message) {
+    public void listen(PostChangeEvent postPublishEvent, Channel channel, Message message) throws IOException {
 
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         try {
-            if(!postPublishEvent.getEventType().equals(PostChangeEvent.EventType.CREATE)){
+            if (!postPublishEvent.getEventType().equals(PostChangeEvent.EventType.CREATE)) {
                 channel.basicAck(deliveryTag, false);
                 return;
             }
@@ -66,12 +66,9 @@ public class PostPublishTagListener {
             channel.basicAck(deliveryTag, false);
 
         } catch (Exception e) {
-            try {
-                channel.basicNack(deliveryTag, false, true);
-            } catch (IOException ioException) {
-                log.error("【标签模块】MQ应答失败", ioException);
-            }
             log.error("【标签模块】异步处理发帖标签更新失败, postId={}", postPublishEvent.getPostId(), e);
+            throw e;
+
         }
     }
 }

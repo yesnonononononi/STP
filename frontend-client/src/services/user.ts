@@ -1,8 +1,8 @@
-import type {Result} from '@/types/result'
+import type { Result } from '@/types/result'
 import request from '@/services/request'
 
 export interface UserProfileData {
-  id: string | number
+  id: string
   nick: string
   avatar: string
   gender?: number
@@ -27,7 +27,7 @@ export interface UserFansData {
   userId: string
   nick: string
   avatar: string
-  followed: boolean
+  status: number
 }
 
 /**
@@ -93,7 +93,7 @@ export class UserAPI {
    * 根据用户ID获取指定用户的详细信息
    */
   static async getUserById(id: string | number): Promise<Result<UserProfileData>> {
-    return await request.get(`/user/${id}`)
+    return await request.get(`/user/${id+""}`)
   }
 
   /**
@@ -125,21 +125,59 @@ export class UserAPI {
   }
 
   /**
-   * 关注/取消关注用户 (Toggle)
+   * 关注/取消关注用户 (Toggle 开关)
    */
   static async toggleFollow(
     followerId: string | number,
     followeeId: string | number,
     source: string = 'profile',
   ): Promise<Result<void>> {
-    return await request.post('/user/follow/follow', { followerId, followeeId, source })
+    return await request.post('/user/follow/follow', { followerId: "" + followerId, followeeId:""+followeeId, source })
   }
 
   /**
-   * 分页获取当前用户的粉丝列表
+   * 关注用户
    */
-  static async getMyFans(page: number, pageSize: number): Promise<Result<{ records: UserFansData[], total: number }>> {
-    return await request.get('/user/follow/my-fans', { params: { page, pageSize } })
+  static async followUser(
+    followerId: string | number,
+    followeeId: string | number,
+    source: string = 'profile',
+  ): Promise<Result<void>> {
+    return await request.post('/user/follow/follow', { followerId: "" + followerId, followeeId:""+followeeId, source })
+  }
+
+  /**
+   * 取消关注
+   * @param id 关注关系主键ID
+   */
+  static async unfollowUser(id: string | number): Promise<Result<void>> {
+    return await request.delete(`/user/follow/unfollow/${id}`)
+  }
+
+  /**
+   * 分页获取指定用户的粉丝列表（复用后端 /user/follow/followees 接口）
+   * @param userId 目标用户ID
+   */
+  static async getMyFans(
+    userId: string | number,
+    page: number,
+    pageSize: number,
+  ): Promise<Result<{ records: UserFansData[]; total: number }>> {
+    const res = await request.get('/user/follow/followees', { params: { userId, page, pageSize } })
+      // 后端返回 UserFollowVO（id/followerId/followeeId），适配为前端 UserFansData
+      return {
+        ...res,
+        data: {
+          records: (res.data.records || []).map((r: any) => ({
+            id: r.id,
+            userId: r.followerId,
+            nick: r.nick || `用户${r.followerId}`,
+            avatar: r.avatar || '',
+            status: r.status,
+          })),
+          total: res.data.total || 0,
+        },
+    }
   }
 
   /**
@@ -152,15 +190,22 @@ export class UserAPI {
   /**
    * 更新当前用户的偏好设置
    */
-  static async updateSettings(form: { showDelPost: number; customizationRecommend: number }): Promise<Result<void>> {
+  static async updateSettings(form: {
+    showDelPost: number
+    customizationRecommend: number
+  }): Promise<Result<void>> {
     return await request.post('/user/setting/update', form)
   }
 
   /**
    * 举报用户
    */
-  static async reportUser(reportedId: string | number, reason: string): Promise<Result<void>> {
-    return await request.post('/user/report', { reportedId, reason })
+  static async reportUser(
+    reportedId: string | number,
+    reason: string,
+    evidence?: string[],
+  ): Promise<Result<void>> {
+    return await request.post('/user/report', { reportedId, reason, evidence: evidence || [] })
   }
 }
 

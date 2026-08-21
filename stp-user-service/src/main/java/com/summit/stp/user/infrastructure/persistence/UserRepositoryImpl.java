@@ -2,6 +2,7 @@ package com.summit.stp.user.infrastructure.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.devframeworkdddstarter.repo.AbstractRepository;
 import com.summit.stp.common.util.TrendDateUtil;
 import com.summit.stp.user.domain.model.User;
@@ -11,11 +12,8 @@ import com.summit.stp.user.infrastructure.persistence.po.UserPO;
 import org.springframework.stereotype.Repository;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.summit.stp.user.api.vo.stats.UserTrendsVO;
 
 import java.time.*;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +62,8 @@ public class UserRepositoryImpl extends AbstractRepository<User, UserPO> impleme
         return getBaseMapper().selectCount(new LambdaQueryWrapper<UserPO>().ge(UserPO::getCreateTime, Instant.from(startOfDay.atZone(ZoneId.systemDefault()))));
     }
 
+
+
     @Override
     public long countTotalUsers() {
         Long count = getBaseMapper().selectCount(null);
@@ -109,6 +109,14 @@ public class UserRepositoryImpl extends AbstractRepository<User, UserPO> impleme
     }
 
     @Override
+    public Page<User> findPage(Integer page, Integer size) {
+        Page<UserPO> p = new Page<>(page,size);
+        Page<User> res = new Page<>();
+        Page<UserPO> userPOPage = getBaseMapper().selectPage(p, null);
+        return res.setCurrent(userPOPage.getCurrent()).setTotal(userPOPage.getTotal()).setRecords(userPOPage.getRecords().stream().map(this::toModel).toList());
+    }
+
+    @Override
     protected UserPO toPO(User entity) {
         return UserPO.toPO(entity);
     }
@@ -116,5 +124,9 @@ public class UserRepositoryImpl extends AbstractRepository<User, UserPO> impleme
     @Override
     protected User toModel(UserPO po) {
         return UserPO.toDomain(po, null, null, null);
+    }
+
+    public List<User> findAll() {
+        return findListBy(User.StatusCode.ACTIVE, UserPO::getStatusCode);
     }
 }

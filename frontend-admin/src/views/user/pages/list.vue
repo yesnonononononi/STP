@@ -256,17 +256,39 @@ const buildPayload = (): AdminUserQueryPayload => {
         }
       : null
 
+  const VIPLevel = normalizeRange(filterForm.VIPLevel)
+  const fans = normalizeRange(filterForm.fans)
+  const topic = normalizeRange(filterForm.topic)
+  const follow = normalizeRange(filterForm.follow)
+  const age = normalizeRange(filterForm.age)
+
+  // false 表示开启筛选（走 ES 多条件查询），无任何筛选条件时传 true 走普通分页
+  const hasActiveFilters =
+    filterForm.keyword.trim() !== '' ||
+    createTime !== null ||
+    filterForm.enabledVIP ||
+    VIPLevel !== null ||
+    fans !== null ||
+    topic !== null ||
+    follow !== null ||
+    age !== null ||
+    filterForm.gender != null ||
+    filterForm.phone.trim() !== '' ||
+    filterForm.ip.trim() !== '' ||
+    filterForm.statusCode != null
+
   return {
     page: page.value,
     size: pageSize.value,
+    queryWithoutFilter: !hasActiveFilters,
     keyword: filterForm.keyword.trim() || null,
     createTime,
     enabledVIP: filterForm.enabledVIP ? true : null,
-    VIPLevel: normalizeRange(filterForm.VIPLevel),
-    fans: normalizeRange(filterForm.fans),
-    topic: normalizeRange(filterForm.topic),
-    follow: normalizeRange(filterForm.follow),
-    age: normalizeRange(filterForm.age),
+    VIPLevel,
+    fans,
+    topic,
+    follow,
+    age,
     gender: filterForm.gender,
     phone: filterForm.phone.trim() || null,
     ip: filterForm.ip.trim() || null,

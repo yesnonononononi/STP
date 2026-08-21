@@ -230,9 +230,9 @@ import {useUserInfoStore} from '@/stores/userInfo'
 const showSettingsModal = ref(false)
 const showShareTip = ref(false)
 
-const unpassReasonMap = reactive<Record<string | number, string>>({})
+const unpassReasonMap = reactive<Record<string, string>>({})
 
-async function fetchUnpassReason(postId: string | number) {
+async function fetchUnpassReason(postId: string) {
   if (unpassReasonMap[postId] && unpassReasonMap[postId] !== '加载中...') return
   unpassReasonMap[postId] = '加载中...'
   try {
@@ -295,10 +295,10 @@ const isOwner = computed(() => {
 })
 
 const emit = defineEmits<{
-  (e: 'like', postId: string | number | undefined): void
-  (e: 'collect', postId: string | number | undefined): void
+  (e: 'like', postId: string | undefined): void
+  (e: 'collect', postId: string | undefined): void
   (e: 'comment-click', post: PostVO): void
-  (e: 'delete', postId: string | number | undefined): void
+  (e: 'delete', postId: string | undefined): void
   (e: 'top', post: PostVO): void
 }>()
 

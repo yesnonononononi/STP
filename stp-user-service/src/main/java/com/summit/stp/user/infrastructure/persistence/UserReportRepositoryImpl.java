@@ -1,5 +1,6 @@
 package com.summit.stp.user.infrastructure.persistence;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -11,6 +12,8 @@ import com.summit.stp.user.infrastructure.persistence.po.UserReportPO;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -72,25 +75,29 @@ public class UserReportRepositoryImpl extends AbstractRepository<UserReport, Use
     @Override
     protected UserReportPO toPO(UserReport entity) {
         if (entity == null) return null;
-        UserReportPO po = new UserReportPO();
-        po.setId(entity.getId());
-        po.setReporterId(entity.getReporterId());
-        po.setReportedId(entity.getReportedId());
-        po.setReason(entity.getReason());
-        po.setStatus(entity.getStatus() != null ? entity.getStatus().getCode() : 0);
-        po.setCreateTime(entity.getCreateTime());
-        po.setUpdateTime(entity.getUpdateTime());
-        return po;
+        return UserReportPO.builder()
+                .id(entity.getId())
+                .reporterId(entity.getReporterId())
+                .reportedId(entity.getReportedId())
+                .reason(entity.getReason())
+                .status(entity.getStatus() != null ? entity.getStatus().getCode() : 0)
+                .createTime(entity.getCreateTime())
+                .evidence(String.join(",", entity.getEvidence()))
+                .updateTime(entity.getUpdateTime())
+                .build();
+
     }
 
     @Override
     protected UserReport toModel(UserReportPO po) {
         if (po == null) return null;
+        String evidence = po.getEvidence();
         return UserReport.builder()
                 .id(po.getId())
                 .reporterId(po.getReporterId())
                 .reportedId(po.getReportedId())
                 .reason(po.getReason())
+                .evidence(StrUtil.isNotBlank(evidence)? List.of(evidence.split(",")) : List.of())
                 .status(UserReportStatusEnum.fromCode(po.getStatus()))
                 .createTime(po.getCreateTime())
                 .updateTime(po.getUpdateTime())

@@ -16,6 +16,7 @@ import java.util.Map;
 public class AdminUserQueryDTO implements Serializable {
     private Integer page;                        //分页指针
     private Integer size;
+    private boolean queryWithoutFilter;
     private String keyword;                     // 昵称关键词匹配
     private RangeDTO<Timestamp> createTime;  // 通过注册时间筛选
     private Boolean enabledVIP;                 // 是否启用VIP筛选

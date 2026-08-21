@@ -48,7 +48,7 @@ public class CommentNotificationListener {
             exchange = @Exchange(name = MqConstants.Comment.EXCHANGE, type = "topic"),
             key = MqConstants.Comment.ROUTING_KEY
     ))
-    public void onCommentNotification(CommentNotificationMessage msg, Channel channel, Message message) {
+    public void onCommentNotification(CommentNotificationMessage msg, Channel channel, Message message) throws IOException {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         log.info("【消息模块】监听到评论 MQ 消息，开始处理通知落地，commentId={}", msg.getCommentId());
         try {
@@ -66,11 +66,7 @@ public class CommentNotificationListener {
             log.info("【消息模块】评论 MQ 通知落地成功，commentId={}", msg.getCommentId());
         } catch (Exception e) {
             log.error("【消息模块】处理评论通知 MQ 失败，commentId={}", msg.getCommentId(), e);
-            try {
-                channel.basicNack(deliveryTag, false, true);
-            } catch (IOException ioException) {
-                log.error("【消息模块】MQ基本拒签操作失败", ioException);
-            }
+            throw e;
         }
     }
 

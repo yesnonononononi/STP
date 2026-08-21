@@ -53,7 +53,7 @@ public class MemberPayEventQueueListener {
             key = MqConstants.Member.ROUTING_KEY
     ))
  
-    public void onEvent(OrderPaidEvent event, Message message, Channel channel) {
+    public void onEvent(OrderPaidEvent event, Message message, Channel channel) throws InterruptedException, IOException {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         long orderId = event.getOrderId();
         log.info("【MQ-member】收到会员权益分发事件，订单ID: {}, DeliveryTag: {}", orderId, deliveryTag);
@@ -105,14 +105,14 @@ public class MemberPayEventQueueListener {
                 channel.basicNack(deliveryTag, false, true);
             }
         } catch (TransactionException | IOException exception) {
-            nack(deliveryTag, channel, event, true);
+            throw exception;
         } catch (BusinessException e) {
             //业务异常,直接入死信,避免无限重试
             log.error("【MQ-member】会员权益分发事件处理失败，订单ID: {}, 错误码: {}, 错误信息: {}", orderId, e.getErrorCode(), e.getMessage());
-            nack(deliveryTag, channel, event, false);
+            throw e;
         } catch (Exception e) {
             log.error("【MQ-member】会员权益分发事件处理失败，订单ID: {}, 错误信息: {}", orderId, e.getMessage());
-            nack(deliveryTag, channel, event, true);
+            throw e;
         } finally {
             distributedLockUtil.releaseLock(lock);
         }
@@ -125,18 +125,7 @@ public class MemberPayEventQueueListener {
     }
     
     
-    /**
-     * 拒绝消息
- 
-     */
-    private void nack(long deliveryTag, Channel channel,OrderPaidEvent orderPaidEvent,boolean requeue){
-        try {
-            channel.basicNack(deliveryTag, false, requeue);
-            log.error("【MQ-member】会员权益分发事件拒绝成功，OrderPaidEvent: {}", orderPaidEvent);
-        }catch (IOException ioException){
-            log.error("【MQ-member】会员权益分发事件拒绝失败，OrderPaidEvent: {}, 错误信息: {}", orderPaidEvent, ioException.getMessage());
-        }
-    }
+
 
     private UserMember initUserMember(Long uid, Member member) {
         return UserMember.builder()

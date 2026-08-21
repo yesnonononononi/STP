@@ -213,7 +213,7 @@ export function usePost() {
    */
   async function handleAddTag(tag: import('@/services/post/types').TopicTag) {
     let finalId = tag.id
-    if (tag.id === 0 || tag.extra === -1) {
+    if (tag.id === '' || tag.extra === -1) {
       try {
         await TagAPI.create({ tagName: tag.keyword })
         const res = await TagAPI.getSearchSuggest(tag.keyword, 1)
@@ -222,11 +222,11 @@ export function usePost() {
         if (createdTag) {
           finalId = createdTag.id
         } else {
-          finalId = Date.now()
+          finalId = Date.now().toString()
         }
       } catch (err) {
         console.error('自动创建话题出错:', err)
-        finalId = Date.now()
+        finalId = Date.now().toString()
       }
     }
 

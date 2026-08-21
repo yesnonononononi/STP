@@ -49,7 +49,7 @@ public class UserSession implements Serializable {
     }
 
     public boolean isLogin(){
-        return id != null && !StringUtil.isNullOrEmpty(token) && !StringUtil.isNullOrEmpty(username) && Objects.equals(tokenType, TokenType.ACCESS);
+        return id != null  && !StringUtil.isNullOrEmpty(username) && Objects.equals(tokenType, TokenType.ACCESS);
     }
 
 }

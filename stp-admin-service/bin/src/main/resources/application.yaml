@@ -1,0 +1,29 @@
+server:
+  port: 8092
+
+spring:
+  application:
+    name: stp-admin-service
+  config:
+    import:
+      - optional:nacos:jdbc.yaml
+      - optional:nacos:redis.yaml
+      - optional:nacos:queue.yaml
+      - optional:file:.env[.properties]
+      - optional:nacos:shared-common.yaml
+      - optional:nacos:sentinel.yaml
+      - optional:nacos:shared-seata.yaml?group=SEATA_GROUP
+  cloud:
+    nacos:
+      config:
+        username: ${NACOS_USER_NAME}
+        password: ${NACOS_USER_PASSWORD}
+        refresh-enabled: true
+        file-extension: yaml
+      server-addr: ${HOST}:8848
+
+stp:
+  jdbc:
+    mapper-locations: classpath*:mapper/**/*.xml
+    type-aliases-package: com.summit.stp.admin.infrastructure.persistence.po
+

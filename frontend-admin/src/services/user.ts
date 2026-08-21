@@ -138,10 +138,28 @@ export class UserAPI {
   }
 
   /**
-   * 分页获取当前用户的粉丝列表
+   * 分页获取指定用户的粉丝列表（复用后端 /user/follow/followees 接口）
+   * @param userId 目标用户ID
    */
-  static async getMyFans(page: number, pageSize: number): Promise<Result<{ records: UserFansData[], total: number }>> {
-    return await request.get('/user/follow/my-fans', { params: { page, pageSize } })
+  static async getMyFans(userId: string | number, page: number, pageSize: number): Promise<Result<{ records: UserFansData[], total: number }>> {
+    const res = await request.get('/user/follow/followees', { params: { userId, page, pageSize } })
+    if (res.code === 1 && res.data) {
+      // 后端返回 UserFollowVO（id/followerId/followeeId），适配为前端 UserFansData
+      return {
+        ...res,
+        data: {
+          records: (res.data.records || []).map((r: any) => ({
+            id: r.id,
+            userId: r.followeeId,
+            nick: r.nick || `用户${r.followeeId}`,
+            avatar: r.avatar || '',
+            followed: !!r.followed
+          })),
+          total: res.data.total || 0
+        }
+      }
+    }
+    return res
   }
 
   /**
@@ -172,6 +190,7 @@ export interface UserReportItem {
   reportedId: number
   reportedNick: string
   reason: string
+  evidence?: string[]
   status: number
   statusDesc: string
   createTime: string

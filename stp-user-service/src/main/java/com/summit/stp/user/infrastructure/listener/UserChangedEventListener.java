@@ -93,6 +93,7 @@ public class UserChangedEventListener {
             log.info("【用户事件】标识：Elasticsearch 动作：CREATE保存用户ES文档成功, userId={}", userId);
         } catch (Exception e) {
             log.error("【用户事件】标识：Elasticsearch 动作：CREATE保存用户ES文档失败, userId={}", userId, e);
+            throw e;
         }
     }
 

@@ -15,4 +15,8 @@ public class PageResult<T> implements Serializable {
     public static <V>PageResult<V> empty(){
         return new PageResult<>(null,null,null);
     }
+
+    public static <V>PageResult<V> empty(Integer current,long total,V empty){
+        return new PageResult<>(current,total,null);
+    }
 }

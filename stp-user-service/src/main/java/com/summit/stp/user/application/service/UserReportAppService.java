@@ -17,11 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,6 +44,7 @@ public class UserReportAppService {
                 .reporterId(currentUserId)
                 .reportedId(command.getReportedId())
                 .reason(command.getReason())
+                .evidence(command.getEvidence())
                 .createTime(LocalDateTime.now())
                 .build();
 
@@ -71,7 +68,7 @@ public class UserReportAppService {
         }
         UserReport report = reportOpt.get();
         report.ignore();
-        userReportRepository.save(report);
+        userReportRepository.updateById(report);
         return Result.success();
     }
 
@@ -84,7 +81,7 @@ public class UserReportAppService {
         }
         UserReport report = reportOpt.get();
         report.process();
-        userReportRepository.save(report);
+        userReportRepository.updateById(report);
 
         // 调用 AdminUserService 执行用户封禁
         if (report.getReportedId() != null) {
@@ -102,29 +99,26 @@ public class UserReportAppService {
 
         List<UserReport> records = reportPage.getRecords();
         if (records == null || records.isEmpty()) {
-            PageResult<List<UserReportVO>> emptyPage = new PageResult<>(
+            return Result.success(new PageResult<>(
                     reportPage.getCurrent(),
                     reportPage.getTotal(),
                     Collections.emptyList()
-            );
-            return Result.success(emptyPage);
+            ));
         }
 
         // 收集所有的举报人和被举报人ID，执行批量查询
         Set<Long> userIds = records.stream()
                 .flatMap(r -> Stream.of(r.getReporterId(), r.getReportedId()))
-                .filter(id -> id != null)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
         Map<Long, User> userMap = userRepository.findUserByIds(userIds);
 
         List<UserReportVO> voList = records.stream().map(r -> {
-            String reporterNick = Optional.ofNullable(userMap.get(r.getReporterId()))
-                    .map(User::getNick)
-                    .orElse("未知用户");
-            String reportedNick = Optional.ofNullable(userMap.get(r.getReportedId()))
-                    .map(User::getNick)
-                    .orElse("未知用户");
+            User reporter = userMap.get(r.getReporterId());
+            User reported = userMap.get(r.getReportedId());
+            String reporterNick = reporter == null ? "未知用户" : reporter.getUsername().getValue();
+            String reportedNick = reported == null ? "未知用户" : reported.getUsername().getValue();
             return UserReportVO.builder()
                     .id(r.getId())
                     .reporterId(r.getReporterId())
@@ -132,6 +126,7 @@ public class UserReportAppService {
                     .reportedId(r.getReportedId())
                     .reportedNick(reportedNick)
                     .reason(r.getReason())
+                    .evidence(r.getEvidence())
                     .status(r.getStatus() != null ? r.getStatus().getCode() : 0)
                     .statusDesc(r.getStatus() != null ? r.getStatus().getDescription() : "待处理")
                     .createTime(r.getCreateTime())

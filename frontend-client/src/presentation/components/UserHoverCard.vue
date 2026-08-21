@@ -118,7 +118,7 @@ const loading = ref(false);
 
 async function loadDetail() {
   if (detailData.value || loading.value) return;
-  const id = Number(props.publisher?.id);
+  const id = props.publisher?.id;
   if (!id) return;
   loading.value = true;
   try {
@@ -155,8 +155,8 @@ async function handleFollow() {
     return;
   }
   try {
-    const followerId = Number(me.id);
-    const followeeId = Number(userId);
+    const followerId = me.id;
+    const followeeId = userId;
     const res = await UserAPI.toggleFollow(followerId, followeeId, 'hover_card');
     if (res.code === 1) {
       const targetFollowed = !displayUser.value.followed;

@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Builder
@@ -15,6 +16,7 @@ public class UserReport {
     private Long reportedId;
     private String reason;
     private UserReportStatusEnum status;
+    private List<String> evidence;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 

@@ -91,7 +91,7 @@ async function loadData() {
     } else {
         const res = await TagAPI.getRecentTags(10);
         suggestList.value = res.data.map(tag => ({
-            id: tag.id as number,
+            id: tag.id,
             keyword: tag.tagName,
             extra: tag.useCount
         }));
@@ -104,7 +104,7 @@ async function addTag(content: string) {
 async function acquireSearchSuggest(keyWord: string, limit: number = 10) {
     const data = (await TagAPI.getSearchSuggest(keyWord, limit)).data.suggestList;
     if (data.length == 0) {
-        suggestList.value = [{ id: 0, keyword: keyWord, extra: -1 }];
+        suggestList.value = [{ id: '', keyword: keyWord, extra: -1 }];
     } else {
         suggestList.value = data;
     }
@@ -120,7 +120,7 @@ function handleEnter(e: KeyboardEvent) {
     if (suggestList.value && suggestList.value.length > 0 && suggestList.value[0]) {
         selectTag(suggestList.value[0]);
     } else if (keyword) {
-        selectTag({ id: 0, keyword: keyword, extra: -1 });
+        selectTag({ id: '', keyword: keyword, extra: -1 });
     }
 }
 </script>

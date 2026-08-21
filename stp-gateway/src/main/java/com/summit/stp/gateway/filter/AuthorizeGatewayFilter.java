@@ -140,6 +140,7 @@ public class AuthorizeGatewayFilter implements GlobalFilter, Ordered {
                 .header("X-User-Id", String.valueOf(id))
                 .header("X-User-Name", Objects.toString(session.getUsername(), ""))
                 .header("X-User-Admin", Objects.toString(session.getAdmin(), ""))
+                .header("X-User-IP",Objects.toString(session.getIp(),""))
                 .header("X-User-Token-Type", Objects.toString(session.getTokenType(), ""))
                 .header("X-User-Token", Objects.toString(session.getToken(), ""));
         return chain.filter(exchange.mutate().request(builder.build()).build());

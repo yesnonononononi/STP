@@ -212,12 +212,11 @@ public class DashboardQueryAppServiceImpl implements DashboardQueryAppService {
         long freeMemory = runtime.freeMemory();
         long usedMemory = totalMemory - freeMemory;
         long maxMemory = runtime.maxMemory();
-        double memPercentage = maxMemory > 0 ? Math.round(usedMemory * 100.0 / maxMemory * 10.0) / 10.0 : 0.0;
+        double memPercentage = maxMemory > 0 ? Math.round(usedMemory * 10.0 / maxMemory ) / 10.0 : 0.0;
 
         double cpuUsage = 0.0;
         try {
-            java.lang.management.OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
-            if (osBean instanceof OperatingSystemMXBean sunOsBean) {
+            if (ManagementFactory.getOperatingSystemMXBean() instanceof OperatingSystemMXBean sunOsBean) {
                 double load = sunOsBean.getCpuLoad();
                 if (load >= 0) {
                     cpuUsage = Math.round(load * 1000.0) / 10.0;
@@ -233,10 +232,10 @@ public class DashboardQueryAppServiceImpl implements DashboardQueryAppService {
         if (discoveryClient != null) {
             try {
                 List<String> services = discoveryClient.getServices();
-                if (services != null && !services.isEmpty()) {
+                if (!services.isEmpty()) {
                     serviceHealthItems = services.stream().map(serviceName -> {
                         List<ServiceInstance> instances = discoveryClient.getInstances(serviceName);
-                        int instanceCount = instances != null ? instances.size() : 0;
+                        int instanceCount = instances.size();
                         String status = instanceCount > 0 ? "UP" : "DOWN";
                         return DashboardSystemStatusVO.ServiceHealthItem.builder()
                                 .name(serviceName)

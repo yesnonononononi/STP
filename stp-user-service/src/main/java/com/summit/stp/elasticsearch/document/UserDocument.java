@@ -1,5 +1,6 @@
 package com.summit.stp.elasticsearch.document;
 
+import com.summit.stp.user.domain.model.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -51,4 +52,6 @@ public class UserDocument implements Serializable {
 
     @Field(type = FieldType.Integer)
     private Integer statusCode;
+
+
 }

@@ -8,7 +8,7 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <el-input v-model="filterForm.keyword" placeholder="搜索帖子 ID/标题/内容..." clearable class="w-64" @keyup.enter="fetchData" />
+        <el-input v-model="filterForm.keyword" placeholder="搜索帖子标题/内容..." clearable class="w-64" @keyup.enter="fetchData" />
         <el-button type="primary" class="admin-btn-primary" @click="openFilterDialog = true">
           高级筛选
         </el-button>

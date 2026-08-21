@@ -26,7 +26,24 @@ public class AdminUserController {
 
     @PostMapping("/list")
     public Result<PageResult<List<UserProfileVO>>> listBy(@RequestBody AdminUserQueryDTO dto){
-        AdminUserQueryCommand command = AdminUserQueryCommand.fromDTO(dto);
+        Integer page = dto.getPage();
+        AdminUserQueryCommand command =AdminUserQueryCommand.builder()
+                .page(page)
+                .size(dto.getSize())
+                .keyword(dto.getKeyword())
+                .createTime(dto.getCreateTime())
+                .enabledVIP(dto.getEnabledVIP())
+                .VIPLevel(dto.getVIPLevel())
+                .fans(dto.getFans())
+                .topic(dto.getTopic())
+                .queryWithoutFilter(dto.isQueryWithoutFilter())
+                .follow(dto.getFollow())
+                .age(dto.getAge())
+                .gender(dto.getGender())
+                .phone(dto.getPhone())
+                .ip(dto.getIp())
+                .statusCode(dto.getStatusCode())
+                .build();
         return adminUserService.listBy(command);
     }
 

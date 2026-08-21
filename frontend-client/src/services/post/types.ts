@@ -58,8 +58,8 @@ export const PostStatusNames = {
  * 帖子持久化实体 (与后端PO对应)
  */
 export interface PostPO {
-  id?: number
-  creatorId: number
+  id?: string
+  creatorId: string
   title: string
   type: PostType
   content?: string
@@ -129,7 +129,7 @@ export interface PageResult<T> {
  * 标签实体
  */
 export interface TagPO {
-  id: number
+  id: string
   tagName: string
   sort?: number
   useCount?: number
@@ -141,7 +141,7 @@ export interface TagPO {
  * 标签展示实体 (VO)
  */
 export interface TagVO {
-  id: string | number
+  id: string
   tagName: string
   sort: number
   useCount: number
@@ -170,9 +170,9 @@ export interface UpdateTagRequest {
  * 帖子标签关联实体
  */
 export interface PostTagRelPO {
-  id?: number
-  postId: number
-  tagId: number
+  id?: string
+  postId: string
+  tagId: string
   createTime?: string
 }
 
@@ -200,7 +200,7 @@ export interface CreatePostRequest {
  * 更新帖子请求实体
  */
 export interface UpdatePostRequest {
-  id: number
+  id: string
   title?: string
   type?: PostType
   content?: string
@@ -212,7 +212,7 @@ export interface UpdatePostRequest {
 }
 
 export interface TopicTag {
-  id: string | number
+  id: string
   keyword: string
   extra: number
 }

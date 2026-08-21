@@ -73,5 +73,10 @@ public class UserCacheProviderImpl implements UserCacheProvider {
             }
         });
     }
+
+    @Override
+    public void clearUserInfo(Long userId) {
+        redisTemplate.delete(UserConstants.Cache.USER_DETAIL + userId);
+    }
 }
 

@@ -25,6 +25,7 @@ public class UserReportController {
         Long currentUserId = UserHolder.getUser().getId();
         CreateUserReportCommand command = CreateUserReportCommand.builder()
                 .reportedId(dto.getReportedId())
+                .evidence(dto.getEvidence())
                 .reason(dto.getReason())
                 .build();
         return userReportAppService.createReport(command, currentUserId);

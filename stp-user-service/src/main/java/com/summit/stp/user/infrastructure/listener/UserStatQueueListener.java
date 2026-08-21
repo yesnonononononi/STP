@@ -49,11 +49,7 @@ public class UserStatQueueListener {
             channel.basicAck(deliveryTag, false);
         } catch (Exception e) {
             log.error("【用户关系】标识：MQ 动作：更新用户话题统计失败: userId={}, delta={}", userId, delta, e);
-            try {
-                channel.basicNack(deliveryTag, false, true);
-            } catch (IOException ioException) {
-                log.error("【用户关系】标识：MQ 动作：更新用户话题统计-MQ应答失败", ioException);
-            }
+            throw e;
         }
     }
 

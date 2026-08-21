@@ -488,12 +488,16 @@
                                 </span>
                             </div>
 
-                            <button @click="handleFansFollowToggle(fans)"
+                            <span v-if="fans.status === 3"
+                                class="h-8 px-4 rounded-xl font-semibold text-xs flex items-center justify-center bg-gray-100 text-gray-400 cursor-default select-none">
+                                已互关
+                            </span>
+                            <button v-else @click="handleFansFollowToggle(fans)"
                                 class="h-8 px-4 rounded-xl font-semibold text-xs transition-all duration-300 cursor-pointer flex items-center justify-center hover:scale-[1.05]"
-                                :class="fans.followed
-                                    ? 'bg-gray-200/80 text-gray-500 hover:bg-gray-300/80'
-                                    : 'bg-linear-to-r from-blue-500 to-indigo-500 text-white hover:shadow-md hover:shadow-blue-500/20 active:scale-95'">
-                                {{ fans.followed ? '已回关' : '回关' }}
+                                :class="fans.status === 2
+                                    ? 'bg-linear-to-r from-blue-500 to-indigo-500 text-white hover:shadow-md hover:shadow-blue-500/20 active:scale-95'
+                                    : 'bg-gray-200/80 text-gray-500 hover:bg-gray-300/80'">
+                                {{ fans.status === 2 ? '回关' : '取消关注' }}
                             </button>
                         </div>
                     </div>
@@ -671,11 +675,11 @@ const profileCompleteness = computed(() => {
 const curTab = ref(0);
 const userInfo = ref<UserProfileData | null>(null);
 const userTag = ref<{ id: number, name: string }[]>([]);
-const pendingDeleteId = ref<number | string | null>(null);
+const pendingDeleteId = ref<string | null>(null);
 const publishTabRef = ref();
 const edit_profile = ref(false);
 const is_editing = ref(false);
-const handleDelete = (id: number | string) => {
+const handleDelete = (id: string) => {
     pendingDeleteId.value = id;
 };
 const editProfileForm = ref<UserProfileUpdateForm>(
@@ -983,7 +987,7 @@ async function loadFansList() {
     if (fansLoading.value) return;
     fansLoading.value = true;
     try {
-        const res = await UserAPI.getMyFans(fansPage.value, fansPageSize.value);
+        const res = await UserAPI.getMyFans(uid.value, fansPage.value, fansPageSize.value);
         if (res.code === 1 && res.data) {
             fansList.value = res.data.records || [];
             fansTotal.value = res.data.total || 0;
@@ -1008,11 +1012,22 @@ async function handleFansFollowToggle(fans: UserFansData) {
         return;
     }
     try {
-        const res = await UserAPI.toggleFollow(currentUser.value.id, fans.userId, 'fans-dialog');
-        if (res.code === 1) {
-            fans.followed = !fans.followed;
+        if (fans.status !== 2) {
+            // 非删除状态（正常关注）：调用取消关注接口
+            const res = await UserAPI.unfollowUser(fans.id);
+            if (res.code === 1) {
+                fans.status = 2;
+            } else {
+                log.error(res.errMsg || "取消关注失败");
+            }
         } else {
-            log.error(res.errMsg || "操作失败");
+            // 删除/已取消状态：调用关注接口
+            const res = await UserAPI.followUser(currentUser.value.id, fans.userId, 'fans-dialog');
+            if (res.code === 1) {
+                fans.status = 1;
+            } else {
+                log.error(res.errMsg || "关注失败");
+            }
         }
     } catch (e: any) {
         log.error(e.message || "操作失败");

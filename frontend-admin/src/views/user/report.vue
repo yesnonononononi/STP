@@ -102,6 +102,24 @@
           </template>
         </el-table-column>
 
+        <el-table-column label="证据截图" min-width="160">
+          <template #default="{ row }">
+            <div v-if="row.evidence && row.evidence.length > 0" class="flex flex-wrap gap-1 items-center">
+              <el-image
+                v-for="(img, index) in row.evidence"
+                :key="index"
+                :src="img"
+                :preview-src-list="row.evidence"
+                :initial-index="index"
+                fit="cover"
+                preview-teleported
+                class="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer hover:opacity-80 transition-opacity"
+              />
+            </div>
+            <span v-else class="text-xs text-slate-400">无证据图</span>
+          </template>
+        </el-table-column>
+
         <el-table-column label="审核状态" width="130">
           <template #default="{ row }">
             <el-tag v-if="row.status === 0" type="warning" effect="light" class="rounded-lg">待处理</el-tag>

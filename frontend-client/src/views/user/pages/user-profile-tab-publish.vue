@@ -48,7 +48,7 @@ const route = useRoute();
 
 const props = withDefaults(defineProps<{
     status: number
-    creatorId: string | number
+    creatorId: string
     self: boolean
     auditFilter?: number
 }>(), {

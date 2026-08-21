@@ -2,8 +2,8 @@ import request from '@/services/request'
 import type { Result, PageResult, RangeDTO } from '@/types/result'
 
 export interface PostImageItem {
-  id?: number
-  postId?: number
+  id?: string
+  postId?: string
   width?:number,
   height?:number
   imageUrl?: string
@@ -11,8 +11,8 @@ export interface PostImageItem {
 }
 
 export interface AdminPostVO {
-  id: number | string
-  creatorId: number | string
+  id: string
+  creatorId: string
   title: string
   type?: string | number
   content: string
@@ -31,8 +31,8 @@ export interface AdminPostVO {
 }
 
 export interface PostVO {
-  id: string | number
-  creatorId: string | number
+  id: string
+  creatorId: string
   title: string
   type?: number | string
   content?: string
@@ -45,7 +45,7 @@ export interface PostVO {
   createTime?: string
   updateTime?: string
   publisher?: {
-    id?: string | number
+    id?: string
     nick?: string
     avatar?: string
     ip?: string
@@ -79,35 +79,35 @@ export class PostAPI {
   /**
    * 查询帖子详情 (/a/post/detail)
    */
-  static async getPostDetail(id: string | number, status?: string | number): Promise<Result<PostVO>> {
+  static async getPostDetail(id: string, status?: string | number): Promise<Result<PostVO>> {
     return request.get('/a/post/detail', { params: { id, status } })
   }
 
   /**
    * 审核通过 (/a/post/bypass)
    */
-  static async bypass(id: string | number): Promise<Result<void>> {
+  static async bypass(id: string): Promise<Result<void>> {
     return request.post('/a/post/bypass', null, { params: { id } })
   }
 
   /**
    * 审核不通过 (驳回 /a/post/bypass/not)
    */
-  static async bypassNot(id: string | number, reason: string): Promise<Result<void>> {
+  static async bypassNot(id: string, reason: string): Promise<Result<void>> {
     return request.post('/a/post/bypass/not', null, { params: { id, reason } })
   }
 
   /**
    * 封禁帖子 (/a/post/ban)
    */
-  static async ban(id: string | number): Promise<Result<void>> {
+  static async ban(id: string): Promise<Result<void>> {
     return request.post('/a/post/ban', null, { params: { id } })
   }
 
   /**
    * 解封帖子 (/a/post/unban)
    */
-  static async unban(id: string | number): Promise<Result<void>> {
+  static async unban(id: string): Promise<Result<void>> {
     return request.post('/a/post/unban', null, { params: { id } })
   }
 }

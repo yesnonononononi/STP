@@ -1,4 +1,4 @@
-package com.summit.stp.user.domain.model;
+package com.summit.stp.user.domain.repository;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
@@ -14,4 +14,6 @@ public interface UserFollowRepository<T> {
     void delete(Long id);
     Page<T> queryFollowersPage(Long followeeId, long page, long pageSize);
     Page<T> queryFolloweesPage(Long followerId, long page, long pageSize);
+
+    void updateById(T existing);
 }

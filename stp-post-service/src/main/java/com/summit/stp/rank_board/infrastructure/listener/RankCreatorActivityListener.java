@@ -30,7 +30,7 @@ public class RankCreatorActivityListener {
             exchange = @Exchange(name = MqConstants.User.EXCHANGE, type = "topic"),
             key = MqConstants.User.ROUTING_KEY_CHANGE
     ))
-    public void listenUserChange(UserChangedEvent event, Channel channel, Message message) {
+    public void listenUserChange(UserChangedEvent event, Channel channel, Message message) throws IOException {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         try {
             channel.basicAck(deliveryTag, false);
@@ -42,7 +42,8 @@ public class RankCreatorActivityListener {
                 log.info("【CreatorRank】标识：UserChange 动作：收到统一用户变更事件，自增创作者积分成功, userId={}, scoreDelta={}", userId, scoreDelta);
             }
         } catch (Exception e) {
-            handleNack(channel, deliveryTag, "UserChange", e);
+            log.error("【CreatorRank】标识：Listener 动作：处理异常, type={}", "UserChange", e);
+            throw e;
         }
     }
 

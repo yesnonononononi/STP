@@ -6,7 +6,7 @@ export interface AdminCommentVO {
   rootId?: number
   publisherId?: number
   parentId?: number
-  postId?: number
+  postId?: string
   postStatus?: number
   type?: number
   content: string

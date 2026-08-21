@@ -1,5 +1,6 @@
 package com.summit.stp.elasticsearch.listener;
 
+import com.rabbitmq.client.Channel;
 import com.summit.stp.common.application.domain.event.EsPostUpdateEvent;
 import com.summit.stp.common.constants.MqConstants;
 import com.summit.stp.elasticsearch.document.PostDocument;
@@ -9,12 +10,14 @@ import com.summit.stp.post.domain.model.Post;
 import com.summit.stp.post.domain.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.QueueBinding;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.Optional;
 
@@ -34,7 +37,8 @@ public class EsPostUpdateListener {
             exchange = @Exchange(name = MqConstants.Es.EXCHANGE, type = "topic"),
             key = MqConstants.Es.ROUTING_KEY_POST_UPDATE
     ))
-    public void handleEsPostUpdate(EsPostUpdateEvent event) {
+    public void handleEsPostUpdate(EsPostUpdateEvent event, Channel channel , Message message) throws IOException {
+        long deliveryTag = message.getMessageProperties().getDeliveryTag();
         if (event == null || event.getPostId() == null) {
             return;
         }
@@ -70,8 +74,10 @@ public class EsPostUpdateListener {
             log.info("【帖子模块】系统ES将被覆盖:{}",doc);
             postDocumentRepository.save(doc);
             log.info("【帖子模块】系统ES全量覆盖更新帖子文档成功，postId={}", postId);
+            channel.basicAck(deliveryTag, false);
         } catch (Exception e) {
             log.error("【帖子模块】处理系统ES帖子更新事件发生异常，postId={}", event.getPostId(), e);
+            throw e;
         }
     }
 }
