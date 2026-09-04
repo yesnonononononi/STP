@@ -14,7 +14,8 @@ import java.util.List;
 import java.util.Map;
 
 @Repository
-public class CommentImageRepositoryImpl extends AbstractRepository<CommentImage, CommentImagePO> implements CommentImageRepository<CommentImage> {
+public class CommentImageRepositoryImpl extends AbstractRepository<CommentImage, CommentImagePO>
+        implements CommentImageRepository<CommentImage> {
 
     public CommentImageRepositoryImpl(BaseMapper<CommentImagePO> baseMapper) {
         super(baseMapper);
@@ -25,16 +26,14 @@ public class CommentImageRepositoryImpl extends AbstractRepository<CommentImage,
         List<CommentImagePO> poList = getBaseMapper().selectList(
                 new LambdaQueryWrapper<CommentImagePO>()
                         .eq(CommentImagePO::getCommentId, commentId)
-                        .orderByAsc(CommentImagePO::getSortOrder)
-        );
+                        .orderByAsc(CommentImagePO::getSortOrder));
         return poList == null ? List.of() : poList.stream().map(this::toModel).toList();
     }
 
-
-
     @Override
     public void updateById(CommentImage commentImage) {
-        if (commentImage == null) return;
+        if (commentImage == null)
+            return;
         super.updateById(commentImage);
     }
 
@@ -47,8 +46,7 @@ public class CommentImageRepositoryImpl extends AbstractRepository<CommentImage,
     public void deleteByCommentId(Long commentId) {
         getBaseMapper().delete(
                 new LambdaQueryWrapper<CommentImagePO>()
-                        .eq(CommentImagePO::getCommentId, commentId)
-        );
+                        .eq(CommentImagePO::getCommentId, commentId));
     }
 
     @Override
@@ -63,8 +61,7 @@ public class CommentImageRepositoryImpl extends AbstractRepository<CommentImage,
                 new LambdaQueryWrapper<CommentImagePO>()
                         .in(CommentImagePO::getCommentId, commentIds)
                         .eq(CommentImagePO::getStatus, 1)
-                        .orderByAsc(CommentImagePO::getSortOrder)
-        );
+                        .orderByAsc(CommentImagePO::getSortOrder));
 
         if (images != null) {
             images.forEach(po -> {
@@ -79,7 +76,8 @@ public class CommentImageRepositoryImpl extends AbstractRepository<CommentImage,
 
     @Override
     protected CommentImagePO toPO(CommentImage entity) {
-        if (entity == null) return null;
+        if (entity == null)
+            return null;
         return CommentImagePO.builder()
                 .id(entity.getId())
                 .name(entity.getImageName())
@@ -95,7 +93,8 @@ public class CommentImageRepositoryImpl extends AbstractRepository<CommentImage,
 
     @Override
     protected CommentImage toModel(CommentImagePO po) {
-        if (po == null) return null;
+        if (po == null)
+            return null;
         return CommentImage.builder()
                 .id(po.getId())
                 .imageName(po.getName())
@@ -109,4 +108,3 @@ public class CommentImageRepositoryImpl extends AbstractRepository<CommentImage,
                 .build();
     }
 }
-
