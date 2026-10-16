@@ -163,7 +163,10 @@ export class UserAPI {
     page: number,
     pageSize: number,
   ): Promise<Result<{ records: UserFansData[]; total: number }>> {
-    const res = await request.get('/user/follow/followees', { params: { userId, page, pageSize } })
+    // 响应拦截器已解包为 Result，这里显式声明类型以匹配返回契约
+    const res = (await request.get('/user/follow/followees', {
+      params: { userId, page, pageSize },
+    })) as unknown as Result<{ records: any[]; total: number }>
       // 后端返回 UserFollowVO（id/followerId/followeeId），适配为前端 UserFansData
       return {
         ...res,
