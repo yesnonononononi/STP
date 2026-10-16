@@ -3,14 +3,19 @@ package com.summit.stp.order.order.application.service.impl;
 import com.summit.stp.common.application.domain.event.OrderPaidEvent;
 import com.summit.stp.common.application.service.queue.QueueSender;
 import com.summit.stp.common.constants.MqConstants;
+import com.summit.stp.order.order.application.service.EventPublishProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+/**
+ * 订单支付事件发布器实现。
+ * <p>显式实现接口 {@link EventPublishProvider}，供应用服务依赖倒置使用。</p>
+ */
 @Service
 @RequiredArgsConstructor
-public class EventPublishProvider implements com.summit.stp.order.order.application.service.EventPublishProvider {
+public class EventPublishProviderImpl implements EventPublishProvider {
     private final QueueSender queueSender;
 
     /**

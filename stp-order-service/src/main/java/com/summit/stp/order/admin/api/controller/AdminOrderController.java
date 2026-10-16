@@ -4,6 +4,8 @@ import com.summit.stp.common.annotation.Admin;
 import com.summit.stp.common.annotation.Login;
 import com.summit.stp.common.application.api.result.PageResult;
 import com.summit.stp.common.application.api.result.Result;
+import com.summit.stp.operationlog.annotation.OperationLog;
+import com.summit.stp.operationlog.domain.model.Operation;
 import com.summit.stp.order.admin.api.dto.AdminOrderQueryRequest;
 import com.summit.stp.order.admin.application.command.AdminQueryCommand;
 import com.summit.stp.order.admin.application.service.AdminOrderService;
@@ -25,8 +27,8 @@ public class AdminOrderController {
     @PostMapping("/list")
     public Result<PageResult<List<AdminOrderVO>>> listBy(AdminOrderQueryRequest request){
         AdminQueryCommand command = AdminQueryCommand.builder()
-                .page(request.getPage())
-                .size(request.getSize())
+                .page(clampPage(request.getPage()))
+                .size(clampSize(request.getSize()))
                 .orderNo(request.getOrderNo())
                 .userId(request.getUserId())
                 .orderType(request.getOrderType())
@@ -35,15 +37,28 @@ public class AdminOrderController {
         return adminOrderService.listBy(command);
     }
     @PostMapping("/reissuance")
+    @OperationLog(description = "订单补发", type = Operation.OperationType.UPDATE, entityId = "#orderNo")
     public Result<Void> reissuance(Long orderNo){
         return adminOrderService.reissuance(orderNo);
     }
     @PostMapping("/refund")
+    @OperationLog(description = "订单退款", type = Operation.OperationType.UPDATE, entityId = "#orderNo")
     public Result<Void> refund(Long orderNo,String reason){
         return adminOrderService.refund(orderNo,reason);
     }
     @PostMapping("/verfiy-status")
     public Result<String> verifyStatus(Long orderNo){
         return adminOrderService.verifyStatus(orderNo);
+    }
+
+    private static Integer clampPage(Integer page) {
+        return (page == null || page < 1) ? 1 : page;
+    }
+
+    private static Integer clampSize(Integer size) {
+        if (size == null || size < 1) {
+            return 10;
+        }
+        return Math.min(size, 100);
     }
 }
