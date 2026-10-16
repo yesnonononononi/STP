@@ -1,0 +1,37 @@
+# 集成测试专用配置（通过 @ActiveProfiles("it") 激活）
+# 目标：切断所有外部中间件依赖；数据源/Redis/RabbitMQ 连接一律由
+#       Testcontainers 的 @DynamicPropertySource 动态注入（不使用固定 localhost）。
+
+spring:
+  cloud:
+    # 关闭 Nacos 配置中心与注册中心（保留主配置中 optional:nacos: 的容错语义）。
+    # 注意：主配置的 spring.cloud.nacos.server-addr 使用 ${HOST} 占位符，
+    # IT 环境无该环境变量，会让 optional:nacos: 导入在构造 URI 阶段抛
+    # IllegalArgumentException（optional: 无法吞掉），因此这里显式给出可解析地址。
+    nacos:
+      server-addr: 127.0.0.1:8848
+      username: nacos
+      password: nacos
+      config:
+        enabled: false
+        import-check:
+          enabled: false
+      discovery:
+        enabled: false
+    # 关闭 Sentinel 侵入
+    sentinel:
+      enabled: false
+
+# 关闭 Seata 分布式事务（IT 不启动 TC；@GlobalTransactional 失效但无副作用）
+seata:
+  enabled: false
+
+# MyBatis-Plus 本地配置（替代 Nacos 下发的 jdbc.yaml）
+mybatis-plus:
+  mapper-locations: classpath*:mapper/order/**/*.xml
+  type-aliases-package: com.summit.stp.order.order.infrastructure.persistence.po
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
