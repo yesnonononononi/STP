@@ -158,6 +158,26 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                 </plugin>
+
+                <!--
+                    PIT 变异测试（-Pmutation 激活）：针对评论缓存操作类 CommentCacheProviderImpl，
+                    喂入纯 Mockito 单测。无 execution 绑定，默认 mvn verify 不触发。
+                -->
+                <plugin>
+                    <groupId>org.pitest</groupId>
+                    <artifactId>pitest-maven</artifactId>
+                    <configuration>
+                        <skip>${mutation.skip}</skip>
+                        <targetClasses>
+                            <param>com.summit.stp.comment.comment.application.service.impl.CommentCacheProviderImpl</param>
+                        </targetClasses>
+                        <targetTests>
+                            <param>com.summit.stp.comment.comment.application.service.impl.CommentCacheProviderImplTest</param>
+                        </targetTests>
+                        <!-- 实测变异得分 75%，阈值留 ~10 点安全余量 -->
+                        <mutationThreshold>65</mutationThreshold>
+                    </configuration>
+                </plugin>
             </plugins>
         </build>
 </project>

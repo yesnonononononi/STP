@@ -156,6 +156,28 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+
+            <!--
+                PIT 变异测试（-Pmutation 激活）：针对并发相关的互动/计数缓存操作类，
+                喂入纯 Mockito 单测。无 execution 绑定，默认 mvn verify 不触发。
+            -->
+            <plugin>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <configuration>
+                    <skip>${mutation.skip}</skip>
+                    <targetClasses>
+                        <param>com.summit.stp.post.application.service.impl.cache.PostInteractionCacheOps</param>
+                        <param>com.summit.stp.post.application.service.impl.cache.PostCounterCacheOps</param>
+                    </targetClasses>
+                    <targetTests>
+                        <param>com.summit.stp.post.application.service.impl.cache.PostInteractionCacheOpsTest</param>
+                        <param>com.summit.stp.post.application.service.impl.cache.PostCounterCacheOpsTest</param>
+                    </targetTests>
+                    <!-- 实测变异得分 62%，阈值留 ~7 点安全余量 -->
+                    <mutationThreshold>55</mutationThreshold>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
