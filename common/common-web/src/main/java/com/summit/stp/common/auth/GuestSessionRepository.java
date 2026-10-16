@@ -38,7 +38,7 @@ public class GuestSessionRepository {
         try {
             return Optional.of(objectMapper.readValue(json, UserSession.class));
         } catch (Exception e) {
-            log.warn("【游客会话】解析 Redis 会话失败，token: {}", token, e);
+            log.warn("【游客会话】解析 Redis 会话失败，token: {}", mask(token), e);
             return Optional.empty();
         }
     }
@@ -62,12 +62,25 @@ public class GuestSessionRepository {
             ));
             return created ? Optional.of(session) : findByToken(token);
         } catch (Exception e) {
-            log.warn("【游客会话】写入 Redis 失败，降级为当前请求会话，token: {}", token, e);
+            log.warn("【游客会话】写入 Redis 失败，降级为当前请求会话，token: {}", mask(token), e);
             return Optional.empty();
         }
     }
 
     private String sessionKey(String token) {
         return UserAuthConstants.Cache.GUEST_SESSION + token;
+    }
+
+    /**
+     * 日志脱敏：仅保留前 4 位，其余以 **** 掩码，避免完整 token 落日志。
+     */
+    private String mask(String token) {
+        if (token == null || token.isEmpty()) {
+            return "****";
+        }
+        if (token.length() <= 4) {
+            return "****";
+        }
+        return token.substring(0, 4) + "****";
     }
 }

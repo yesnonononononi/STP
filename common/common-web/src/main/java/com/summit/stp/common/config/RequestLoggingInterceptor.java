@@ -13,7 +13,9 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, @NonNull Object handler) {
-        log.info("请求URL: {} {}", request.getRequestURL(), response.getStatus());
+        // 脱敏：仅记录请求方法 + 路径（getRequestURI 不含 query），
+        // 避免将带敏感参数（token / code / 手机号等）的完整 URL 写入日志。
+        log.info("请求: {} {}", request.getMethod(), request.getRequestURI());
         return true;
     }
 }

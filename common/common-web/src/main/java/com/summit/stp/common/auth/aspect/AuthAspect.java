@@ -52,7 +52,13 @@ public class AuthAspect {
             log.warn("【鉴权】@Admin 校验失败（未登录或userId为空），userId={}, tokenType={}", session.getId(), session.getTokenType());
             throw new AuthException(401, "请先登录");
         }
-        if (admin != null && !isAdmin(session, admin.order())) {
+        // 纵深防御：取不到 @Admin 注解时应拒绝访问（fail-closed），而不是放行。
+        // 正常情况下切点已由 @annotation/@within 命中，注解不应为空；为空说明注解解析异常，按拒绝处理。
+        if (admin == null) {
+            log.warn("【鉴权】@Admin 注解解析为空，按拒绝访问处理，userId={}", session.getId());
+            throw new AuthException(403, "无管理员权限");
+        }
+        if (!isAdmin(session, admin.order())) {
             log.warn("【鉴权】@Admin 校验失败（非管理员），userId={}", session.getId());
             throw new AuthException(403, "无管理员权限");
         }

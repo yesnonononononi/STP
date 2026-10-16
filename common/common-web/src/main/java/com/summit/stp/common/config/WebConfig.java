@@ -52,7 +52,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "/user-auth/register",
                         "/user-auth/forget",
                         "/pay/check",
-                        "/u/admin/internal/is/**",
+                        // 注意：/u/admin/internal/** 曾被排除，导致内部 RPC 接口绕过 X-Internal-Request 校验，
+                        // 现予移除，使其重新进入 Interceptor 的 /internal/ 内部调用合法性校验。
                         "/static/**",
                         "/error"
                 );
