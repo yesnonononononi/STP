@@ -16,8 +16,9 @@ public class ArchitectureTest {
     @Test
     @DisplayName("检查项目源码中 Domain 层文件不应非法直接 import Infrastructure 层包")
     public void domainLayerImportsCheck() throws IOException {
-        Path projectRoot = Paths.get("d:/Code/STP");
-        if (!Files.exists(projectRoot)) {
+        Path projectRoot = resolveProjectRoot();
+        if (projectRoot == null) {
+            // 无法定位聚合根模块（例如独立运行该类）时跳过断言，避免跨平台误报
             return;
         }
 
@@ -39,6 +40,40 @@ public class ArchitectureTest {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * 从当前工作目录逐级向上定位聚合（父）工程根目录。
+     * <p>判定标准：目录下存在 {@code pom.xml} 且该文件包含 {@code <modules>} 配置，
+     * 即视为多模块聚合根。Windows 本地与 Linux CI 行为一致，无需硬编码磁盘路径。</p>
+     *
+     * @return 聚合根目录；未找到时返回 {@code null}
+     */
+    private Path resolveProjectRoot() {
+        Path current = Paths.get(System.getProperty("user.dir", ".")).toAbsolutePath().normalize();
+        while (current != null) {
+            Path pom = current.resolve("pom.xml");
+            if (Files.isRegularFile(pom) && containsModules(pom)) {
+                return current;
+            }
+            current = current.getParent();
+        }
+        return null;
+    }
+
+    /**
+     * 判断 pom.xml 是否为包含 {@code <modules>} 的聚合工程描述。
+     *
+     * @param pom pom.xml 路径
+     * @return 包含 modules 配置时返回 true
+     */
+    private boolean containsModules(Path pom) {
+        try {
+            String content = Files.readString(pom);
+            return content.contains("<modules>");
+        } catch (IOException e) {
+            return false;
         }
     }
 }
