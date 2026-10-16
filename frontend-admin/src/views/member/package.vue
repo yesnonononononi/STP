@@ -149,21 +149,11 @@ const list = ref<MemberPackageItem[]>([])
 const loading = ref(false)
 const dialogVisible = ref(false)
 
+// 会员类型为前端固定枚举（后端 /member/list 接口不存在，已移除幽灵接口调用）。
 const memberTypeList = ref<MemberTypeVO[]>([
   { id: 1, name: '普通会员', description: '尊享基础特权' },
   { id: 2, name: '超级会员', description: '畅享高级特权' }
 ])
-
-const fetchMemberTypes = async () => {
-  try {
-    const res = await MemberAPI.getMemberTypeList()
-    if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
-      memberTypeList.value = res.data
-    }
-  } catch {
-    // 允许降级使用默认映射列表
-  }
-}
 
 const getTypeName = (typeId?: number, typeName?: string): string => {
   if (typeName) return typeName
@@ -216,12 +206,11 @@ const fetchData = async () => {
   loading.value = true
   try {
     const res = await MemberAPI.getPackageList()
-    list.value = res.data || [
-      { id: 1, name: 'VIP 连续包月套餐', price: 25.0, duration: 30, description: '自动续费，随时可退', typeId: 1, typeName: '普通会员', stock: 9999, discount: 0.85, status: 1, priority: 1, createTime: '2026-01-01 10:00:00' },
-      { id: 2, name: 'VIP 年度至尊套餐', price: 198.0, duration: 365, description: '超值年度优惠，畅享全年特权', typeId: 2, typeName: '超级会员', stock: 500, discount: 0.7, status: 1, priority: 2, createTime: '2026-01-01 10:00:00' }
-    ]
+    // 只展示后端真实返回，不再用 Mock 数据兜底。
+    list.value = res.data || []
   } catch {
     // 拦截器处理
+    list.value = []
   } finally {
     loading.value = false
   }
@@ -280,7 +269,6 @@ const handleDelete = (row: MemberPackageItem) => {
 }
 
 onMounted(() => {
-  fetchMemberTypes()
   fetchData()
 })
 </script>

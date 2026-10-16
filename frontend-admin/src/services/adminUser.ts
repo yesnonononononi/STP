@@ -33,15 +33,16 @@ export class AdminUserAPI {
 
   /**
    * 封禁指定用户
+   * 后端已由 GET 改为 POST（状态变更类接口统一使用 POST），uid 仍以查询参数传递。
    */
   static async ban(uid: string | number): Promise<Result<void>> {
-    return await request.get('/a/user/ban', { params: { uid } })
+    return await request.post('/a/user/ban', null, { params: { uid } })
   }
 
   /**
    * 解封指定用户
    */
   static async unban(uid: string | number): Promise<Result<void>> {
-    return await request.get('/a/user/unban', { params: { uid } })
+    return await request.post('/a/user/unban', null, { params: { uid } })
   }
 }

@@ -189,7 +189,9 @@ request.interceptors.response.use(
       return Promise.reject(new Error(message))
     }
 
-    return response.data as any
+    // 运行时返回的是已解包的 Result（而非 AxiosResponse）；此处显式收窄类型，
+    // 调用方通过「返回值注解为 Promise<Result<...>>」获得正确类型。
+    return response.data as unknown as AxiosResponse<Result>
   },
   async (error) => {
     const { response, config } = error || {}

@@ -42,6 +42,24 @@
       </div>
     </div>
 
+    <!-- 数据加载错误态：接口失败时明确提示，不再用 Mock 数据掩盖 -->
+    <div
+      v-if="loadError"
+      class="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm"
+    >
+      <el-icon><Warning /></el-icon>
+      <span>部分大盘数据加载失败，下方仅展示成功获取的真实数据，请稍后重试。</span>
+    </div>
+
+    <!-- 实时指标降级提示：后端 degraded=true 时，网关 QPS / MQ 积压等显示为 “—” -->
+    <div
+      v-else-if="systemStatus.degraded"
+      class="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm"
+    >
+      <el-icon><Warning /></el-icon>
+      <span>实时性能指标暂时降级（网关 QPS / MQ 积压等显示为 “—”），其余数据为真实值。</span>
+    </div>
+
     <!-- 核心 KPI 统计卡片 (4列) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
       <!-- 1. 全站累计用户 -->
@@ -206,7 +224,7 @@
               <p class="text-xs text-slate-400">核心微服务响应时间、网关 QPS 与资源占用</p>
             </div>
             <span class="inline-flex items-center text-xs text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md font-medium">
-              网关 QPS: {{ systemStatus.gatewayQps }}
+              网关 QPS: {{ formatMetric(systemStatus.gatewayQps) }}
             </span>
           </div>
 
@@ -215,9 +233,17 @@
             <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
               <div class="flex justify-between text-xs text-slate-500 mb-1.5">
                 <span>平均 API 延迟</span>
-                <span class="font-bold text-slate-700">{{ systemStatus.avgResponseTimeMs }} ms</span>
+                <span class="font-bold text-slate-700">
+                  {{ systemStatus.avgResponseTimeMs == null ? '—' : `${systemStatus.avgResponseTimeMs} ms` }}
+                </span>
               </div>
-              <el-progress :percentage="Math.min(systemStatus.avgResponseTimeMs * 2, 100)" :show-text="false" status="success" />
+              <el-progress
+                v-if="systemStatus.avgResponseTimeMs != null"
+                :percentage="Math.min(systemStatus.avgResponseTimeMs * 2, 100)"
+                :show-text="false"
+                status="success"
+              />
+              <div v-else class="text-[11px] text-slate-400 leading-5">暂无采集数据</div>
             </div>
 
             <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
@@ -421,14 +447,18 @@ const overview = ref<DashboardOverview>({
 })
 
 const systemStatus = ref<DashboardSystemStatus>({
-  gatewayQps: 0,
-  avgResponseTimeMs: 0,
+  // null 表示后端暂未采集到该指标，展示为 “—”，不得回退成 0。
+  gatewayQps: null,
+  avgResponseTimeMs: null,
   cpuUsage: 0,
   memoryUsage: 0,
   redisHitRate: 0,
-  mqBacklogCount: 0,
+  mqBacklogCount: null,
   services: []
 })
+
+// 大盘数据加载失败标记，用于渲染错误态（替代此前的 Mock 兜底）。
+const loadError = ref(false)
 
 const activities = ref<DashboardActivity[]>([])
 
@@ -460,11 +490,19 @@ const formatRate = (val: number | string | undefined | null) => {
   return `${val.toFixed(1)}%`
 }
 
-// 获取全盘数据
+// 系统指标为空（null = 未知/未采集）时统一展示 “—”，避免用 0 误导。
+const formatMetric = (val: number | string | undefined | null) => {
+  if (val === null || val === undefined) return '—'
+  return `${val}`
+}
+
+// 获取全盘数据。
+// 使用 allSettled：单个接口失败时不再用 Mock 数据兜底，只渲染成功返回的真实数据，
+// 并标记错误态交由页面展示，绝不允许编造数据冒充成功。
 const fetchDashboardData = async () => {
   loading.value = true
   try {
-    const [ovRes, trendsRes, memberRes, contentRes, sysRes, actRes] = await Promise.all([
+    const results = await Promise.allSettled([
       DashboardAPI.getOverview(),
       DashboardAPI.getTrends(trendPeriod.value),
       DashboardAPI.getMemberStats(),
@@ -473,19 +511,26 @@ const fetchDashboardData = async () => {
       DashboardAPI.getRecentActivities()
     ])
 
-    if (ovRes.data) overview.value = ovRes.data
-    if (sysRes.data) systemStatus.value = sysRes.data
-    if (actRes.data) activities.value = actRes.data
+    const [ovRes, trendsRes, memberRes, contentRes, sysRes, actRes] = results
+    const failed = results.filter(r => r.status === 'rejected')
+    loadError.value = failed.length > 0
+
+    if (ovRes.status === 'fulfilled' && ovRes.value.data) overview.value = ovRes.value.data
+    if (sysRes.status === 'fulfilled' && sysRes.value.data) systemStatus.value = sysRes.value.data
+    if (actRes.status === 'fulfilled' && actRes.value.data) activities.value = actRes.value.data
 
     await nextTick()
 
     setTimeout(async () => {
-      if (trendsRes.data) await renderTrendsChart(trendsRes.data)
-      if (memberRes.data) await renderMemberStatsChart(memberRes.data)
-      if (contentRes.data) await renderContentStatsChart(contentRes.data)
+      if (trendsRes.status === 'fulfilled' && trendsRes.value.data) await renderTrendsChart(trendsRes.value.data)
+      if (memberRes.status === 'fulfilled' && memberRes.value.data) await renderMemberStatsChart(memberRes.value.data)
+      if (contentRes.status === 'fulfilled' && contentRes.value.data) await renderContentStatsChart(contentRes.value.data)
     }, 50)
-  } catch (err) {
-    ElMessage.error('获取大盘数据失败，请重试')
+
+    if (failed.length > 0) {
+      const reason = failed[0].status === 'rejected' ? failed[0].reason : null
+      ElMessage.error(reason?.message || '部分大盘数据获取失败，请稍后重试')
+    }
   } finally {
     loading.value = false
   }
@@ -493,8 +538,12 @@ const fetchDashboardData = async () => {
 
 const changeTrendPeriod = async (period: string) => {
   trendPeriod.value = period
-  const res = await DashboardAPI.getTrends(period)
-  if (res.data) renderTrendsChart(res.data)
+  try {
+    const res = await DashboardAPI.getTrends(period)
+    if (res.data) renderTrendsChart(res.data)
+  } catch (err) {
+    ElMessage.error(err instanceof Error ? err.message : '趋势数据获取失败')
+  }
 }
 
 let echartsLib: any = null
@@ -610,7 +659,9 @@ const changeMemberTab = async (tabKey: string) => {
     if (res.data) {
       renderMemberStatsChart(res.data)
     }
-  } catch {
+  } catch (err) {
+    // 失败时回退到上一次成功加载的真实数据（若存在），并提示错误，绝不注入 Mock 数据。
+    ElMessage.error(err instanceof Error ? err.message : '会员统计获取失败')
     if (rawMemberStatsData.value) {
       renderMemberStatsChart(rawMemberStatsData.value)
     }

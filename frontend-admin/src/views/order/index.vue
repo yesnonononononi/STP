@@ -73,10 +73,12 @@
                 手工补单
               </el-button>
 
-              <!-- 退单退款 -->
-              <el-button v-if="row.status === 1" size="small" type="danger" plain @click="openRefundModal(row)">
-                发起退单
-              </el-button>
+              <!-- 退单退款：后端 AdminOrderServiceImpl.refund() 尚未实现，入口暂时下线 -->
+              <el-tooltip v-if="row.status === 1" content="退款功能暂未开放" placement="top">
+                <span class="inline-flex">
+                  <el-button size="small" type="danger" plain disabled>发起退单</el-button>
+                </span>
+              </el-tooltip>
             </div>
           </template>
         </el-table-column>
@@ -117,21 +119,6 @@
       </template>
     </el-dialog>
 
-    <!-- 退单理由弹窗 -->
-    <el-dialog v-model="refundDialogVisible" title="发起退单退款" width="460px">
-      <div class="space-y-3">
-        <p class="text-sm text-slate-600">确定要退单订单 <strong>[ {{ activeOrder?.id }} ]</strong> 吗？</p>
-        <el-input v-model="refundReasonInput" type="textarea" :rows="3" placeholder="请输入退单原由或退款备注..." />
-      </div>
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <el-button @click="refundDialogVisible = false">取消</el-button>
-          <el-button type="danger" :disabled="!refundReasonInput.trim()" @click="confirmRefund">
-            确认退单
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -148,11 +135,6 @@ const pagination = reactive({ page: 1, size: 10 })
 const openFilterDialog = ref(false)
 
 const filterForm = reactive<{ orderNo?: string; userId?: number; orderType?: number; payStatus?: number }>({})
-
-// 退单弹窗
-const refundDialogVisible = ref(false)
-const activeOrder = ref<AdminOrderVO | null>(null)
-const refundReasonInput = ref('')
 
 const getPayTypeName = (type?: number) => {
   if (type === 1) return '微信支付'
@@ -221,25 +203,6 @@ const handleReissuance = (row: AdminOrderVO) => {
       // 拦截器处理
     }
   }).catch(() => {})
-}
-
-// 打开退单弹窗
-const openRefundModal = (row: AdminOrderVO) => {
-  activeOrder.value = row
-  refundReasonInput.value = ''
-  refundDialogVisible.value = true
-}
-
-const confirmRefund = async () => {
-  if (!activeOrder.value || !refundReasonInput.value.trim()) return
-  try {
-    await OrderAPI.refundOrder(activeOrder.value.id, refundReasonInput.value.trim())
-    ElMessage.success('退单退款申请提交成功')
-    refundDialogVisible.value = false
-    fetchData()
-  } catch {
-    // 拦截器处理
-  }
 }
 
 const applyFilter = () => {

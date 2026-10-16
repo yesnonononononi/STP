@@ -213,7 +213,7 @@ const form = reactive<{
 })
 
 // 解析后端返回的特权结构（字符串/数组兼容）
-const parsePrivileges = (raw: any): PrivilegeItem[] => {
+const parsePrivileges = (raw: string | PrivilegeItem[] | null | undefined): PrivilegeItem[] => {
   if (!raw) return []
   if (Array.isArray(raw)) return raw
   if (typeof raw === 'string') {
@@ -232,34 +232,12 @@ const fetchData = async () => {
   try {
     const res = await MemberAPI.getLevelConfigList()
     const rawData = res.data
-    const arrayData = Array.isArray(rawData) ? rawData : (rawData as any)?.data
-    list.value = Array.isArray(arrayData) ? arrayData : [
-      {
-        id: '1001',
-        level: 1,
-        levelName: '普通会员',
-        minRecharge: 0,
-        privilegesJson: [
-          { name: '基础功能', description: '享平台基础体验', enabled: true }
-        ],
-        iconUrl: '',
-        sortOrder: 1
-      },
-      {
-        id: '1002',
-        level: 2,
-        levelName: '黄金 VIP',
-        minRecharge: 200,
-        privilegesJson: [
-          { name: '9.5折优惠', description: '消费享95折', enabled: true },
-          { name: '专属挂件', description: '可佩戴挂件', enabled: true }
-        ],
-        iconUrl: '',
-        sortOrder: 2
-      }
-    ]
+    const arrayData = Array.isArray(rawData) ? rawData : rawData?.data
+    // 接口失败会由拦截器抛出；此处只展示真实返回，不再用 Mock 数据兜底。
+    list.value = Array.isArray(arrayData) ? arrayData : []
   } catch {
     // 拦截器处理
+    list.value = []
   } finally {
     loading.value = false
   }

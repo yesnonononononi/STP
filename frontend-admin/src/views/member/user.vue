@@ -131,13 +131,12 @@ const fetchData = async () => {
   try {
     const res = await MemberAPI.getUserMemberList()
     const rawData = res.data
-    const arrayData = Array.isArray(rawData) ? rawData : (rawData as any)?.data
-    list.value = Array.isArray(arrayData) ? arrayData : [
-      { userId: 10086, totalRecharge: 580.0, level: { level: 2, levelName: '黄金 VIP', minRecharge: 200, privilegesJson: '', iconUrl: '', sortOrder: 2 }, packageTypeId: 1, expireTime: '2026-12-31 23:59:59', levelUpgradeTime: '2026-06-01 10:00:00' },
-      { userId: 10087, totalRecharge: 2100.0, level: { level: 3, levelName: '钻石 VIP', minRecharge: 1000, privilegesJson: '', iconUrl: '', sortOrder: 3 }, packageTypeId: 2, expireTime: '2027-08-16 12:00:00', levelUpgradeTime: '2026-08-01 14:30:00' }
-    ]
+    const arrayData = Array.isArray(rawData) ? rawData : rawData?.data
+    // 只展示后端真实返回，不再用 Mock 数据兜底。
+    list.value = Array.isArray(arrayData) ? arrayData : []
   } catch {
     // 拦截器处理
+    list.value = []
   } finally {
     loading.value = false
   }

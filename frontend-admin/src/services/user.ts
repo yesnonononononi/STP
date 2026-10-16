@@ -32,6 +32,22 @@ export interface UserFansData {
   followed: boolean
 }
 
+/** 后端 /user/follow/followees 返回的关注关系 VO（UserFollowVO） */
+interface UserFollowVO {
+  id: string
+  followerId?: string
+  followeeId: string
+  nick?: string
+  avatar?: string
+  followed?: boolean
+}
+
+/** 后端分页包装（Page<T>） */
+interface FolloweePage {
+  records?: UserFollowVO[]
+  total?: number
+}
+
 /**
  * 用户公开展示简单信息
  */
@@ -142,24 +158,22 @@ export class UserAPI {
    * @param userId 目标用户ID
    */
   static async getMyFans(userId: string | number, page: number, pageSize: number): Promise<Result<{ records: UserFansData[], total: number }>> {
-    const res = await request.get('/user/follow/followees', { params: { userId, page, pageSize } })
-    if (res.code === 1 && res.data) {
-      // 后端返回 UserFollowVO（id/followerId/followeeId），适配为前端 UserFansData
-      return {
-        ...res,
-        data: {
-          records: (res.data.records || []).map((r: any) => ({
-            id: r.id,
-            userId: r.followeeId,
-            nick: r.nick || `用户${r.followeeId}`,
-            avatar: r.avatar || '',
-            followed: !!r.followed
-          })),
-          total: res.data.total || 0
-        }
-      }
+    const res: Result<FolloweePage> = await request.get('/user/follow/followees', { params: { userId, page, pageSize } })
+    // 后端返回 UserFollowVO（id/followerId/followeeId），适配为前端 UserFansData
+    const records: UserFansData[] = (res.data?.records || []).map((r) => ({
+      id: r.id,
+      userId: r.followeeId,
+      nick: r.nick || `用户${r.followeeId}`,
+      avatar: r.avatar || '',
+      followed: !!r.followed,
+    }))
+    return {
+      ...res,
+      data: {
+        records,
+        total: res.data?.total || 0,
+      },
     }
-    return res
   }
 
   /**

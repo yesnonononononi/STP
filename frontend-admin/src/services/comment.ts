@@ -1,5 +1,5 @@
 import request from '@/services/request'
-import type { Result } from '@/types/result'
+import type { Result, PageResult } from '@/types/result'
 
 export interface AdminCommentVO {
   id: number
@@ -26,12 +26,6 @@ export interface CommentQueryPayload {
   pageSize: number
   keyword?: string
   status?: number // 0: 已屏蔽(BAN), 1: 正常(NORMAL), 2: 已举报(REPORT)
-}
-
-export interface PageResult<T> {
-  page?: number
-  total?: number
-  data?: T
 }
 
 export class CommentAPI {
