@@ -1,0 +1,31 @@
+# 集成测试专用配置（通过 @ActiveProfiles("it") 激活）
+# 目标：切断所有外部中间件依赖；数据源/Redis/RabbitMQ 连接一律由
+#       Testcontainers 的 @DynamicPropertySource 动态注入（不使用固定 localhost）。
+
+spring:
+  cloud:
+    # 主配置 spring.cloud.nacos.server-addr 使用 ${HOST} 占位符，IT 环境无该变量会导致
+    # optional:nacos: 在构造 URI 阶段抛 IllegalArgumentException，这里显式给出可解析地址。
+    nacos:
+      server-addr: 127.0.0.1:8848
+      username: nacos
+      password: nacos
+      config:
+        enabled: false
+        import-check:
+          enabled: false
+      discovery:
+        enabled: false
+    sentinel:
+      enabled: false
+
+seata:
+  enabled: false
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
