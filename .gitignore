@@ -51,3 +51,10 @@ docker-compose.override.yml
 # Agent 协作文件（计划/记忆/技能等）
 /.lingxi/
 /.lingxi/
+
+# 运行时日志（构建 / 服务 / 校验输出，不入库）
+*.log
+# 订单服务编译期 classpath 导出（本地工具产物）
+/stp-order-service/cp.txt
+# AI 协作工具草稿目录（记忆/草稿等，不入库）
+/.workbuddy-ai/
