@@ -1,7 +1,6 @@
 package com.summit.stp.message.entertainment.domain.model;
 
 import com.summit.stp.common.application.domain.exception.BusinessException;
-import com.summit.stp.message.entertainment.infrastructure.constants.EntertainmentConstants;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -10,6 +9,12 @@ import java.sql.Timestamp;
 @Builder
 @Getter
 public class Emoji {
+
+    /**
+     * 表情名称允许的最大长度（领域约束）。
+     */
+    public static final int MAX_NAME_LENGTH = 10;
+
     private final Long id;
     private final Long packageId;
     private String tiny;
@@ -40,8 +45,8 @@ public class Emoji {
         }
     }
     public void updateName(String newName){
-        if(newName == null || newName.length() > EntertainmentConstants.Business.MAX_NAME_LENGTH){
-            throw new BusinessException("表情名长度不能大于" + EntertainmentConstants.Business.MAX_NAME_LENGTH);
+                if(newName == null || newName.length() > MAX_NAME_LENGTH){
+            throw new BusinessException("表情名长度不能大于" + MAX_NAME_LENGTH);
         }
         this.name = newName;
         this.updateTime = new Timestamp(System.currentTimeMillis());

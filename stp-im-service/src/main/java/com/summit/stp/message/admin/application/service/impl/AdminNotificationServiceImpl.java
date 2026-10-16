@@ -5,19 +5,17 @@ import com.summit.stp.message.admin.application.command.AdminCreateNotificationC
 import com.summit.stp.message.admin.application.command.AdminNotificationQueryCommand;
 import com.summit.stp.message.admin.application.service.AdminNotificationService;
 import com.summit.stp.message.admin.application.vo.AdminNotificationVO;
-import com.summit.stp.common.annotation.Admin;
-import com.summit.stp.common.annotation.Login;
 import com.summit.stp.common.application.api.result.PageResult;
 import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.common.application.domain.exception.BusinessException;
 import com.summit.stp.common.auth.UserHolder;
+import com.summit.stp.common.util.DistributedLockUtil;
 import com.summit.stp.message.message.domain.exception.MessageNoExistException;
 import com.summit.stp.message.message.domain.model.SystemMessage;
 import com.summit.stp.message.message.domain.repository.SystemMessageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -25,52 +23,70 @@ import java.util.List;
 
 @Service
 @Slf4j
-@Admin
-@Login
 @RequiredArgsConstructor
 public class AdminNotificationServiceImpl implements AdminNotificationService {
+
+    /** 管理端写操作分布式锁等待时间（秒） */
+    private static final long LOCK_WAIT_SECONDS = 3L;
+    /** 管理端写操作分布式锁租约时间（秒） */
+    private static final long LOCK_LEASE_SECONDS = 10L;
+
     private final SystemMessageRepository systemMessageRepository;
+    private final DistributedLockUtil distributedLockUtil;
 
     @Override
-    public Result<PageResult<List<AdminNotificationVO>>> listBy(@RequestBody AdminNotificationQueryCommand command) {
+    public Result<PageResult<List<AdminNotificationVO>>> listBy(AdminNotificationQueryCommand command) {
         Page<SystemMessage> res = systemMessageRepository.findPage(command);
         return Result.success(new PageResult<>(res.getCurrent(), res.getTotal(), res.getRecords().stream().map(this::toVO).toList()));
     }
 
 
     @Override
-    public Result<Void> create(@RequestBody AdminCreateNotificationCommand command) {
+    public Result<Void> create(AdminCreateNotificationCommand command) {
         validateCreateCommand(command);
         SystemMessage systemMessage = buildModel(command);
-        systemMessageRepository.save(systemMessage);
-        return Result.success();
+        // 同一目标用户+同一通知类型的创建串行化，避免重复发通知（幂等/防重，#24）
+        String lockKey = "admin:notification:create:" + command.getTargetUserId() + ":" + command.getNoticeType();
+        return distributedLockUtil.executeWithLock(lockKey, LOCK_WAIT_SECONDS, LOCK_LEASE_SECONDS, () -> {
+            systemMessageRepository.save(systemMessage);
+            return Result.success();
+        });
     }
 
     @Override
     public Result<Void> revoke(Long id) {
         if(id == null)return Result.error("通知ID不能为空");
-        SystemMessage systemMessage = systemMessageRepository.findById(id).orElseThrow(MessageNoExistException::new);
-        systemMessage.revoke();
-        systemMessageRepository.updateById(systemMessage);
-        return Result.success();
+        // 同一通知的撤销串行化（幂等/防重，#24）
+        return distributedLockUtil.executeWithLock("admin:notification:revoke:" + id, LOCK_WAIT_SECONDS, LOCK_LEASE_SECONDS, () -> {
+            SystemMessage systemMessage = systemMessageRepository.findById(id).orElseThrow(MessageNoExistException::new);
+            systemMessage.revoke();
+            systemMessageRepository.updateById(systemMessage);
+            return Result.success();
+        });
     }
 
     @Override
     public Result<Void> delete(Long id) {
         if(id == null)return Result.error("通知ID不能为空");
-        SystemMessage systemMessage = systemMessageRepository.findById(id).orElseThrow(MessageNoExistException::new);
-        systemMessage.delete();
-        systemMessageRepository.updateById(systemMessage);
-        return Result.success();
+        // 同一通知的删除串行化（幂等/防重，#24）
+        return distributedLockUtil.executeWithLock("admin:notification:delete:" + id, LOCK_WAIT_SECONDS, LOCK_LEASE_SECONDS, () -> {
+            SystemMessage systemMessage = systemMessageRepository.findById(id).orElseThrow(MessageNoExistException::new);
+            systemMessage.delete();
+            systemMessageRepository.updateById(systemMessage);
+            return Result.success();
+        });
     }
 
     @Override
     public Result<Void> publish(Long id) {
         if(id == null)return Result.error("通知ID不能为空");
-        SystemMessage systemMessage = systemMessageRepository.findById(id).orElseThrow(MessageNoExistException::new);
-        systemMessage.publish();
-        systemMessageRepository.updateById(systemMessage);
-        return Result.success();
+        // 同一通知的发布串行化，避免重复发布（幂等/防重，#24）
+        return distributedLockUtil.executeWithLock("admin:notification:publish:" + id, LOCK_WAIT_SECONDS, LOCK_LEASE_SECONDS, () -> {
+            SystemMessage systemMessage = systemMessageRepository.findById(id).orElseThrow(MessageNoExistException::new);
+            systemMessage.publish();
+            systemMessageRepository.updateById(systemMessage);
+            return Result.success();
+        });
     }
 
 

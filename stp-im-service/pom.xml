@@ -80,6 +80,10 @@
             <groupId>com.summit</groupId>
             <artifactId>common-web</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.summit</groupId>
+            <artifactId>operation-log-starter</artifactId>
+        </dependency>
 
         <!-- Lombok -->
         <dependency>
