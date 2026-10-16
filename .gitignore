@@ -44,3 +44,10 @@ graphify-out/
 *.jar
 !**/wrapper/maven-wrapper.jar
 
+# 本地运行临时产物（中间件编排覆盖、服务启动脚本与日志）
+docker-compose.override.yml
+.stp-run/
+
+# Agent 协作文件（计划/记忆/技能等）
+/.lingxi/
+/.lingxi/

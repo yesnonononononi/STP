@@ -2,11 +2,16 @@ package com.summit.stp.post.application.service.impl.cache;
 
 import com.summit.stp.post.infrastructure.constants.PostConstants;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.lang.NonNull;
+import org.springframework.scripting.support.ResourceScriptSource;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -21,10 +26,45 @@ import java.util.function.Function;
 @SuppressWarnings("unchecked")
 public class PostInteractionCacheOps {
 
+    /** 互动切换 Lua 脚本资源路径，供 Spring 装配与测试直连两种场景复用。 */
+    private static final String TOGGLE_SCRIPT_LOCATION = "file/post_interaction_toggle.lua";
+
     private final RedisTemplate<String, Object> redisTemplate;
 
+    private final DefaultRedisScript<Long> toggleScript;
+
+    /**
+     * 测试/直连场景构造方法：自行从 classpath 加载 Lua 脚本。
+     *
+     * @param redisTemplate 帖子模块 Redis 模板
+     */
     public PostInteractionCacheOps(RedisTemplate<String, Object> redisTemplate) {
+        this(redisTemplate, loadToggleScript());
+    }
+
+    /**
+     * Spring 容器构造方法：注入容器管理的脚本 Bean。
+     *
+     * @param redisTemplate 帖子模块 Redis 模板
+     * @param toggleScript  由 {@code PostRedisScriptConfiguration} 注册的切换脚本
+     */
+    @Autowired
+    public PostInteractionCacheOps(RedisTemplate<String, Object> redisTemplate,
+                                   @Qualifier("postInteractionToggleScript") DefaultRedisScript<Long> toggleScript) {
         this.redisTemplate = redisTemplate;
+        this.toggleScript = toggleScript;
+    }
+
+    /**
+     * 从 classpath 加载互动切换脚本（测试直连时使用）。
+     *
+     * @return 结果类型为 Long 的脚本
+     */
+    private static DefaultRedisScript<Long> loadToggleScript() {
+        DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+        script.setScriptSource(new ResourceScriptSource(new ClassPathResource(TOGGLE_SCRIPT_LOCATION)));
+        script.setResultType(Long.class);
+        return script;
     }
 
     /**
@@ -32,30 +72,28 @@ public class PostInteractionCacheOps {
      * 0 : 未互动
      * 1 : 已互动
      *
+     * <p>通过 Lua 脚本把"读判定 + 改写集合与计数"合并为单次原子操作，
+     * 保证互动计数恒等于互动集合真实规模，避免并发 toggle 时的计数漂移。</p>
+     *
+     * @param postId 帖子 ID
+     * @param userId 用户 ID
+     * @param type   互动类型（点赞/收藏）
      * @return 互动状态，标识是否是第一次互动
      */
     public boolean toggle(Long postId, Long userId, InteractionType type) {
         String setKey = type.buildSetKey(postId);
         String postKey = PostConstants.Cache.DETAIL_PREFIX + postId;
         try {
-            Double score = redisTemplate.opsForZSet().score(setKey, userId);
-            //如果score不存在,意味着是第一次互动且未互动成功
-            //否则,score == 1 : 已经互动,需要取消 score == 0 : 未互动,需要添加
-            if (score == null || score == 0.0) {
-                redisTemplate.opsForZSet().add(setKey, userId, 1.0);
-                redisTemplate.opsForHash().increment(postKey, type.getCountField(), 1);
-            } else if (score == 1.0) {
-                redisTemplate.opsForZSet().remove(setKey, userId);
-                Long newCount = redisTemplate.opsForHash().increment(postKey, type.getCountField(), -1);
-                if (newCount != null && newCount < 0) {
-                    redisTemplate.opsForHash().put(postKey, type.getCountField(), 0L);
-                }
-            }
-            return score == null;
-
-
+            // KEYS 走 key 序列化器（原始字符串），ARGV 走 value 序列化器（与 opsForZSet 写入的 member 字节一致），
+            // 计数 field 名通过 KEYS[3] 传递以避免被 Jackson 二次序列化。
+            Long result = redisTemplate.execute(
+                    toggleScript,
+                    Arrays.asList(setKey, postKey, type.getCountField()),
+                    userId
+            );
+            return result != null && result == 1L;
         } catch (Exception e) {
-            log.warn("【帖子模块】互动写入异常，type={}，动作：自增自减", type, e);
+            log.warn("【帖子模块】互动写入异常，type={}，动作：原子切换", type, e);
             throw e;
         }
     }

@@ -105,17 +105,19 @@ public class CouponActivityCacheProviderImpl implements CouponActivityCacheProvi
 
     @Override
     public void cacheUserLimit(Long userId, Long couponId, Long duration) {
-        String key = CouponConstants.Cache.USER_LIMITED_HASH + userId;
-        Boolean hasField = stringRedisTemplate.opsForHash().hasKey(key, couponId.toString());
-        if (hasField != null && hasField) {
+        if (userId == null || couponId == null) {
+            log.warn("【优惠券活动】初始化用户限领缓存参数非法 用户ID:{} 券ID:{}", userId, couponId);
             return;
         }
-        stringRedisTemplate.opsForHash().putAndExpire(
-                key,
-                Map.of(couponId.toString(), "0"),
-                RedisHashCommands.HashFieldSetOption.UPSERT,
-                Expiration.from(Duration.of(duration, ChronoUnit.MILLIS))
-        );
+        String key = CouponConstants.Cache.USER_LIMITED_HASH + userId;
+        String field = couponId.toString();
+        // 原子 set-if-absent：仅当该 field 尚不存在时写入初始值 "0"，绝不覆盖并发场景下
+        // 已被 CouponStockSeckill.lua 自增为 1 的计数，避免同一用户被重置后再次领取。
+        Boolean created = stringRedisTemplate.opsForHash().putIfAbsent(key, field, "0");
+        // 仅新建 field 时补设 TTL，保持原有 key 级别过期语义
+        if (Boolean.TRUE.equals(created) && duration != null && duration > 0) {
+            stringRedisTemplate.expire(key, Duration.of(duration, ChronoUnit.MILLIS));
+        }
     }
 
     @Override

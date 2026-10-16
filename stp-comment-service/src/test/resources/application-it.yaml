@@ -1,0 +1,22 @@
+# 集成测试专用配置（通过 @ActiveProfiles("it") 激活）
+# 目标：切断所有外部中间件依赖；Redis 连接由 Testcontainers 提供。
+# 说明：当前并发 IT（CommentConcurrencyIT）直接构建 RedisTemplate，不加载 Spring 上下文，
+#       本文件为后续基于 @SpringBootTest 的集成测试备用，约定与 coupon 模块保持一致。
+
+spring:
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+      username: nacos
+      password: nacos
+      config:
+        enabled: false
+        import-check:
+          enabled: false
+      discovery:
+        enabled: false
+    sentinel:
+      enabled: false
+
+seata:
+  enabled: false
