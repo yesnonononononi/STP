@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DashboardOverviewVO {
+public class DashboardOverviewVO implements DashboardDegradable {
     private Integer totalUsers;
     private Integer todayNewUsers;
     private String userGrowthRate;
@@ -24,4 +24,9 @@ public class DashboardOverviewVO {
     private String memberGrowthRate;
     private Integer pendingReports; //待处理风控举报
     private Integer todayProcessedReports; //今日处理的风控举报
+
+    /**
+     * 降级标记：true 表示部分/全部远程 KPI 取数失败，当前为降级兜底数据（非真实 0）
+     */
+    private Boolean degraded;
 }

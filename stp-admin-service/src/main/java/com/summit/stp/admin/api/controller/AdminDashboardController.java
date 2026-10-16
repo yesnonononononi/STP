@@ -54,6 +54,13 @@ public class AdminDashboardController {
 
     @GetMapping("/recent-activities")
     public Result<List<SystemActivityVO>> recentActivities(@RequestParam(value = "limit", defaultValue = "10") Integer limit) {
-        return adminDashboardService.recentActivities(limit);
+        return adminDashboardService.recentActivities(clampLimit(limit));
+    }
+
+    private static Integer clampLimit(Integer limit) {
+        if (limit == null || limit < 1) {
+            return 10;
+        }
+        return Math.min(limit, 100);
     }
 }

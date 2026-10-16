@@ -21,9 +21,25 @@ spring:
         refresh-enabled: true
         file-extension: yaml
       server-addr: ${HOST}:8848
+    # 远程调用（Feign）超时：为大盘并发聚合的每个下游调用设置显式读写超时，
+    # 避免下游服务挂起时 Tomcat 请求线程被无限阻塞（配合 Dashboard 线程池 AbortPolicy 降级）。
+    # 注意：Spring Cloud 2022+ 起前缀为 spring.cloud.openfeign（旧的 feign.client 已废弃）。
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 2000
+            readTimeout: 3000
 
 stp:
   jdbc:
     mapper-locations: classpath*:mapper/**/*.xml
     type-aliases-package: com.summit.stp.admin.infrastructure.persistence.po
+  metrics:
+    # 后台大盘 RabbitMQ 积压量采集（RabbitMQ 管理 HTTP API，Basic Auth）
+    # 未配置 management-url 时大盘 mqBacklogCount 返回 null，前端展示 "—"
+    rabbitmq:
+      management-url: "${RABBITMQ_MANAGEMENT_URL:http://localhost:15672}"
+      username: ${RABBITMQ_DEFAULT_USER:guest}
+      password: ${RABBITMQ_DEFAULT_PASS:guest}
 

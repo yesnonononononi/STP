@@ -3,6 +3,7 @@ package com.summit.stp.admin.application.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.summit.stp.common.application.api.result.PageResult;
 import com.summit.stp.common.application.api.result.Result;
+import com.summit.stp.admin.application.assembler.DashboardDataAssembler;
 import com.summit.stp.admin.application.command.CreateSystemActivityCommand;
 import com.summit.stp.admin.application.command.SystemActivityQueryCommand;
 import com.summit.stp.admin.application.vo.SystemActivityVO;
@@ -23,6 +24,7 @@ import java.util.List;
 public class SystemActivityAppService {
 
     private final SystemActivityRepository<SystemActivity> systemActivityRepository;
+    private final DashboardDataAssembler dashboardDataAssembler;
 
     @Transactional(rollbackFor = Exception.class)
     public Result<Void> createActivity(CreateSystemActivityCommand command) {
@@ -41,17 +43,8 @@ public class SystemActivityAppService {
 
     public Result<List<SystemActivityVO>> getRecentActivities(int limit) {
         List<SystemActivity> activities = systemActivityRepository.findRecentActivities(limit);
-        List<SystemActivityVO> voList = activities.stream().map(a -> SystemActivityVO.builder()
-                .id(a.getId())
-                .type(a.getType() != null ? a.getType().getCode() : "INFO")
-                .typeDesc(a.getType() != null ? a.getType().getDescription() : "系统日志")
-                .module(a.getModule())
-                .title(a.getTitle())
-                .content(a.getContent())
-                .targetUrl(a.getTargetUrl())
-                .createTime(a.getCreateTime())
-                .build()
-        ).toList();
+        // #29 复用 DashboardDataAssembler 的统一映射方法，消除重复的手写 builder
+        List<SystemActivityVO> voList = dashboardDataAssembler.assembleRecentActivities(activities);
         return Result.success(voList);
     }
 
@@ -63,17 +56,8 @@ public class SystemActivityAppService {
                 command.getPageSize()
         );
 
-        List<SystemActivityVO> voList = pageData.getRecords().stream().map(a -> SystemActivityVO.builder()
-                .id(a.getId())
-                .type(a.getType() != null ? a.getType().getCode() : "INFO")
-                .typeDesc(a.getType() != null ? a.getType().getDescription() : "系统日志")
-                .module(a.getModule())
-                .title(a.getTitle())
-                .content(a.getContent())
-                .targetUrl(a.getTargetUrl())
-                .createTime(a.getCreateTime())
-                .build()
-        ).toList();
+        // #29 复用 DashboardDataAssembler 的统一映射方法
+        List<SystemActivityVO> voList = dashboardDataAssembler.assembleRecentActivities(pageData.getRecords());
 
         PageResult<List<SystemActivityVO>> pageResult = new PageResult<>(
                 pageData.getCurrent(),

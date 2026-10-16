@@ -140,14 +140,24 @@
         </where>
     </select>
 
+    <!--
+      性能说明（索引友好改写）：
+      1) WHERE 条件对索引列 create_time 使用范围比较 [start, start+61d)，可直接命中 idx_created_at，
+         严禁写成 DATE(create_time) >= ? 这类对索引列套函数的写法（会导致全表扫描）。
+      2) 上界 61 天对应 PostRepositoryImpl.countContentStats 的窗口上限（days 被限制在 1..60），
+         超出统计窗口的行本就由 Java 端按 limitDays 丢弃，因此该上界不会造成数据缺失；
+         若后续放开窗口上限，请同步调整此常量，或改由调用方传入 endTimestamp（需在 PostsMapper 增加 @Param）。
+      3) GROUP BY DATE(create_time) 仅对上述已收窄的结果集做按天聚合，不参与索引扫描范围。
+    -->
     <select id="selectContentStats" resultType="com.summit.stp.post.infrastructure.persistence.dto.PostTrendStatDTO">
-        SELECT 
+        SELECT
             DATE(create_time) AS dateStr,
             COUNT(*) AS postCnt,
             IFNULL(SUM(reply_count), 0) AS commentCnt,
             SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) AS blockedCnt
         FROM posts
         WHERE create_time >= #{startTimestamp}
+          AND create_time <![CDATA[<]]> DATE_ADD(#{startTimestamp}, INTERVAL 61 DAY)
         GROUP BY DATE(create_time)
     </select>
 

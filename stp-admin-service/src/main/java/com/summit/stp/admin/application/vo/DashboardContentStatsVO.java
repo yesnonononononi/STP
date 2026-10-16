@@ -11,9 +11,14 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DashboardContentStatsVO {
+public class DashboardContentStatsVO implements DashboardDegradable {
     private List<String> dates;
     private List<Integer> postCountList;
     private List<Integer> commentCountList;
     private List<Integer> blockedCountList;
+
+    /**
+     * 降级标记：true 表示社区内容统计远程取数失败，当前为空列表兜底（非真实空数据）
+     */
+    private Boolean degraded;
 }

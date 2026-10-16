@@ -6,6 +6,7 @@ import com.summit.stp.member.domain.model.MemberType;
 import com.summit.stp.member.domain.repository.MemberLevelConfigRepository;
 import com.summit.stp.member.domain.repository.MemberRepository;
 import com.summit.stp.member.domain.repository.UserMemberRepository;
+import com.summit.stp.common.application.domain.exception.ParameterException;
 import com.summit.stp.user.api.vo.stats.MemberDistributionVO;
 import com.summit.stp.user.api.vo.stats.UserStatsOverviewVO;
 import com.summit.stp.user.api.vo.stats.UserTrendsVO;
@@ -195,12 +196,33 @@ public class UserDashSupport {
      */
     public UserTrendsVO getUserTrendsStats(String period) {
         log.info("【用户模块】[DashSupport] 基于领域仓储查询用户增长走势, 周期: {}", period);
-        int days = "30d".equalsIgnoreCase(period) ? 30 : 7;
+        int days = resolveDays(period);
         UserTrendStat trend = userRepository.countUserTrends(days);
         return UserTrendsVO.builder()
                 .dates(trend != null && trend.getDates() != null ? trend.getDates() : Collections.emptyList())
                 .newUserCountList(trend != null && trend.getNewUserCountList() != null ? trend.getNewUserCountList()
                         : Collections.emptyList())
                 .build();
+    }
+
+    /**
+     * 解析统计周期口径（#17）：支持 7d / 30d / 90d。
+     * <p>空值默认 7 天并记录告警；非法值抛出参数异常，禁止静默按 7 天处理。</p>
+     */
+    private static int resolveDays(String period) {
+        if (period == null || period.isBlank()) {
+            log.warn("【用户模块】[DashSupport] 统计周期为空，默认使用 7d");
+            return 7;
+        }
+        switch (period.trim().toLowerCase()) {
+            case "7d":
+                return 7;
+            case "30d":
+                return 30;
+            case "90d":
+                return 90;
+            default:
+                throw new ParameterException("不支持的统计周期: " + period + "，可选值: 7d/30d/90d");
+        }
     }
 }
