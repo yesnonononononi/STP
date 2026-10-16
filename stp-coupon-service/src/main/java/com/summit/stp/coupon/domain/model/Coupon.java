@@ -105,17 +105,33 @@ public class Coupon {
 
         // 2. 指定商品分类
         if (this.scopeType == CouponScopeType.SCOPE_OF_PRODUCT_TYPE) {
-            return this.scopeRelationIds.contains(productTypeId) ? null : "优惠范围不包含该分类";
+            return containsId(this.scopeRelationIds, productTypeId) ? null : "优惠范围不包含该分类";
         }
 
         // 3. 指定商品 (单品)
         if (this.scopeType == CouponScopeType.SCOPE_OF_PRODUCT) {
-            return this.scopeRelationIds.contains(packageId) ? null : "优惠券不适用于该单品";
+            return containsId(this.scopeRelationIds, packageId) ? null : "优惠券不适用于该单品";
         }
 
 
 
         return "优惠范围不适用";
+    }
+
+    /**
+     * 安全判断集合是否包含指定 id。
+     * <p>当 id 为 null 时直接视为不包含，避免不可变集合（如 {@link List#of}）的
+     * {@code contains(null)} 抛出 {@link NullPointerException}。</p>
+     *
+     * @param ids 待检查的 id 集合，允许为 null
+     * @param id  目标 id，允许为 null
+     * @return 集合非空且包含目标 id 时返回 true，否则 false
+     */
+    private static boolean containsId(List<Long> ids, Long id) {
+        if (id == null || ids == null) {
+            return false;
+        }
+        return ids.contains(id);
     }
 
     /**
