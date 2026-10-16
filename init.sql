@@ -122,7 +122,8 @@ CREATE TABLE `comments`
     KEY `idx_root_id` (`root_id`),
     KEY `idx_user_id` (`user_id`),
     KEY `idx_status_updatetime_id` (`status`, `update_time`, `id`),
-    KEY `idx_status_parent_root_updatetime` (`status`, `parent_id`, `root_id`, `update_time`, `id`)
+    KEY `idx_status_parent_root_updatetime` (`status`, `parent_id`, `root_id`, `update_time`, `id`),
+    KEY `idx_comments_content` (`content`(64))
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 2089925083773673473
   DEFAULT CHARSET = utf8mb4
@@ -411,7 +412,8 @@ CREATE TABLE `payment_order`
     `pay_time`        datetime                DEFAULT NULL COMMENT '支付完成时间',
     `timeout_time`    datetime       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '超时时间',
     PRIMARY KEY (`id`),
-    KEY `idx_payment_order_status_timeout_time_id` (`status`, `timeout_time`, `id`)
+    KEY `idx_payment_order_status_timeout_time_id` (`status`, `timeout_time`, `id`),
+    KEY `idx_payment_order_create_time` (`create_time`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 2090020891831304193
   DEFAULT CHARSET = utf8mb4
@@ -794,7 +796,8 @@ CREATE TABLE `user`
     `bg_image`     varchar(500)          DEFAULT NULL COMMENT '用户主页背景图',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uname` (`uname`),
-    KEY `idx_phone` (`phone`)
+    KEY `idx_phone` (`phone`),
+    KEY `idx_user_create_time` (`create_time`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 2084276653212235281
   DEFAULT CHARSET = utf8mb4
@@ -873,7 +876,9 @@ CREATE TABLE `user_member`
     `expire_time`        datetime       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '过期时间',
     `daily_rate`         decimal(10, 4) NOT NULL DEFAULT '0.0000' COMMENT '当前会员日折算单价',
     PRIMARY KEY (`user_id`),
-    KEY `idx_level` (`vip_level`)
+    KEY `idx_level` (`vip_level`),
+    KEY `idx_user_member_expire_time` (`expire_time`),
+    KEY `idx_user_member_package_type_id` (`package_type_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT ='用户VIP汇总表';

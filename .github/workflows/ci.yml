@@ -1,4 +1,4 @@
-name: CI Pipeline
+﻿name: CI Pipeline
 
 on:
   push:
@@ -23,12 +23,27 @@ jobs:
           cache: maven
 
       - name: Run Tests & Build with Maven
-        # 默认执行完整编译、测试与打包；若单元测试失败，流水线会自动拦截并告警
-        run: mvn -B clean verify --file pom.xml
+        # 鎵ц瀹屾暣缂栬瘧銆佹祴璇曚笌鎵撳寘锛汮aCoCo 瑕嗙洊鐜囬棬绂佸湪 verify 闃舵鐢熸晥锛?        # 鑻ュ崟鍏冩祴璇曞け璐ユ垨鍏抽敭妯″潡瑕嗙洊鐜囦綆浜庨槇鍊硷紝娴佹按绾夸細鑷姩鎷︽埅骞跺憡璀︺€?        run: mvn -B clean verify --file pom.xml
+
+      - name: Upload JaCoCo coverage reports
+        # 鏃犺鏋勫缓鎴愬姛涓庡惁閮戒笂浼犳姤鍛婏紝渚夸簬瀹氫綅瑕嗙洊鐜囬棬绂佸け璐ュ師鍥?        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage-reports
+          path: |
+            stp-payment-service/target/site/jacoco/
+            stp-order-service/target/site/jacoco/
+            stp-coupon-service/target/site/jacoco/
+          if-no-files-found: warn
+          retention-days: 7
 
   frontend-ci:
-    name: Frontend CI (Node / Vite / TypeScript)
+    name: Frontend CI (${{ matrix.app }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [frontend-client, frontend-admin]
 
     steps:
       - name: Checkout repository
@@ -39,10 +54,10 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
 
-      - name: Install dependencies & Build Frontend
-        working-directory: frontend
+      - name: Install dependencies & Build (${{ matrix.app }})
+        working-directory: ${{ matrix.app }}
         run: |
           npm ci
           npm run build

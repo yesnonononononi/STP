@@ -2,6 +2,8 @@ services:
   redis:
     container_name: stp-redis
     image: redis:8
+    # 强制密码认证：密码由 .env 的 REDIS_PASSWORD 注入（勿使用默认空密码）
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
     ports:
       - "6379:6379"
     volumes:
@@ -10,7 +12,7 @@ services:
     env_file:
       - .env
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -134,9 +136,7 @@ services:
   auth-service:
     container_name: stp-auth-service
     build: ./stp-auth-service
-
-    ports:
-      - "8081:8081"
+    # 生产环境不对外暴露业务服务端口，统一经网关(9090)访问，避免绕过鉴权
     env_file:
       - .env
     environment:
@@ -147,7 +147,8 @@ services:
       MINIO_HOST: minio
       RABBITMQ_HOST: rabbitmq
       # JWT 密钥仅注入认证服务，避免其他模块扫描 common 时误创建 JWT Bean
-      STP_AUTH_JWT_SECRET_KEY: ${STP_AUTH_JWT_SECRET_KEY:-stp-docker-jwt-secret-change-me-20260803-please-override}
+      # 移除弱口令兜底默认值：缺失即启动失败，强制从 .env 注入强随机密钥
+      STP_AUTH_JWT_SECRET_KEY: ${STP_AUTH_JWT_SECRET_KEY}
     restart: always
     depends_on:
       mysql:
@@ -159,8 +160,6 @@ services:
   admin-service:
     container_name: stp-admin-service
     build: ./stp-admin-service
-    ports:
-      - "8092:8092"
     env_file:
       - .env
     environment:
@@ -202,8 +201,6 @@ services:
   user-service:
     container_name: stp-user-service
     build: ./stp-user-service
-    ports:
-      - "8082:8082"
     env_file:
       - .env
     environment:
@@ -226,8 +223,6 @@ services:
   message-service:
     container_name: stp-message-service
     build: ./stp-im-service
-    ports:
-      - "8087:8087"
     env_file:
       - .env
     environment:
@@ -252,8 +247,6 @@ services:
   order-service:
     container_name: stp-order-service
     build: ./stp-order-service
-    ports:
-      - "8090:8090"
     env_file:
       - .env
     environment:
@@ -278,8 +271,6 @@ services:
   payment-service:
     container_name: stp-payment-service
     build: ./stp-payment-service
-    ports:
-      - "8088:8088"
     env_file:
       - .env
     environment:
@@ -304,8 +295,6 @@ services:
   toolbox-service:
     container_name: stp-toolbox-service
     build: ./stp-toolbox-service
-    ports:
-      - "8085:8085"
     env_file:
       - .env
     environment:
@@ -330,8 +319,6 @@ services:
   post-service:
     container_name: stp-post-service
     build: ./stp-post-service
-    ports:
-      - "8083:8083"
     env_file:
       - .env
     environment:
@@ -356,8 +343,6 @@ services:
   coupon-service:
     container_name: stp-coupon-service
     build: ./stp-coupon-service
-    ports:
-      - "8089:8089"
     env_file:
       - .env
     environment:
@@ -382,8 +367,6 @@ services:
   comment-service:
     container_name: stp-comment-service
     build: ./stp-comment-service
-    ports:
-      - "8086:8086"
     env_file:
       - .env
     environment:
