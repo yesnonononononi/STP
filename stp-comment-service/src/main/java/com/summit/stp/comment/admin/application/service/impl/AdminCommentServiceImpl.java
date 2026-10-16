@@ -9,6 +9,7 @@ import com.summit.stp.comment.comment.domain.model.Comment;
 import com.summit.stp.comment.comment.domain.repository.CommentRepository;
 import com.summit.stp.common.application.api.result.PageResult;
 import com.summit.stp.common.application.api.result.Result;
+import com.summit.stp.common.util.DistributedLockUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,7 +21,14 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @Slf4j
 public class AdminCommentServiceImpl implements AdminCommentService {
+
+    /** 管理端写操作分布式锁等待时间（秒） */
+    private static final long LOCK_WAIT_SECONDS = 3L;
+    /** 管理端写操作分布式锁租约时间（秒） */
+    private static final long LOCK_LEASE_SECONDS = 10L;
+
     private final CommentRepository commentRepository;
+    private final DistributedLockUtil distributedLockUtil;
 
     @Override
     public Result<PageResult<List<AdminCommentVO>>> listBy(CommentQueryCommand command) {
@@ -36,20 +44,26 @@ public class AdminCommentServiceImpl implements AdminCommentService {
     @Override
     public Result<Void> toggleBan(Long id, boolean attemptBan) {
         if(id == null)return Result.error("评论ID不能为空");
-        Comment comment = commentRepository.findById(id).orElseThrow(NoSuchCommentException::new);
-        if(attemptBan)comment.ban();
-        else comment.unban();
-        commentRepository.update(comment);
-        return Result.success();
+        // 同一评论的封禁/解封串行化（幂等/防重，#24）
+        return distributedLockUtil.executeWithLock("admin:comment:ban:" + id, LOCK_WAIT_SECONDS, LOCK_LEASE_SECONDS, () -> {
+            Comment comment = commentRepository.findById(id).orElseThrow(NoSuchCommentException::new);
+            if(attemptBan)comment.ban();
+            else comment.unban();
+            commentRepository.update(comment);
+            return Result.success();
+        });
     }
 
     @Override
     public Result<Void> ignoreReport(Long id) {
         if(id == null)return Result.error("评论ID不能为空");
-        Comment comment = commentRepository.findById(id).orElseThrow(NoSuchCommentException::new);
-        comment.ignoreReport();
-        commentRepository.update(comment);
-        return Result.success();
+        // 同一评论的忽略举报串行化（幂等/防重，#24）
+        return distributedLockUtil.executeWithLock("admin:comment:ignoreReport:" + id, LOCK_WAIT_SECONDS, LOCK_LEASE_SECONDS, () -> {
+            Comment comment = commentRepository.findById(id).orElseThrow(NoSuchCommentException::new);
+            comment.ignoreReport();
+            commentRepository.update(comment);
+            return Result.success();
+        });
     }
 
 
@@ -66,7 +80,8 @@ public class AdminCommentServiceImpl implements AdminCommentService {
                 .createTime(comment.getCreateTime())
                 .replyCount(comment.getReplyCount())
                 .isTop(comment.getIsTop())
-                .status(comment.getStatus().getCode())
+                // 状态为空时返回 null 而非 NPE（#20）
+                .status(comment.getStatus() != null ? comment.getStatus().getCode() : null)
                 .reportReason(comment.getReportReason())
                 .item(comment.getItem())
                 .extra(comment.getExtra())
