@@ -27,6 +27,7 @@ import reactor.core.publisher.Mono;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
 
 @Slf4j
@@ -42,23 +43,74 @@ public class AuthorizeGatewayFilter implements GlobalFilter, Ordered {
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
+    /** 内部 RPC 接口路径标识，命中即拒绝外部访问 */
+    private static final String INTERNAL_PATH_SEGMENT = "/internal/";
+
+    /**
+     * 客户端可伪造的透传头。
+     * 必须在鉴权之前无条件剥离，随后由网关基于「校验通过的 token」重新注入，
+     * 确保匿名 / 无 token 请求也不能携带伪造身份头到达下游服务。
+     */
+    private static final List<String> FORGED_CLIENT_HEADERS = List.of(
+            "X-User-Id",
+            "X-User-Name",
+            "X-User-Admin",
+            "X-User-IP",
+            "X-User-Token",
+            "X-User-Token-Type",
+            "X-User-Session",
+            "X-Internal-Request"
+    );
+
     @Override
     public @NonNull Mono<Void> filter(ServerWebExchange exchange, @NonNull GatewayFilterChain chain) {
-        ServerHttpRequest request = exchange.getRequest();
+        // 0. 安全基线：先剥离客户端伪造的透传头（剥离 → 鉴权 → 重新注入）
+        ServerWebExchange sanitized = stripForgedHeaders(exchange);
+        ServerHttpRequest request = sanitized.getRequest();
         String path = request.getURI().getPath();
 
+        // 1. 内部 RPC 接口兜底拦截（代码层强约束，不依赖 Nacos 路由配置）：
+        //    任何外部请求（含无 token 的匿名请求）访问 /**/internal/** 一律 403
+        if (path.contains(INTERNAL_PATH_SEGMENT)) {
+            log.warn("【网关】拦截外部访问内部接口，path={}, remote={}", path, request.getRemoteAddress());
+            return forbidden(sanitized);
+        }
 
-        // 认证相关接口直接放行，由 auth 服务自主完成登录与 Token 生成
+        // 2. 认证相关接口直接放行，由 auth 服务自主完成登录与 Token 生成
         if (path.contains("/user-auth/login") ||
                 path.contains("/user-auth/register") ||
                 path.contains("/user-auth/refresh-token") ||
                 path.contains("/user-auth/forget")) {
-            return chain.filter(exchange);
+            return chain.filter(sanitized);
         }
         // 获取 token
         String authHeader = request.getHeaders().getFirst("Authorization");
         // 解析
-        return resolveToken(authHeader, exchange, chain);
+        return resolveToken(authHeader, sanitized, chain);
+    }
+
+    /**
+     * 剥离客户端传入的全部 X-User-* / X-Internal-Request 头。
+     * HttpHeaders 为大小写不敏感容器，remove 可覆盖任意大小写变体。
+     */
+    private ServerWebExchange stripForgedHeaders(ServerWebExchange exchange) {
+        ServerHttpRequest sanitizedRequest = exchange.getRequest().mutate()
+                .headers(headers -> FORGED_CLIENT_HEADERS.forEach(headers::remove))
+                .build();
+        return exchange.mutate().request(sanitizedRequest).build();
+    }
+
+    /**
+     * 返回 403，用于拦截内部接口的外部访问。
+     */
+    private Mono<Void> forbidden(ServerWebExchange exchange) {
+        ServerHttpResponse response = exchange.getResponse();
+        if (response.isCommitted()) return Mono.empty();
+        response.setStatusCode(HttpStatus.FORBIDDEN);
+        response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        DataBuffer buffer = response.bufferFactory()
+                .wrap("禁止外部访问内部接口".getBytes(StandardCharsets.UTF_8));
+        return response.writeWith(Mono.just(buffer));
     }
 
     /**
