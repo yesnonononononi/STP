@@ -26,24 +26,9 @@ public class AdminUserController {
 
     @PostMapping("/list")
     public Result<PageResult<List<UserProfileVO>>> listBy(@RequestBody AdminUserQueryDTO dto){
-        Integer page = dto.getPage();
-        AdminUserQueryCommand command =AdminUserQueryCommand.builder()
-                .page(page)
-                .size(dto.getSize())
-                .keyword(dto.getKeyword())
-                .createTime(dto.getCreateTime())
-                .enabledVIP(dto.getEnabledVIP())
-                .VIPLevel(dto.getVIPLevel())
-                .fans(dto.getFans())
-                .topic(dto.getTopic())
-                .queryWithoutFilter(dto.isQueryWithoutFilter())
-                .follow(dto.getFollow())
-                .age(dto.getAge())
-                .gender(dto.getGender())
-                .phone(dto.getPhone())
-                .ip(dto.getIp())
-                .statusCode(dto.getStatusCode())
-                .build();
+        AdminUserQueryCommand command = dto.toCommand();
+        command.setPage(clampPage(command.getPage()));
+        command.setSize(clampSize(command.getSize()));
         return adminUserService.listBy(command);
     }
 
@@ -52,7 +37,7 @@ public class AdminUserController {
         return adminUserService.countNewUser();
     }
 
-    @GetMapping("/ban")
+    @PostMapping("/ban")
     @OperationLog(description = "禁用用户", type =  Operation.OperationType.UPDATE,entityId = "#uid")
     public Result<Void> ban(Long uid){
         return adminUserService.toggleBan(uid,true);
@@ -60,8 +45,19 @@ public class AdminUserController {
 
 
     @OperationLog(description = "启用用户", type =  Operation.OperationType.UPDATE,entityId = "#uid")
-    @GetMapping("/unban")
+    @PostMapping("/unban")
     public Result<Void> unban(Long uid){
         return adminUserService.toggleBan(uid,false);
+    }
+
+    private static Integer clampPage(Integer page) {
+        return (page == null || page < 1) ? 1 : page;
+    }
+
+    private static Integer clampSize(Integer size) {
+        if (size == null || size < 1) {
+            return 10;
+        }
+        return Math.min(size, 100);
     }
 }

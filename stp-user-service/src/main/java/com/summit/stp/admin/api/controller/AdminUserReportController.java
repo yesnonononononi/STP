@@ -30,8 +30,8 @@ public class AdminUserReportController {
             @RequestParam(value = "pageSize", defaultValue = "10") long pageSize) {
         UserReportQueryCommand command = UserReportQueryCommand.builder()
                 .status(status)
-                .page(page)
-                .pageSize(pageSize)
+                .page(clampPage(page))
+                .pageSize(clampSize(pageSize))
                 .build();
         return userReportAppService.queryReportPage(command);
     }
@@ -46,5 +46,16 @@ public class AdminUserReportController {
     @OperationLog(description = "管理员处理举报并封禁用户", type = Operation.OperationType.UPDATE, entityId = "#id")
     public Result<Void> processAndBanReport(@PathVariable("id") Long id) {
         return userReportAppService.processAndBanReport(id);
+    }
+
+    private static long clampPage(long page) {
+        return page < 1 ? 1 : page;
+    }
+
+    private static long clampSize(long size) {
+        if (size < 1) {
+            return 10;
+        }
+        return Math.min(size, 100);
     }
 }

@@ -5,13 +5,19 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
 import java.sql.Timestamp;
 
+/**
+ * 管理端用户查询命令（application 层）。
+ * <p>字段定义的唯一来源；api 层的 {@code AdminUserQueryDTO} 继承本类以消除 15 字段逐字重复（#31）。</p>
+ */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AdminUserQueryCommand {
+public class AdminUserQueryCommand implements Serializable {
     private Integer page;                        //分页指针
     private Integer size;
     private String keyword;                     // 昵称关键词匹配

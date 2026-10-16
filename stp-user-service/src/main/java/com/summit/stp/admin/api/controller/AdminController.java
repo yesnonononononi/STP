@@ -24,12 +24,12 @@ public class AdminController {
     @GetMapping("/list")
     @Login
     public Result<List<AdminVO>> list(Integer page, Integer pageSize){
-        return adminService.list(page, pageSize);
+        return adminService.list(clampPage(page), clampSize(pageSize));
     }
     @Admin
     @PostMapping("/ban")
     @Login
-    @OperationLog(description = "禁用管理员", type = Operation.OperationType.UPDATE)
+    @OperationLog(description = "禁用管理员", type = Operation.OperationType.UPDATE, entityId = "#aId")
     public Result<Void> ban(Long aId){
         return adminService.toggleBan(aId, true);
     }
@@ -69,6 +69,17 @@ public class AdminController {
                 .order(adminDTO.getOrder())
                 .build();
         return adminService.add(command);
+    }
+
+    private static Integer clampPage(Integer page) {
+        return (page == null || page < 1) ? 1 : page;
+    }
+
+    private static Integer clampSize(Integer size) {
+        if (size == null || size < 1) {
+            return 10;
+        }
+        return Math.min(size, 100);
     }
 
 }

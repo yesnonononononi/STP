@@ -8,6 +8,8 @@ import java.util.Optional;
 public interface AdminRepository {
     void save(Admin admin);
 
+    void updateById(Admin admin);
+
     List<Admin> list(Integer page, Integer pageSize);
 
     Optional<Admin> findById(Long id);
