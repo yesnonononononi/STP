@@ -1,8 +1,11 @@
 package com.summit.stp.common.config;
 
+import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.config.GlobalConfig;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
+import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionTemplate;
@@ -40,6 +43,13 @@ public class SqlConfig {
         GlobalConfig globalConfig = new GlobalConfig();
         metaObjectHandlerProvider.ifAvailable(globalConfig::setMetaObjectHandler);
         factoryBean.setGlobalConfig(globalConfig);
+
+        // 注册 MyBatis-Plus 分页插件，setMaxLimit 作为全局分页兜底，防止无界查询
+        MybatisPlusInterceptor mybatisPlusInterceptor = new MybatisPlusInterceptor();
+        PaginationInnerInterceptor paginationInnerInterceptor = new PaginationInnerInterceptor(DbType.MYSQL);
+        paginationInnerInterceptor.setMaxLimit(100L);
+        mybatisPlusInterceptor.addInnerInterceptor(paginationInnerInterceptor);
+        factoryBean.setPlugins(mybatisPlusInterceptor);
 
         // 从配置读取 mapper-locations，支持逗号分隔的多路径扫描
         List<Resource> resourceList = new ArrayList<>();

@@ -52,6 +52,13 @@
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
         </dependency>
 
+        <!-- MyBatis Plus JSQLParser: 3.5.9 起 PaginationInnerInterceptor 等基于 JSqlParser 的插件从 extension 拆分至此 -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <version>${mybatis-plus.version}</version>
+        </dependency>
+
 
         <!-- Hutool -->
         <dependency>
