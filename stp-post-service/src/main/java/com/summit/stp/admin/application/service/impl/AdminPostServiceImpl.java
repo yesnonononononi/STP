@@ -8,6 +8,7 @@ import com.summit.stp.common.application.api.result.PageResult;
 import com.summit.stp.common.application.api.result.Result;
 import com.summit.stp.common.application.domain.event.EsPostUpdateEvent;
 import com.summit.stp.common.application.domain.event.PostChangeEvent;
+import com.summit.stp.common.util.DistributedLockUtil;
 import com.summit.stp.elasticsearch.service.PostQuerySupport;
 import com.summit.stp.post.application.service.PostAppService;
 import com.summit.stp.post.application.service.PostMessageSender;
@@ -21,16 +22,22 @@ import com.summit.stp.post.domain.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AdminPostServiceImpl implements AdminPostService {
 
+    /** 管理端写操作分布式锁等待时间（秒） */
+    private static final long LOCK_WAIT_SECONDS = 3L;
+    /** 管理端写操作分布式锁租约时间（秒） */
+    private static final long LOCK_LEASE_SECONDS = 10L;
 
     private final PostQuerySupport postQuerySupport;
     private final PostRepository postRepository;
@@ -38,59 +45,82 @@ public class AdminPostServiceImpl implements AdminPostService {
     private final TransactionTemplate transactionTemplate;
     private final PostQueryService postQueryService;
     private final PostMessageSender postMessageSender;
+    private final DistributedLockUtil distributedLockUtil;
 
     @Override
     public Result<PageResult<List<AdminPostVO>>> list(AdminPostQueryCommand command) {
         ESPageVO<Long> res = postQuerySupport.listBy(command);
         List<Long> ids = res.getData();
-        List<Post> list = postRepository.findByIds(ids);
-        return Result.success(new PageResult<>(res.getPage(), res.getTotal(), list.stream().map(this::toVO).toList()));
+        // 列表为空时返回空页而非 null（#19），保持分页语义自洽
+        if (ids == null || ids.isEmpty()) {
+            return Result.success(PageResult.empty());
+        }
+        // total 以 ES 结果集为准（分页总数权威值）；记录回表 IN 查询不保序，故按 ES 返回的 id 顺序重排（#19）
+        Map<Long, Post> byId = postRepository.findByIds(ids).stream()
+                .collect(Collectors.toMap(Post::getId, p -> p, (a, b) -> a));
+        List<AdminPostVO> data = ids.stream()
+                .map(byId::get)
+                .filter(Objects::nonNull)
+                .map(this::toVO)
+                .toList();
+        return Result.success(new PageResult<>(res.getPage(), res.getTotal(), data));
     }
 
 
-    @Transactional(rollbackFor = Exception.class)
     @Override
     public void bypass(Long id) {
-        Post p = transactionTemplate.execute(status -> {
-            // 1, 查找帖子并更新
-            Post post = postRepository.findById(id).orElseThrow(NoSuchPostException::new);
-            post.pass();
-            postRepository.update(post);
-            // 2. 初始化帖子缓存
-            postAppService.initPostCache(post);
+        // 统一使用 TransactionTemplate 管理事务（不再与 @Transactional 混用，#33），并加分布式锁防重（#24）
+        distributedLockUtil.executeWithLock("admin:post:bypass:" + id, LOCK_WAIT_SECONDS, LOCK_LEASE_SECONDS, () -> {
+            transactionTemplate.executeWithoutResult(status -> {
+                // 1, 查找帖子并更新
+                Post post = postRepository.findById(id).orElseThrow(NoSuchPostException::new);
+                post.pass();
+                postRepository.update(post);
+                // 2. 初始化帖子缓存
+                postAppService.initPostCache(post);
 
-            // 3, 发布帖子发布事件
-            postAppService.publishPostEvent(post, PostChangeEvent.EventType.CREATE, null, id);
-            return post;
+                // 3, 发布帖子发布事件
+                postAppService.publishPostEvent(post, PostChangeEvent.EventType.CREATE, null, id);
+            });
+
+            // 事务提交后发布系统 ES 状态变更事件
+            publishEsStatusChangeEvent(id, PostStatus.NORMAL.getCode(), null);
         });
-
-        // 3. 发布系统 ES 状态变更事件
-        publishEsStatusChangeEvent(id, PostStatus.NORMAL.getCode(), null);
     }
 
     @Override
     public void bypassNot(Long id, String reason) {
-        Post post = postRepository.findById(id).orElseThrow(NoSuchPostException::new);
-        post.unpass(reason);
-        postRepository.update(post);
+        distributedLockUtil.executeWithLock("admin:post:bypassNot:" + id, LOCK_WAIT_SECONDS, LOCK_LEASE_SECONDS, () -> {
+            transactionTemplate.executeWithoutResult(status -> {
+                Post post = postRepository.findById(id).orElseThrow(NoSuchPostException::new);
+                post.unpass(reason);
+                postRepository.update(post);
+            });
 
-        // 发布系统 ES 状态变更事件
-        publishEsStatusChangeEvent(id, PostStatus.UNPASS.getCode(), reason);
+            // 发布系统 ES 状态变更事件
+            publishEsStatusChangeEvent(id, PostStatus.UNPASS.getCode(), reason);
+        });
     }
 
     @Override
     public void toggleBan(Long id, boolean attemptBan) {
-        Post post = postRepository.findById(id).orElseThrow(NoSuchPostException::new);
-        if (attemptBan) {
-            post.ban();
-            postAppService.deletePostExtraInfo(post,null);
-        } else {
-            post.unban();
-        }
-        postRepository.update(post);
+        distributedLockUtil.executeWithLock("admin:post:ban:" + id, LOCK_WAIT_SECONDS, LOCK_LEASE_SECONDS, () -> {
+            Integer[] statusHolder = new Integer[1];
+            transactionTemplate.executeWithoutResult(status -> {
+                Post post = postRepository.findById(id).orElseThrow(NoSuchPostException::new);
+                if (attemptBan) {
+                    post.ban();
+                    postAppService.deletePostExtraInfo(post, null);
+                } else {
+                    post.unban();
+                }
+                postRepository.update(post);
+                statusHolder[0] = post.getStatus().getCode();
+            });
 
-        // 发布系统 ES 状态变更事件
-        publishEsStatusChangeEvent(id, post.getStatus().getCode(), null);
+            // 发布系统 ES 状态变更事件
+            publishEsStatusChangeEvent(id, statusHolder[0], null);
+        });
     }
 
     private void publishEsStatusChangeEvent(Long id, Integer status, String unpassReason) {
